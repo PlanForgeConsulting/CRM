@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PlanForge">
+<meta name="theme-color" content="#122840">
+<meta name="color-scheme" content="light only">
+<title>PlanForge Partner Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{height:-webkit-fill-available;color-scheme:light only}
+body{font-family:'Libre Franklin',-apple-system,BlinkMacSystemFont,sans-serif;background:#FAF8F3!important;color:#2D2D2D!important;min-height:100vh;min-height:-webkit-fill-available;overscroll-behavior:none;-webkit-text-size-adjust:100%}
+.header{background:linear-gradient(135deg,#122840 0%,#1B3A5C 50%,#2A5580 100%);padding:28px 20px 24px;padding-top:max(28px,env(safe-area-inset-top,28px));text-align:center;position:relative;overflow:hidden}
+.header::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:radial-gradient(ellipse at 20% 50%,rgba(196,149,42,0.1) 0%,transparent 60%)}
+.header-inner{position:relative;z-index:1}
+.header-brand{font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:#C4952A;margin-bottom:8px}
+.header-title{font-size:22px;font-weight:800;color:#fff;margin:0 0 6px;line-height:1.2}
+.header-sub{font-size:13px;color:rgba(255,255,255,0.7);font-weight:400}
+.accent-bar{height:3px;background:linear-gradient(to right,#B22234,#C4952A)}
+.calc-body{padding:24px 20px 16px}
+.slider-group{margin-bottom:28px}
+.slider-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.slider-label{font-size:14px;font-weight:600;color:#1B3A5C;letter-spacing:0.02em;text-transform:uppercase}
+.slider-value{font-size:24px;font-weight:700;color:#1B3A5C}
+input[type="range"]{width:100%;height:8px;border-radius:4px;-webkit-appearance:none;appearance:none;outline:none;cursor:pointer;background:#E5E7EB}
+input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;height:28px;width:28px;border-radius:50%;background:#1B3A5C;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.25);cursor:pointer}
+input[type="range"]::-moz-range-thumb{height:28px;width:28px;border-radius:50%;background:#1B3A5C;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.25);cursor:pointer}
+.slider-range{display:flex;justify-content:space-between;margin-top:4px;font-size:11px;color:#6B7280}
+.results{padding:0 20px 24px}
+.year-one{background:linear-gradient(135deg,#122840,#1B3A5C);border-radius:12px;padding:24px 20px;margin-bottom:12px;text-align:center;position:relative;overflow:hidden}
+.year-one::after{content:'';position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;background:radial-gradient(circle,rgba(196,149,42,0.15) 0%,transparent 70%)}
+.year-one-label{font-size:11px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4952A;margin-bottom:8px}
+.year-one-amount{font-size:42px;font-weight:900;color:#fff;line-height:1;margin-bottom:4px}
+.year-one-detail{font-size:12px;color:rgba(255,255,255,0.6);font-weight:400}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.stat-card{background:#fff;border-radius:10px;padding:18px 16px;border:1px solid #E5E7EB;text-align:center}
+.stat-label{font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#6B7280;margin-bottom:6px}
+.stat-amount{font-size:26px;font-weight:800}
+.stat-amount.navy{color:#1B3A5C}
+.stat-amount.gold{color:#C4952A}
+.stat-sub{font-size:11px;color:#6B7280}
+.client-impact{background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;padding:16px 18px;margin-bottom:16px;text-align:center}
+.client-label{font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#166534;margin-bottom:4px}
+.client-amount{font-size:28px;font-weight:800;color:#166534}
+.client-sub{font-size:12px;color:#166534;opacity:0.8}
+.breakdown-toggle{width:100%;background:none;border:1px solid #E5E7EB;border-radius:8px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;margin-bottom:12px;font-family:'Libre Franklin',sans-serif}
+.breakdown-toggle span:first-child{font-size:13px;font-weight:600;color:#1B3A5C}
+.breakdown-arrow{font-size:18px;color:#1B3A5C;transition:transform 0.2s}
+.breakdown-arrow.open{transform:rotate(180deg)}
+.breakdown-content{background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:18px;margin-bottom:16px;display:none}
+.breakdown-content.open{display:block}
+.breakdown-section{margin-bottom:16px}
+.breakdown-section:last-child{margin-bottom:0}
+.breakdown-title{font-size:12px;font-weight:700;color:#1B3A5C;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px}
+.breakdown-text{font-size:13px;color:#2D2D2D;line-height:1.6}
+.breakdown-divider{height:1px;background:#E5E7EB;margin:0 0 16px}
+.tier-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tier-box{padding:8px 10px;border-radius:6px;font-size:12px;font-weight:600;text-align:center;background:#FAF8F3;color:#2D2D2D;transition:background 0.2s,color 0.2s}
+.tier-box.active{background:#1B3A5C;color:#fff}
+.footer{text-align:center;padding:16px 0 8px}
+.footer-motto{font-size:15px;font-weight:700;color:#1B3A5C;margin-bottom:4px}
+.footer-info{font-size:12px;color:#6B7280}
+</style>
+</head>
+<body>
+<div class="header"><div class="header-inner">
+<div class="header-brand">PlanForge Consulting</div>
+<h1 class="header-title">Partner Revenue Calculator</h1>
+<p class="header-sub">See what referring 401(k) plans means for your practice</p>
+</div></div>
+<div class="accent-bar"></div>
+<div class="calc-body">
+<div class="slider-group"><div class="slider-header"><span class="slider-label">Plans You Refer Per Year</span><span class="slider-value" id="plansDisplay">3</span></div><input type="range" id="plansSlider" min="1" max="15" value="3"><div class="slider-range"><span>1</span><span>15</span></div></div>
+<div class="slider-group"><div class="slider-header"><span class="slider-label">Avg Employees Per Plan</span><span class="slider-value" id="empDisplay">25</span></div><input type="range" id="empSlider" min="10" max="75" step="5" value="25"><div class="slider-range"><span>10</span><span>75</span></div></div>
+<div class="slider-group"><div class="slider-header"><span class="slider-label">Revenue Share Tier</span><span class="slider-value" id="tierDisplay">Growing (10%)</span></div><input type="range" id="tierSlider" min="5" max="20" step="5" value="10"><div class="slider-range"><span>5%</span><span>20%</span></div></div>
+</div>
+<div class="results">
+<div class="year-one"><div class="year-one-label">Your Year One Earnings</div><div class="year-one-amount" id="yearOneTotal">$3,313</div><div class="year-one-detail" id="yearOneDetail">$1,250 referral bonuses + $2,063 recurring share</div></div>
+<div class="two-col"><div class="stat-card"><div class="stat-label">Per Year (if repeated)</div><div class="stat-amount navy" id="perYear">$3,313</div><div class="stat-sub">with new referrals</div></div><div class="stat-card"><div class="stat-label">3-Year Total</div><div class="stat-amount gold" id="threeYear">$9,938</div><div class="stat-sub">cumulative</div></div></div>
+<div class="client-impact"><div class="client-label">Total Tax Credits for Your Clients</div><div class="client-amount" id="clientSavings">$93,750</div><div class="client-sub" id="clientSub">Up to $31,250 per plan over 5 years via SECURE Act 2.0</div></div>
+<button class="breakdown-toggle" id="breakdownBtn"><span>How It Works</span><span class="breakdown-arrow" id="breakdownArrow">&#9660;</span></button>
+<div class="breakdown-content" id="breakdownContent">
+<div class="breakdown-section"><div class="breakdown-title">Referral Bonus</div><div class="breakdown-text">Earn <strong>$250</strong> for your first qualified referral that implements a 401(k) plan, and <strong>$500</strong> for every referral after that. Even if they don't choose PlanForge.</div></div>
+<div class="breakdown-divider"></div>
+<div class="breakdown-section"><div class="breakdown-title">Revenue Share (First Year)</div><div class="breakdown-text" id="revShareText">Earn <strong>10%</strong> of administrative fees on every plan you refer during the first year of the plan. Starts at 5%, scales to 20% based on volume. Keep referring new plans each year to maintain your revenue stream.</div></div>
+<div class="breakdown-divider"></div>
+<div class="breakdown-section"><div class="breakdown-title">Your Clients Win Too</div><div class="breakdown-text">Each client can access up to <strong>$265,000</strong> in SECURE Act 2.0 tax credits over 5 years. Net-zero cost 401(k) plans that make you look like a hero.</div></div>
+<div class="breakdown-divider"></div>
+<div class="breakdown-section"><div class="breakdown-title">Revenue Share Tiers</div><div class="tier-grid" id="tierGrid"><div class="tier-box" data-tier="5">5% &mdash; 1-2 plans/yr</div><div class="tier-box active" data-tier="10">10% &mdash; 3-5 plans/yr</div><div class="tier-box" data-tier="15">15% &mdash; 6-9 plans/yr</div><div class="tier-box" data-tier="20">20% &mdash; 10+ plans/yr</div></div></div>
+</div>
+<div class="footer"><div class="footer-motto">Pay Your Team, Not the IRS.</div><div style="height:16px"></div><div class="footer-info">PlanForge Consulting | Nick Moore, CFP&#174;</div><div class="footer-info">nick@planforge401k.com | 214-908-2310</div><div class="footer-info">planforge401k.com</div></div>
+</div>
+<script>
+var G=function(id){return document.getElementById(id)};
+var pS=G('plansSlider'),eS=G('empSlider'),tS=G('tierSlider'),FEE=275;
+function fmt(n){return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(n)}
+function autoTier(p){if(p>=10)return 20;if(p>=6)return 15;if(p>=3)return 10;return 5}
+function minPlans(t){if(t>=20)return 10;if(t>=15)return 6;if(t>=10)return 3;return 1}
+function maxPlans(t){if(t>=20)return 15;if(t>=15)return 9;if(t>=10)return 5;return 2}
+function tierLbl(v){if(v<=5)return'Starting (5%)';if(v<=10)return'Growing (10%)';if(v<=15)return'Established (15%)';return'Top Partner (20%)'}
+function sBg(s){
+var p=((s.value-s.min)/(s.max-s.min))*100;
+s.style.background='linear-gradient(to right,#1B3A5C 0%,#1B3A5C '+p+'%,#E5E7EB '+p+'%,#E5E7EB 100%)';
+}
+function tHL(tier){
+var b=document.querySelectorAll('.tier-box');
+for(var i=0;i<b.length;i++){
+b[i].className=parseInt(b[i].getAttribute('data-tier'))===tier?'tier-box active':'tier-box';
+}
+}
+function calc(){
+var p=parseInt(pS.value),e=parseInt(eS.value),t=parseInt(tS.value);
+var sh=p*e*FEE*(t/100);
+var bn=p>=2?250+(p-1)*500:250;
+var y1=sh+bn;
+var y3=(bn+sh)*3;
+var cp=Math.min(e*250*5,265000);
+var tc=p*cp;
+G('plansDisplay').textContent=p;
+G('empDisplay').textContent=e;
+G('tierDisplay').textContent=tierLbl(t);
+G('yearOneTotal').textContent=fmt(y1);
+G('yearOneDetail').textContent=fmt(bn)+' referral bonuses + '+fmt(sh)+' recurring share';
+G('perYear').textContent=fmt(y1);
+G('threeYear').textContent=fmt(y3);
+G('clientSavings').textContent=fmt(tc);
+G('clientSub').textContent='Up to '+fmt(cp)+' per plan over 5 years via SECURE Act 2.0';
+G('revShareText').innerHTML='Earn <strong>'+t+'%</strong> of administrative fees on every plan you refer during the first year of the plan. Starts at 5%, scales to 20% based on volume. Keep referring new plans each year to maintain your revenue stream.';
+tHL(t);
+sBg(pS);sBg(eS);sBg(tS);
+}
+function sP(){
+tS.value=autoTier(parseInt(pS.value));
+sBg(tS);
+calc();
+}
+function sT(){
+var t=parseInt(tS.value);
+var m=minPlans(t);
+var x=maxPlans(t);
+var p=parseInt(pS.value);
+if(p<m){pS.value=m;sBg(pS)}
+if(p>x){pS.value=x;sBg(pS)}
+calc();
+}
+pS.addEventListener('input',sP);
+pS.addEventListener('change',sP);
+eS.addEventListener('input',calc);
+eS.addEventListener('change',calc);
+tS.addEventListener('input',sT);
+tS.addEventListener('change',sT);
+G('breakdownBtn').addEventListener('click',function(){
+var c=G('breakdownContent'),a=G('breakdownArrow');
+if(c.classList.contains('open')){c.classList.remove('open');a.classList.remove('open')}
+else{c.classList.add('open');a.classList.add('open')}
+});
+calc();
+</script>
+</body>
+</html>
