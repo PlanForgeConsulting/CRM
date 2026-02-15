@@ -93,7 +93,7 @@
 <div class="pf-results">
 <div class="pf-y1"><div class="pf-y1-label">Your Year One Earnings</div><div class="pf-y1-amount" id="yearOneTotal">$3,313</div><div class="pf-y1-detail" id="yearOneDetail">$1,250 referral bonuses + $2,063 recurring share</div></div>
 <div class="pf-cols"><div class="pf-card"><div class="pf-card-label">Per Year (if repeated)</div><div class="pf-card-amount pf-navy" id="perYear">$3,313</div><div class="pf-card-sub">with new referrals</div></div><div class="pf-card"><div class="pf-card-label">3-Year Total</div><div class="pf-card-amount pf-gold" id="threeYear">$9,938</div><div class="pf-card-sub">cumulative</div></div></div>
-<div class="pf-client"><div class="pf-client-label">Total Tax Credits for Your Clients</div><div class="pf-client-amount" id="clientSavings">$93,750</div><div class="pf-client-sub" id="clientSub">Up to $91,500 per plan over 3 years via SECURE Act 2.0</div></div>
+<div class="pf-client"><div class="pf-client-label">Total Tax Credits for Your Clients</div><div class="pf-client-amount" id="clientSavings">$93,750</div><div class="pf-client-sub" id="clientSub">Up to $91,500 per plan over 5 years via SECURE Act 2.0</div></div>
 </div>
 <button class="pf-toggle" id="breakdownBtn"><span>How It Works</span><span class="pf-arrow" id="breakdownArrow">&#9660;</span></button>
 <div class="pf-breakdown" id="breakdownContent">
@@ -101,7 +101,7 @@
 <div class="pf-divider"></div>
 <div class="pf-bk-section"><div class="pf-bk-title">Revenue Share (First Year)</div><div class="pf-bk-text" id="revShareText">Earn <strong>10%</strong> of administrative fees on every plan you refer during the first year of the plan. Starts at 5%, scales to 20% based on volume. Keep referring new plans each year to maintain your revenue stream.</div></div>
 <div class="pf-divider"></div>
-<div class="pf-bk-section"><div class="pf-bk-title">Your Clients Win Too</div><div class="pf-bk-text" id="clientWinText">Each client can access up to <strong>$91,500</strong> in SECURE Act 2.0 tax credits over 3 years. Net-zero cost 401(k) plans that make you look like a hero.</div></div>
+<div class="pf-bk-section"><div class="pf-bk-title">Your Clients Win Too</div><div class="pf-bk-text" id="clientWinText">Each client can access up to <strong>$91,500</strong> in SECURE Act 2.0 tax credits over 5 years. Net-zero cost 401(k) plans that make you look like a hero.</div></div>
 <div class="pf-divider"></div>
 <div class="pf-bk-section"><div class="pf-bk-title">Revenue Share Tiers</div><div class="pf-tier-grid" id="tierGrid"><div class="pf-tier" data-tier="5">5% &mdash; 1-2 plans/yr</div><div class="pf-tier active" data-tier="10">10% &mdash; 3-5 plans/yr</div><div class="pf-tier" data-tier="15">15% &mdash; 6-9 plans/yr</div><div class="pf-tier" data-tier="20">20% &mdash; 10+ plans/yr</div></div></div>
 </div>
@@ -141,7 +141,7 @@ var bn=p>=2?250+(p-1)*500:250;
 var y1=sh+bn;
 var y3=(bn+sh)*3;
 var annualCredit=taxCreditPerYear(e);
-var cp=annualCredit*3;
+var cp=annualCredit*5;
 var tc=p*cp;
 G('plansDisplay').textContent=p;
 G('empDisplay').textContent=e;
@@ -151,8 +151,8 @@ G('yearOneDetail').textContent=fmt(bn)+' referral bonuses + '+fmt(sh)+' recurrin
 G('perYear').textContent=fmt(y1);
 G('threeYear').textContent=fmt(y3);
 G('clientSavings').textContent=fmt(tc);
-G('clientSub').textContent='Up to '+fmt(cp)+' per plan over 3 years via SECURE Act 2.0';
-G('clientWinText').innerHTML='Each client can access up to <strong>'+fmt(cp)+'</strong> in SECURE Act 2.0 tax credits over 3 years. Net-zero cost 401(k) plans that make you look like a hero.';
+G('clientSub').textContent='Up to '+fmt(cp)+' per plan over 5 years via SECURE Act 2.0';
+G('clientWinText').innerHTML='Each client can access up to <strong>'+fmt(cp)+'</strong> in SECURE Act 2.0 tax credits over 5 years. Net-zero cost 401(k) plans that make you look like a hero.';
 G('revShareText').innerHTML='Earn <strong>'+t+'%</strong> of administrative fees on every plan you refer during the first year of the plan. Starts at 5%, scales to 20% based on volume. Keep referring new plans each year to maintain your revenue stream.';
 tHL(t);
 sBg(pS);sBg(eS);sBg(tS);
