@@ -59,7 +59,22 @@
 #pf-calc .pf-footer{text-align:center!important;padding:16px 0 20px!important}
 #pf-calc .pf-motto{font-size:15px!important;font-weight:700!important;color:#1B3A5C!important;margin-bottom:16px!important}
 #pf-calc .pf-info{font-size:12px!important;color:#6B7280!important;margin-bottom:2px!important}
-@media(min-width:768px){#pf-calc .pf-breakdown{display:block!important}#pf-calc .pf-toggle{display:none!important}}
+@media(min-width:768px){
+#pf-calc{max-width:900px!important}
+#pf-calc .pf-header{padding:36px 40px 32px!important}
+#pf-calc .pf-brand{font-size:12px!important}
+#pf-calc .pf-title{font-size:30px!important}
+#pf-calc .pf-sub{font-size:15px!important}
+#pf-calc .pf-main{display:grid!important;grid-template-columns:1fr 1fr!important;gap:0!important;align-items:start!important}
+#pf-calc .pf-body{padding:36px 32px!important}
+#pf-calc .pf-results{padding:36px 32px!important}
+#pf-calc .pf-slider-value{font-size:28px!important}
+#pf-calc .pf-y1-amount{font-size:48px!important}
+#pf-calc .pf-card-amount{font-size:30px!important}
+#pf-calc .pf-client-amount{font-size:32px!important}
+#pf-calc .pf-breakdown{display:block!important}
+#pf-calc .pf-toggle{display:none!important}
+}
 </style>
 
 <div id="pf-calc">
@@ -69,6 +84,7 @@
 <p class="pf-sub">See what referring 401(k) plans means for your practice</p>
 </div></div>
 <div class="pf-accent"></div>
+<div class="pf-main">
 <div class="pf-body">
 <div class="pf-slider-group"><div class="pf-slider-header"><span class="pf-slider-label">Plans You Refer Per Year</span><span class="pf-slider-value" id="plansDisplay">3</span></div><input type="range" id="plansSlider" min="1" max="15" value="3"><div class="pf-range"><span>1</span><span>15</span></div></div>
 <div class="pf-slider-group"><div class="pf-slider-header"><span class="pf-slider-label">Avg Employees Per Plan</span><span class="pf-slider-value" id="empDisplay">25</span></div><input type="range" id="empSlider" min="10" max="75" step="5" value="25"><div class="pf-range"><span>10</span><span>75</span></div></div>
@@ -78,6 +94,7 @@
 <div class="pf-y1"><div class="pf-y1-label">Your Year One Earnings</div><div class="pf-y1-amount" id="yearOneTotal">$3,313</div><div class="pf-y1-detail" id="yearOneDetail">$1,250 referral bonuses + $2,063 recurring share</div></div>
 <div class="pf-cols"><div class="pf-card"><div class="pf-card-label">Per Year (if repeated)</div><div class="pf-card-amount pf-navy" id="perYear">$3,313</div><div class="pf-card-sub">with new referrals</div></div><div class="pf-card"><div class="pf-card-label">3-Year Total</div><div class="pf-card-amount pf-gold" id="threeYear">$9,938</div><div class="pf-card-sub">cumulative</div></div></div>
 <div class="pf-client"><div class="pf-client-label">Total Tax Credits for Your Clients</div><div class="pf-client-amount" id="clientSavings">$93,750</div><div class="pf-client-sub" id="clientSub">Up to $91,500 per plan over 3 years via SECURE Act 2.0</div></div>
+</div>
 <button class="pf-toggle" id="breakdownBtn"><span>How It Works</span><span class="pf-arrow" id="breakdownArrow">&#9660;</span></button>
 <div class="pf-breakdown" id="breakdownContent">
 <div class="pf-bk-section"><div class="pf-bk-title">Referral Bonus</div><div class="pf-bk-text">Earn <strong>$250</strong> for your first qualified referral that implements a 401(k) plan, and <strong>$500</strong> for every referral after that. Even if they don't choose PlanForge.</div></div>
