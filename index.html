@@ -59,6 +59,7 @@
 #pf-calc .pf-footer{text-align:center!important;padding:16px 0 20px!important}
 #pf-calc .pf-motto{font-size:15px!important;font-weight:700!important;color:#1B3A5C!important;margin-bottom:16px!important}
 #pf-calc .pf-info{font-size:12px!important;color:#6B7280!important;margin-bottom:2px!important}
+@media(min-width:768px){#pf-calc .pf-breakdown{display:block!important}#pf-calc .pf-toggle{display:none!important}}
 </style>
 
 <div id="pf-calc">
@@ -76,14 +77,14 @@
 <div class="pf-results">
 <div class="pf-y1"><div class="pf-y1-label">Your Year One Earnings</div><div class="pf-y1-amount" id="yearOneTotal">$3,313</div><div class="pf-y1-detail" id="yearOneDetail">$1,250 referral bonuses + $2,063 recurring share</div></div>
 <div class="pf-cols"><div class="pf-card"><div class="pf-card-label">Per Year (if repeated)</div><div class="pf-card-amount pf-navy" id="perYear">$3,313</div><div class="pf-card-sub">with new referrals</div></div><div class="pf-card"><div class="pf-card-label">3-Year Total</div><div class="pf-card-amount pf-gold" id="threeYear">$9,938</div><div class="pf-card-sub">cumulative</div></div></div>
-<div class="pf-client"><div class="pf-client-label">Total Tax Credits for Your Clients</div><div class="pf-client-amount" id="clientSavings">$93,750</div><div class="pf-client-sub" id="clientSub">Up to $31,250 per plan over 5 years via SECURE Act 2.0</div></div>
+<div class="pf-client"><div class="pf-client-label">Total Tax Credits for Your Clients</div><div class="pf-client-amount" id="clientSavings">$93,750</div><div class="pf-client-sub" id="clientSub">Up to $91,500 per plan over 3 years via SECURE Act 2.0</div></div>
 <button class="pf-toggle" id="breakdownBtn"><span>How It Works</span><span class="pf-arrow" id="breakdownArrow">&#9660;</span></button>
 <div class="pf-breakdown" id="breakdownContent">
 <div class="pf-bk-section"><div class="pf-bk-title">Referral Bonus</div><div class="pf-bk-text">Earn <strong>$250</strong> for your first qualified referral that implements a 401(k) plan, and <strong>$500</strong> for every referral after that. Even if they don't choose PlanForge.</div></div>
 <div class="pf-divider"></div>
 <div class="pf-bk-section"><div class="pf-bk-title">Revenue Share (First Year)</div><div class="pf-bk-text" id="revShareText">Earn <strong>10%</strong> of administrative fees on every plan you refer during the first year of the plan. Starts at 5%, scales to 20% based on volume. Keep referring new plans each year to maintain your revenue stream.</div></div>
 <div class="pf-divider"></div>
-<div class="pf-bk-section"><div class="pf-bk-title">Your Clients Win Too</div><div class="pf-bk-text">Each client can access up to <strong>$265,000</strong> in SECURE Act 2.0 tax credits over 5 years. Net-zero cost 401(k) plans that make you look like a hero.</div></div>
+<div class="pf-bk-section"><div class="pf-bk-title">Your Clients Win Too</div><div class="pf-bk-text" id="clientWinText">Each client can access up to <strong>$91,500</strong> in SECURE Act 2.0 tax credits over 3 years. Net-zero cost 401(k) plans that make you look like a hero.</div></div>
 <div class="pf-divider"></div>
 <div class="pf-bk-section"><div class="pf-bk-title">Revenue Share Tiers</div><div class="pf-tier-grid" id="tierGrid"><div class="pf-tier" data-tier="5">5% &mdash; 1-2 plans/yr</div><div class="pf-tier active" data-tier="10">10% &mdash; 3-5 plans/yr</div><div class="pf-tier" data-tier="15">15% &mdash; 6-9 plans/yr</div><div class="pf-tier" data-tier="20">20% &mdash; 10+ plans/yr</div></div></div>
 </div>
@@ -98,7 +99,7 @@
 <script>
 (function(){
 var G=function(id){return document.getElementById(id)};
-var pS=G('plansSlider'),eS=G('empSlider'),tS=G('tierSlider'),FEE=275;
+var pS=G('plansSlider'),eS=G('empSlider'),tS=G('tierSlider');
 function fmt(n){return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(n)}
 function autoTier(p){if(p>=10)return 20;if(p>=6)return 15;if(p>=3)return 10;return 5}
 function minPlans(t){if(t>=20)return 10;if(t>=15)return 6;if(t>=10)return 3;return 1}
@@ -108,6 +109,8 @@ function sBg(s){
 var p=((s.value-s.min)/(s.max-s.min))*100;
 s.style.background='linear-gradient(to right,#1B3A5C 0%,#1B3A5C '+p+'%,#E5E7EB '+p+'%,#E5E7EB 100%)';
 }
+function planFee(e){if(e<=10)return 3500;if(e<=20)return 3500+(e-10)*200;if(e<=35)return 5500;return 5500+(e-35)*100}
+function taxCreditPerYear(e){var base=5500,perEmp=1000;if(e>50){var r=(e-50)*0.02;perEmp=Math.max(0,perEmp*(1-r))}return base+perEmp*e}
 function tHL(tier){
 var b=document.querySelectorAll('#pf-calc .pf-tier');
 for(var i=0;i<b.length;i++){
@@ -116,11 +119,12 @@ b[i].className=parseInt(b[i].getAttribute('data-tier'))===tier?'pf-tier active':
 }
 function calc(){
 var p=parseInt(pS.value),e=parseInt(eS.value),t=parseInt(tS.value);
-var sh=p*e*FEE*(t/100);
+var fee=planFee(e);var sh=p*fee*(t/100);
 var bn=p>=2?250+(p-1)*500:250;
 var y1=sh+bn;
 var y3=(bn+sh)*3;
-var cp=Math.min(e*250*5,265000);
+var annualCredit=taxCreditPerYear(e);
+var cp=annualCredit*3;
 var tc=p*cp;
 G('plansDisplay').textContent=p;
 G('empDisplay').textContent=e;
@@ -130,7 +134,8 @@ G('yearOneDetail').textContent=fmt(bn)+' referral bonuses + '+fmt(sh)+' recurrin
 G('perYear').textContent=fmt(y1);
 G('threeYear').textContent=fmt(y3);
 G('clientSavings').textContent=fmt(tc);
-G('clientSub').textContent='Up to '+fmt(cp)+' per plan over 5 years via SECURE Act 2.0';
+G('clientSub').textContent='Up to '+fmt(cp)+' per plan over 3 years via SECURE Act 2.0';
+G('clientWinText').innerHTML='Each client can access up to <strong>'+fmt(cp)+'</strong> in SECURE Act 2.0 tax credits over 3 years. Net-zero cost 401(k) plans that make you look like a hero.';
 G('revShareText').innerHTML='Earn <strong>'+t+'%</strong> of administrative fees on every plan you refer during the first year of the plan. Starts at 5%, scales to 20% based on volume. Keep referring new plans each year to maintain your revenue stream.';
 tHL(t);
 sBg(pS);sBg(eS);sBg(tS);
