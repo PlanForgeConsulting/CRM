@@ -8,7 +8,28 @@
 <meta name="apple-mobile-web-app-title" content="PlanForge">
 <meta name="theme-color" content="#122840">
 <meta name="color-scheme" content="light only">
-<title>PlanForge Partner Calculator</title>
+
+<!-- SEO Meta Tags -->
+<title>Partner Revenue Calculator | PlanForge Consulting</title>
+<meta name="description" content="See how much you can earn referring 401(k) plans to PlanForge Consulting. Calculate referral bonuses, recurring revenue share, and client tax credit savings.">
+<meta name="keywords" content="401k referral, partner revenue, PlanForge, retirement plan, SECURE Act 2.0, tax credits, financial advisor partnership">
+<meta name="author" content="PlanForge Consulting">
+<link rel="canonical" href="https://planforge401k.com/partner-calculator/">
+
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://planforge401k.com/partner-calculator/">
+<meta property="og:title" content="Partner Revenue Calculator | PlanForge Consulting">
+<meta property="og:description" content="See how much you can earn referring 401(k) plans. Calculate your referral bonuses, recurring revenue share, and the tax credits your clients unlock.">
+<meta property="og:site_name" content="PlanForge Consulting">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Partner Revenue Calculator | PlanForge Consulting">
+<meta name="twitter:description" content="See how much you can earn referring 401(k) plans. Calculate your referral bonuses, recurring revenue share, and the tax credits your clients unlock.">
+
+<!-- Robots -->
+<meta name="robots" content="index, follow">
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -61,12 +82,20 @@ input[type="range"]::-moz-range-thumb{height:28px;width:28px;border-radius:50%;b
 .tier-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .tier-box{padding:8px 10px;border-radius:6px;font-size:12px;font-weight:600;text-align:center;background:#FAF8F3;color:#2D2D2D;transition:background 0.2s,color 0.2s}
 .tier-box.active{background:#1B3A5C;color:#fff}
+.page-wrapper{max-width:480px;margin:0 auto;background:#FAF8F3;min-height:100vh;box-shadow:0 0 40px rgba(0,0,0,0.08)}
+@media(max-width:480px){.page-wrapper{box-shadow:none}}
 .footer{text-align:center;padding:16px 0 8px}
 .footer-motto{font-size:15px;font-weight:700;color:#1B3A5C;margin-bottom:4px}
 .footer-info{font-size:12px;color:#6B7280}
+.cta-section{text-align:center;padding:8px 20px 24px}
+.cta-btn{display:inline-block;background:linear-gradient(135deg,#122840,#1B3A5C);color:#fff;text-decoration:none;font-family:'Libre Franklin',sans-serif;font-size:15px;font-weight:700;padding:14px 32px;border-radius:8px;letter-spacing:0.03em;border:none;cursor:pointer;transition:transform 0.15s,box-shadow 0.15s}
+.cta-btn:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(18,40,64,0.3)}
+.cta-btn:active{transform:translateY(0)}
+.cta-divider{width:40px;height:2px;background:#C4952A;margin:12px auto 16px;border-radius:1px}
 </style>
 </head>
 <body>
+<div class="page-wrapper">
 <div class="header"><div class="header-inner">
 <div class="header-brand">PlanForge Consulting</div>
 <h1 class="header-title">Partner Revenue Calculator</h1>
@@ -92,8 +121,13 @@ input[type="range"]::-moz-range-thumb{height:28px;width:28px;border-radius:50%;b
 <div class="breakdown-divider"></div>
 <div class="breakdown-section"><div class="breakdown-title">Revenue Share Tiers</div><div class="tier-grid" id="tierGrid"><div class="tier-box" data-tier="5">5% &mdash; 1-2 plans/yr</div><div class="tier-box active" data-tier="10">10% &mdash; 3-5 plans/yr</div><div class="tier-box" data-tier="15">15% &mdash; 6-9 plans/yr</div><div class="tier-box" data-tier="20">20% &mdash; 10+ plans/yr</div></div></div>
 </div>
+<div class="cta-section">
+<div class="cta-divider"></div>
+<a href="mailto:nick@planforge401k.com?subject=Partnership%20Inquiry%20-%20401(k)%20Referrals" class="cta-btn">Start a Partnership Conversation</a>
+</div>
 <div class="footer"><div class="footer-motto">Pay Your Team, Not the IRS.</div><div style="height:16px"></div><div class="footer-info">PlanForge Consulting | Nick Moore, CFP&#174;</div><div class="footer-info">nick@planforge401k.com | 214-908-2310</div><div class="footer-info">planforge401k.com</div></div>
 </div>
+</div><!-- end page-wrapper -->
 <script>
 var G=function(id){return document.getElementById(id)};
 var pS=G('plansSlider'),eS=G('empSlider'),tS=G('tierSlider'),FEE=275;
