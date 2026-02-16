@@ -1,0 +1,768 @@
+<!-- PlanForge Business Owner Tax Savings Calculator V2 - WordPress Embed -->
+<!-- Paste this entire block into a Custom HTML block in WordPress -->
+<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+#pft-calc,#pft-calc *{box-sizing:border-box!important;margin:0!important;padding:0!important;-webkit-tap-highlight-color:transparent;line-height:normal!important;letter-spacing:normal!important;text-transform:none!important;border:none!important;float:none!important;text-indent:0!important}
+#pft-calc{font-family:'Libre Franklin',-apple-system,BlinkMacSystemFont,sans-serif!important;background:#FAF8F3!important;color:#2D2D2D!important;max-width:480px!important;margin:0 auto!important;border-radius:12px!important;overflow:hidden!important;box-shadow:0 0 40px rgba(0,0,0,0.08)!important}
+#pft-calc a{color:inherit!important;text-decoration:none!important}
+#pft-calc .pft-header{background:linear-gradient(135deg,#122840 0%,#1B3A5C 50%,#2A5580 100%)!important;padding:28px 20px 24px!important;text-align:center!important;position:relative!important;overflow:hidden!important}
+#pft-calc .pft-header::before{content:''!important;position:absolute!important;top:0!important;left:0!important;right:0!important;bottom:0!important;background:radial-gradient(ellipse at 20% 50%,rgba(196,149,42,0.1) 0%,transparent 60%)!important}
+#pft-calc .pft-header-inner{position:relative!important;z-index:1!important}
+#pft-calc .pft-brand{font-size:11px!important;font-weight:700!important;letter-spacing:0.2em!important;text-transform:uppercase!important;color:#C4952A!important;margin-bottom:8px!important;display:block!important}
+#pft-calc .pft-title{font-size:20px!important;font-weight:800!important;color:#fff!important;margin:0 0 6px!important;padding:0!important;line-height:1.2!important}
+#pft-calc .pft-sub{font-size:13px!important;color:rgba(255,255,255,0.7)!important;font-weight:400!important;margin:0!important;padding:0!important}
+#pft-calc .pft-accent{height:3px!important;background:linear-gradient(to right,#B22234,#C4952A)!important;border:none!important}
+#pft-calc .pft-body{padding:24px 20px 16px!important}
+#pft-calc .pft-slider-group{margin-bottom:22px!important}
+#pft-calc .pft-slider-header{display:flex!important;justify-content:space-between!important;align-items:baseline!important;margin-bottom:6px!important}
+#pft-calc .pft-slider-label{font-size:13px!important;font-weight:600!important;color:#1B3A5C!important}
+#pft-calc .pft-slider-value{font-size:20px!important;font-weight:700!important;color:#1B3A5C!important}
+#pft-calc input[type="range"]{width:100%!important;height:8px!important;border-radius:4px!important;-webkit-appearance:none!important;appearance:none!important;outline:none!important;cursor:pointer!important;background:#E5E7EB!important;margin:4px 0!important;padding:0!important}
+#pft-calc input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none!important;height:26px!important;width:26px!important;border-radius:50%!important;background:#1B3A5C!important;border:3px solid #fff!important;box-shadow:0 2px 8px rgba(0,0,0,0.25)!important;cursor:pointer!important;margin-top:-9px!important}
+#pft-calc input[type="range"]::-moz-range-thumb{height:26px!important;width:26px!important;border-radius:50%!important;background:#1B3A5C!important;border:3px solid #fff!important;box-shadow:0 2px 8px rgba(0,0,0,0.25)!important;cursor:pointer!important}
+#pft-calc .pft-range{display:flex!important;justify-content:space-between!important;margin-top:4px!important;font-size:11px!important;color:#6B7280!important}
+#pft-calc .pft-select-group{margin-bottom:22px!important}
+#pft-calc .pft-select-label{font-size:13px!important;font-weight:600!important;color:#1B3A5C!important;margin-bottom:6px!important;display:block!important}
+#pft-calc select{width:100%!important;padding:10px 12px!important;border:1px solid #D1D5DB!important;border-radius:8px!important;font-family:'Libre Franklin',sans-serif!important;font-size:14px!important;color:#1B3A5C!important;background:#fff!important;cursor:pointer!important;-webkit-appearance:auto!important;appearance:auto!important}
+#pft-calc .pft-toggle-group{margin-bottom:22px!important}
+#pft-calc .pft-toggle-label{font-size:13px!important;font-weight:600!important;color:#1B3A5C!important;margin-bottom:6px!important;display:block!important}
+#pft-calc .pft-toggle-btns{display:flex!important;border:1px solid #D1D5DB!important;border-radius:8px!important;overflow:hidden!important}
+#pft-calc .pft-toggle-btn{flex:1!important;padding:8px 0!important;text-align:center!important;font-family:'Libre Franklin',sans-serif!important;font-size:13px!important;font-weight:600!important;cursor:pointer!important;background:#fff!important;color:#6B7280!important;border:none!important;transition:background 0.15s,color 0.15s!important}
+#pft-calc .pft-toggle-btn.active{background:#1B3A5C!important;color:#fff!important}
+#pft-calc .pft-tabs{display:flex!important;margin-bottom:16px!important;border:1px solid #D1D5DB!important;border-radius:8px!important;overflow:hidden!important}
+#pft-calc .pft-tab{flex:1!important;padding:10px 0!important;text-align:center!important;font-family:'Libre Franklin',sans-serif!important;font-size:13px!important;font-weight:600!important;cursor:pointer!important;background:#fff!important;color:#6B7280!important;border:none!important;transition:background 0.15s,color 0.15s!important}
+#pft-calc .pft-tab.active{background:#1B3A5C!important;color:#fff!important}
+#pft-calc .pft-results{padding:0 20px 24px!important}
+#pft-calc .pft-rate-note{font-size:11px!important;color:#6B7280!important;text-align:center!important;margin-bottom:12px!important;font-style:italic!important}
+#pft-calc .pft-waterfall{margin-bottom:16px!important}
+#pft-calc .pft-wf-header{display:grid!important;grid-template-columns:1fr 1fr 1fr 1fr!important;gap:4px!important;margin-bottom:8px!important}
+#pft-calc .pft-wf-col-head{font-size:10px!important;font-weight:700!important;letter-spacing:0.05em!important;text-transform:uppercase!important;text-align:center!important;padding:8px 4px!important;border-radius:6px!important}
+#pft-calc .pft-wf-col-head:first-child{text-align:left!important;background:none!important;color:#6B7280!important}
+#pft-calc .pft-wf-col-head.pft-col-typ{background:#F3F4F6!important;color:#6B7280!important}
+#pft-calc .pft-wf-col-head.pft-col-std{background:#EEF2F7!important;color:#1B3A5C!important}
+#pft-calc .pft-wf-col-head.pft-col-opt{background:linear-gradient(135deg,#122840,#1B3A5C)!important;color:#fff!important;position:relative!important}
+#pft-calc .pft-best-badge{display:none!important;position:absolute!important;top:-8px!important;right:-2px!important;background:#C4952A!important;color:#fff!important;font-size:7px!important;font-weight:800!important;padding:2px 5px!important;border-radius:3px!important;letter-spacing:0.05em!important;white-space:nowrap!important}
+#pft-calc .pft-col-opt.pft-col-best .pft-best-badge{display:block!important}
+#pft-calc .pft-wf-row{display:grid!important;grid-template-columns:1fr 1fr 1fr 1fr!important;gap:4px!important;margin-bottom:2px!important;align-items:center!important}
+#pft-calc .pft-wf-label{font-size:11px!important;color:#6B7280!important;font-weight:500!important;padding:6px 0!important}
+#pft-calc .pft-wf-val{font-size:12px!important;font-weight:700!important;text-align:center!important;padding:6px 2px!important;border-radius:4px!important}
+#pft-calc .pft-wf-val.neg{color:#166534!important}
+#pft-calc .pft-wf-row.pft-wf-total{border-top:2px solid #1B3A5C!important;margin-top:4px!important;padding-top:4px!important}
+#pft-calc .pft-wf-row.pft-wf-total .pft-wf-label{font-weight:700!important;color:#1B3A5C!important;font-size:12px!important}
+#pft-calc .pft-wf-row.pft-wf-total .pft-wf-val{font-size:13px!important;font-weight:800!important}
+#pft-calc .pft-wf-val.pft-net-neg{color:#166534!important;background:#F0FDF4!important}
+#pft-calc .pft-wf-val.pft-net-pos{color:#B22234!important;background:#FEF2F2!important}
+@keyframes pftPulse{0%,100%{opacity:1}50%{opacity:0.7}}
+#pft-calc .pft-badges{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important;margin-bottom:16px!important}
+#pft-calc .pft-savings-badge{background:linear-gradient(135deg,#D4A832,#C4952A,#B8862D)!important;border-radius:10px!important;padding:14px 10px!important;text-align:center!important;position:relative!important;overflow:hidden!important}
+#pft-calc .pft-savings-badge::before{content:'\2713'!important;position:absolute!important;top:8px!important;left:10px!important;font-size:14px!important;color:rgba(255,255,255,0.4)!important}
+#pft-calc .pft-badge-label{display:block!important;font-size:9px!important;font-weight:600!important;color:rgba(255,255,255,0.85)!important;margin-bottom:6px!important;letter-spacing:0.03em!important}
+#pft-calc .pft-badge-amount{display:block!important;font-size:20px!important;font-weight:800!important;color:#fff!important;line-height:1.1!important;margin-bottom:4px!important}
+#pft-calc .pft-badge-pct{display:block!important;font-size:13px!important;font-weight:700!important;color:#fff!important;animation:pftPulse 2.5s ease-in-out infinite!important}
+#pft-calc .pft-expand-btn{width:100%!important;background:none!important;border:1px solid #E5E7EB!important;border-radius:8px!important;padding:12px 16px!important;display:flex!important;justify-content:space-between!important;align-items:center!important;cursor:pointer!important;margin-bottom:12px!important;font-family:'Libre Franklin',sans-serif!important}
+#pft-calc .pft-expand-btn span:first-child{font-size:13px!important;font-weight:600!important;color:#1B3A5C!important}
+#pft-calc .pft-arrow{font-size:18px!important;color:#1B3A5C!important;transition:transform 0.2s!important}
+#pft-calc .pft-arrow.open{transform:rotate(180deg)!important}
+#pft-calc .pft-expand-content{background:#fff!important;border:1px solid #E5E7EB!important;border-radius:10px!important;padding:18px!important;margin-bottom:16px!important;display:none!important}
+#pft-calc .pft-expand-content.open{display:block!important}
+#pft-calc .pft-math-section{margin-bottom:14px!important}
+#pft-calc .pft-math-title{font-size:12px!important;font-weight:700!important;color:#1B3A5C!important;text-transform:uppercase!important;letter-spacing:0.1em!important;margin-bottom:8px!important}
+#pft-calc .pft-math-text{font-size:13px!important;color:#2D2D2D!important;line-height:1.6!important}
+#pft-calc .pft-math-text strong{font-weight:700!important}
+#pft-calc .pft-math-divider{height:1px!important;background:#E5E7EB!important;margin:12px 0!important}
+#pft-calc .pft-math-table{width:100%!important;border-collapse:collapse!important;margin:10px 0!important;font-size:11px!important}
+#pft-calc .pft-math-table th,#pft-calc .pft-math-table td{padding:4px 6px!important;text-align:center!important;border-bottom:1px solid #E5E7EB!important}
+#pft-calc .pft-math-table th{font-weight:700!important;color:#1B3A5C!important;font-size:10px!important;text-transform:uppercase!important}
+#pft-calc .pft-forfeit{padding:0 20px 16px!important}
+#pft-calc .pft-forfeit-title{font-size:14px!important;font-weight:700!important;color:#1B3A5C!important;margin-bottom:4px!important}
+#pft-calc .pft-forfeit-sub{font-size:11px!important;color:#6B7280!important;margin-bottom:12px!important;line-height:1.5!important}
+#pft-calc .pft-forfeit-grid{display:grid!important;grid-template-columns:auto 1fr 1fr!important;gap:2px 8px!important;align-items:center!important;margin-bottom:12px!important}
+#pft-calc .pft-fg-head{font-size:10px!important;font-weight:700!important;text-transform:uppercase!important;color:#6B7280!important;padding:4px 0!important;border-bottom:1px solid #E5E7EB!important}
+#pft-calc .pft-fg-label{font-size:12px!important;color:#2D2D2D!important;padding:4px 0!important}
+#pft-calc .pft-fg-val{font-size:12px!important;font-weight:700!important;text-align:right!important;padding:4px 0!important;color:#1B3A5C!important}
+#pft-calc .pft-fg-total{border-top:2px solid #1B3A5C!important;font-weight:800!important;padding-top:6px!important;margin-top:2px!important}
+#pft-calc .pft-fg-na{font-size:12px!important;color:#6B7280!important;font-style:italic!important;margin-bottom:12px!important}
+#pft-calc .pft-benefit{padding:0 20px 20px!important}
+#pft-calc .pft-benefit-card{background:linear-gradient(135deg,#122840,#1B3A5C)!important;border-radius:12px!important;padding:20px 16px!important;overflow:hidden!important}
+#pft-calc .pft-benefit-heading{font-size:12px!important;font-weight:700!important;color:#C4952A!important;text-transform:uppercase!important;letter-spacing:0.15em!important;text-align:center!important;margin-bottom:14px!important}
+#pft-calc .pft-ben-header{display:grid!important;grid-template-columns:1.2fr 1fr 1fr 1fr!important;gap:4px!important;margin-bottom:8px!important}
+#pft-calc .pft-ben-col-head{font-size:9px!important;font-weight:700!important;color:rgba(255,255,255,0.6)!important;text-transform:uppercase!important;text-align:center!important}
+#pft-calc .pft-ben-col-head:first-child{text-align:left!important}
+#pft-calc .pft-ben-row{display:grid!important;grid-template-columns:1.2fr 1fr 1fr 1fr!important;gap:4px!important;margin-bottom:4px!important;align-items:center!important}
+#pft-calc .pft-ben-label{font-size:11px!important;color:rgba(255,255,255,0.75)!important;font-weight:500!important}
+#pft-calc .pft-ben-val{font-size:11px!important;font-weight:700!important;color:#fff!important;text-align:center!important}
+#pft-calc .pft-ben-row.pft-ben-total{border-top:2px solid #C4952A!important;margin-top:6px!important;padding-top:8px!important}
+#pft-calc .pft-ben-row.pft-ben-total .pft-ben-label{font-size:11px!important;font-weight:800!important;color:#C4952A!important}
+#pft-calc .pft-ben-row.pft-ben-total .pft-ben-val{font-size:14px!important;font-weight:900!important;color:#C4952A!important}
+#pft-calc .pft-ben-row.pft-ben-total .pft-ben-val.pft-ben-highlight{text-shadow:0 0 12px rgba(196,149,42,0.5)!important;font-size:15px!important}
+#pft-calc .pft-hiw{padding:0!important}
+#pft-calc .pft-hiw-tag{margin-bottom:14px!important}
+#pft-calc .pft-hiw-tag-title{font-size:12px!important;font-weight:700!important;color:#1B3A5C!important;text-transform:uppercase!important;letter-spacing:0.1em!important;margin-bottom:6px!important}
+#pft-calc .pft-hiw-tag-body{font-size:13px!important;color:#2D2D2D!important;line-height:1.6!important}
+#pft-calc .pft-hiw-divider{height:1px!important;background:#E5E7EB!important;margin:0 0 14px!important}
+#pft-calc .pft-cta{padding:8px 20px 24px!important;text-align:center!important}
+#pft-calc .pft-cta-line{width:40px!important;height:2px!important;background:#C4952A!important;margin:12px auto 16px!important;border-radius:1px!important}
+#pft-calc .pft-step{display:none!important}
+#pft-calc .pft-step.active{display:block!important}
+#pft-calc .pft-q-title{font-size:16px!important;font-weight:700!important;color:#1B3A5C!important;margin-bottom:6px!important}
+#pft-calc .pft-q-sub{font-size:13px!important;color:#6B7280!important;margin-bottom:16px!important}
+#pft-calc .pft-q-btns{display:flex!important;gap:10px!important;justify-content:center!important}
+#pft-calc .pft-q-btn{padding:12px 24px!important;border-radius:8px!important;font-family:'Libre Franklin',sans-serif!important;font-size:14px!important;font-weight:700!important;cursor:pointer!important;border:none!important;transition:transform 0.15s!important}
+#pft-calc .pft-q-btn:hover{transform:translateY(-1px)!important}
+#pft-calc .pft-q-btn.pft-q-yes{background:linear-gradient(135deg,#122840,#1B3A5C)!important;color:#fff!important}
+#pft-calc .pft-q-btn.pft-q-no{background:#E5E7EB!important;color:#2D2D2D!important}
+#pft-calc .pft-form{text-align:left!important}
+#pft-calc .pft-form-title{font-size:15px!important;font-weight:700!important;color:#1B3A5C!important;margin-bottom:12px!important;text-align:center!important}
+#pft-calc .pft-form-field{margin-bottom:12px!important}
+#pft-calc .pft-form-field label{display:block!important;font-size:12px!important;font-weight:600!important;color:#1B3A5C!important;margin-bottom:4px!important}
+#pft-calc .pft-form-field input,#pft-calc .pft-form-field textarea{width:100%!important;padding:10px 12px!important;border:1px solid #D1D5DB!important;border-radius:8px!important;font-family:'Libre Franklin',sans-serif!important;font-size:14px!important;color:#2D2D2D!important;background:#fff!important}
+#pft-calc .pft-form-field textarea{height:60px!important;resize:vertical!important}
+#pft-calc .pft-submit-btn{width:100%!important;padding:14px!important;background:linear-gradient(135deg,#122840,#1B3A5C)!important;color:#fff!important;font-family:'Libre Franklin',sans-serif!important;font-size:15px!important;font-weight:700!important;border:none!important;border-radius:8px!important;cursor:pointer!important;margin-top:8px!important}
+#pft-calc .pft-back-btn{background:none!important;border:none!important;color:#1B3A5C!important;font-family:'Libre Franklin',sans-serif!important;font-size:13px!important;cursor:pointer!important;padding:8px 0!important;margin-bottom:8px!important;font-weight:500!important}
+#pft-calc .pft-back-btn:hover{text-decoration:underline!important}
+#pft-calc .pft-confirm-icon{font-size:48px!important;margin-bottom:12px!important}
+#pft-calc .pft-confirm-title{font-size:18px!important;font-weight:700!important;color:#1B3A5C!important;margin-bottom:8px!important}
+#pft-calc .pft-confirm-text{font-size:13px!important;color:#6B7280!important;line-height:1.6!important;margin-bottom:16px!important}
+#pft-calc .pft-calendly-btn{display:inline-block!important;background:linear-gradient(135deg,#C4952A,#D4A832)!important;color:#fff!important;text-decoration:none!important;font-family:'Libre Franklin',sans-serif!important;font-size:14px!important;font-weight:700!important;padding:12px 28px!important;border-radius:8px!important;border:none!important;cursor:pointer!important}
+#pft-calc .pft-footer{text-align:center!important;padding:16px 20px 20px!important}
+#pft-calc .pft-motto{font-size:15px!important;font-weight:700!important;color:#1B3A5C!important;margin-bottom:12px!important}
+#pft-calc .pft-info{font-size:12px!important;color:#6B7280!important;margin-bottom:2px!important}
+#pft-calc .pft-info a{color:#6B7280!important;text-decoration:underline!important}
+@media(min-width:768px){
+#pft-calc{max-width:960px!important}
+#pft-calc .pft-title{font-size:26px!important}
+#pft-calc .pft-main{display:grid!important;grid-template-columns:340px 1fr!important;gap:0!important;align-items:start!important}
+#pft-calc .pft-body{padding:28px 24px!important}
+#pft-calc .pft-results{padding:28px 24px!important}
+#pft-calc .pft-expand-content.pft-math-panel{display:block!important}
+#pft-calc .pft-math-toggle{display:none!important}
+#pft-calc .pft-badge-amount{font-size:22px!important}
+#pft-calc .pft-wf-val{font-size:13px!important}
+#pft-calc .pft-wf-row.pft-wf-total .pft-wf-val{font-size:14px!important}
+#pft-calc .pft-ben-row.pft-ben-total .pft-ben-val{font-size:16px!important}
+#pft-calc .pft-ben-row.pft-ben-total .pft-ben-val.pft-ben-highlight{font-size:17px!important}
+}
+</style>
+
+<div id="pft-calc">
+<div class="pft-header"><div class="pft-header-inner">
+<span class="pft-brand">PlanForge Consulting</span>
+<div class="pft-title">Business Owner Tax Savings Calculator</div>
+<p class="pft-sub">See how much a PlanForge 401(k) can save you</p>
+</div></div>
+<div class="pft-accent"></div>
+
+<div class="pft-main">
+<!-- LEFT: Inputs -->
+<div class="pft-body">
+
+<div class="pft-slider-group">
+<div class="pft-slider-header"><span class="pft-slider-label">Number of Employees</span><span class="pft-slider-value" id="empDisplay">25</span></div>
+<input type="range" id="empSlider" min="1" max="100" value="25">
+<div class="pft-range"><span>1</span><span>100</span></div>
+</div>
+
+<div class="pft-slider-group">
+<div class="pft-slider-header"><span class="pft-slider-label">Average Employee Salary</span><span class="pft-slider-value" id="salDisplay">$100,000</span></div>
+<input type="range" id="salSlider" min="30000" max="150000" step="5000" value="100000">
+<div class="pft-range"><span>$30K</span><span>$150K</span></div>
+</div>
+
+<div class="pft-slider-group">
+<div class="pft-slider-header"><span class="pft-slider-label">Owner W-2 Salary</span><span class="pft-slider-value" id="ownerDisplay">$300,000</span></div>
+<input type="range" id="ownerSlider" min="100000" max="500000" step="10000" value="300000">
+<div class="pft-range"><span>$100K</span><span>$500K</span></div>
+</div>
+
+<div class="pft-select-group">
+<label class="pft-select-label" for="ageSelect">Owner Age Range</label>
+<select id="ageSelect">
+<option value="40under">40 &amp; Under</option>
+<option value="41to50">41 to 50</option>
+<option value="50plus" selected>50+</option>
+</select>
+</div>
+
+<div class="pft-toggle-group">
+<span class="pft-toggle-label">Cross-Testing (Maximize Owner Contributions)</span>
+<div class="pft-toggle-btns" id="crossToggle">
+<button class="pft-toggle-btn active" data-val="true">On</button>
+<button class="pft-toggle-btn" data-val="false">Off</button>
+</div>
+</div>
+
+<div class="pft-toggle-group">
+<span class="pft-toggle-label">Average Employee Younger Than Owner by 10+ Years</span>
+<div class="pft-toggle-btns" id="ageTestToggle">
+<button class="pft-toggle-btn active" data-val="true">On</button>
+<button class="pft-toggle-btn" data-val="false">Off</button>
+</div>
+</div>
+
+<div class="pft-slider-group">
+<div class="pft-slider-header"><span class="pft-slider-label">Average Annual Employee Turnover</span><span class="pft-slider-value" id="turnDisplay">33%</span></div>
+<input type="range" id="turnSlider" min="0" max="50" value="33">
+<div class="pft-range"><span>0%</span><span>50%</span></div>
+</div>
+
+</div>
+
+<!-- RIGHT: Results -->
+<div class="pft-results">
+
+<div class="pft-tabs" id="tabBar">
+<button class="pft-tab active" data-tab="annual">Annual</button>
+<button class="pft-tab" data-tab="3year">3-Year</button>
+<button class="pft-tab" data-tab="5year">5-Year</button>
+</div>
+
+<div class="pft-rate-note">(Assumes 30% Tax Rate)</div>
+
+<div class="pft-waterfall" id="waterfall"></div>
+
+<div class="pft-badges" id="badges"></div>
+
+<button class="pft-expand-btn pft-math-toggle" id="mathToggleBtn"><span>See the Math</span><span class="pft-arrow" id="mathArrow">&#9660;</span></button>
+<div class="pft-expand-content pft-math-panel" id="mathContent"></div>
+
+</div>
+</div>
+
+<!-- Forfeiture Estimator -->
+<div class="pft-forfeit" id="forfeitSection"></div>
+
+<!-- Total Ownership Benefit -->
+<div class="pft-benefit" id="benefitSection"></div>
+
+<!-- How It Works -->
+<button class="pft-expand-btn" id="hiwToggleBtn" style="margin:0 20px 12px!important"><span>How It Works</span><span class="pft-arrow" id="hiwArrow">&#9660;</span></button>
+<div class="pft-expand-content" id="hiwContent" style="margin:0 20px 16px!important">
+<div class="pft-hiw">
+<div class="pft-hiw-tag">
+<div class="pft-hiw-tag-title">NET-ZERO COST</div>
+<div class="pft-hiw-tag-body">The SECURE Act 2.0 provides tax credits that cover your plan's startup and administration costs for the first 3 to 5 years. Most of our clients reduce 401(k) expenses by 90% or more. Many end up at net-zero or even net-positive. You are not adding a cost. You are redirecting money that was already going to the IRS.</div>
+</div>
+<div class="pft-hiw-divider"></div>
+<div class="pft-hiw-tag">
+<div class="pft-hiw-tag-title">MONEY BACK IN YOUR POCKET</div>
+<div class="pft-hiw-tag-body">With cross-tested profit sharing, you can contribute significantly more to your own retirement than your employees receive, all within IRS guidelines. Every dollar you contribute is tax-deductible. You decide how much to put in each year, and you can fund contributions after December 31st, up to your tax filing deadline. No mandatory match. No locked-in commitment. Full control.</div>
+</div>
+<div class="pft-hiw-divider"></div>
+<div class="pft-hiw-tag">
+<div class="pft-hiw-tag-title">WHAT HAPPENS NEXT</div>
+<div class="pft-hiw-tag-body">If the numbers you entered reflect your business, we will build you a free custom illustration using your actual W-2 data. No obligation. You will see exactly what your plan costs (and saves) in a side-by-side comparison. Takes one conversation.</div>
+</div>
+<div class="pft-hiw-divider"></div>
+<div class="pft-hiw-tag">
+<div class="pft-hiw-tag-title">YOUR TEAM BENEFITS TOO</div>
+<div class="pft-hiw-tag-body">Employees get access to a real retirement plan with self-directed investment options, including individual stocks. A vesting schedule protects your investment. Employees who leave early forfeit employer contributions back into the plan. You build loyalty with the people who stay.</div>
+</div>
+</div>
+</div>
+
+<!-- CTA Section -->
+<div class="pft-cta">
+<div class="pft-cta-line"></div>
+
+<div class="pft-step active" id="qualifyStep">
+<div class="pft-q-title">Want a custom illustration?</div>
+<div class="pft-q-sub">See exactly what these numbers look like with your real W-2 data.</div>
+<div class="pft-q-btns">
+<button class="pft-q-btn pft-q-yes" id="qYes">Yes, this is my company</button>
+<button class="pft-q-btn pft-q-no" id="qNo">No, I was just exploring</button>
+</div>
+</div>
+
+<div class="pft-step" id="formYesStep">
+<button class="pft-back-btn" id="formBackYes">&#8592; Back</button>
+<div class="pft-form-title">Get Your Free Custom Illustration</div>
+<div class="pft-form" id="yesForm">
+<div class="pft-form-field"><label>Full Name</label><input type="text" id="fName" placeholder="Jane Smith"></div>
+<div class="pft-form-field"><label>Company Name</label><input type="text" id="fCompany" placeholder="Acme Corp"></div>
+<div class="pft-form-field"><label>Email</label><input type="email" id="fEmail" placeholder="jane@acme.com"></div>
+<div class="pft-form-field"><label>Phone (optional)</label><input type="tel" id="fPhone" placeholder="214-555-1234"></div>
+<button class="pft-submit-btn" id="submitYes">Request My Illustration</button>
+</div>
+</div>
+
+<div class="pft-step" id="formNoStep">
+<button class="pft-back-btn" id="formBackNo">&#8592; Back</button>
+<div class="pft-form-title">Want us to send you this estimate?</div>
+<div class="pft-form" id="noForm">
+<div class="pft-form-field"><label>Email</label><input type="email" id="fEmailNo" placeholder="you@example.com"></div>
+<button class="pft-submit-btn" id="submitNo">Send My Results</button>
+</div>
+</div>
+
+<div class="pft-step" id="confirmStep">
+<div class="pft-confirm-icon">&#9989;</div>
+<div class="pft-confirm-title">You're all set!</div>
+<div class="pft-confirm-text">We will be in touch within 1 business day with your custom illustration. Want to skip the wait?</div>
+<a href="https://calendly.com/planforge" target="_blank" rel="noopener" class="pft-calendly-btn">Book a Call Now</a>
+</div>
+
+</div>
+
+<!-- Footer -->
+<div class="pft-footer">
+<div class="pft-motto">Pay Your Team, Not the IRS.</div>
+<div class="pft-info">PlanForge Consulting | Nick Moore, CFP&#174;</div>
+<div class="pft-info"><a href="mailto:nick@planforge401k.com" style="color:#6B7280;text-decoration:underline">nick@planforge401k.com</a> | <a href="tel:2149082310" style="color:#6B7280;text-decoration:underline">214-908-2310</a></div>
+<div class="pft-info"><a href="https://planforge401k.com" target="_blank" rel="noopener" style="color:#6B7280;text-decoration:underline">planforge401k.com</a></div>
+</div>
+</div>
+
+<script>
+(function(){
+var G=function(id){return document.getElementById(id)};
+function fmt(n){return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(n)}
+function fmtPct(n){return n.toFixed(1)+'%'}
+function sBg(s){var p=((s.value-s.min)/(s.max-s.min))*100;s.style.background='linear-gradient(to right,#1B3A5C 0%,#1B3A5C '+p+'%,#E5E7EB '+p+'%,#E5E7EB 100%)'}
+
+var TAX_RATE=0.30;
+var IRS_CAP_DOLLAR=69000;
+var CREDIT_PHASE=[1.0,1.0,0.75,0.50,0.25];
+var STD_EMP_CONTRIB=[1000,1000,1000,1000,1000];
+var OPT_EMP_CONTRIB=[1000,1000,1333,2000,4000];
+var TREASURY_GROWTH=0.04;
+
+var state={
+  employees:25,
+  avgSalary:100000,
+  ownerSalary:300000,
+  age:'50plus',
+  crossTesting:true,
+  ageTest:true,
+  turnover:0.33,
+  tabView:'annual'
+};
+
+function calcAdminCredit(employees){
+  var base=5500;
+  if(employees>50){var r=(employees-50)*0.02;base=Math.max(0,base*(1-r))}
+  return base;
+}
+
+function calcCreditPerEmp(employees){
+  var base=1000;
+  if(employees>50){var r=(employees-50)*0.02;base=Math.max(0,base*(1-r))}
+  return base;
+}
+
+function ownerProfitSharePct(age,crossTesting,ageTest,basePct,planType){
+  if(!crossTesting)return basePct;
+  if(planType==='standard')return 3*basePct;
+  if(!ageTest)return 3*basePct;
+  if(age==='40under'||age==='41to50')return 4*basePct;
+  if(age==='50plus')return Math.max(5*basePct,0.20);
+  return 3*basePct;
+}
+
+function calcYearlyBreakdown(employees,years,planType){
+  var annualAdmin=calcAdminCredit(employees);
+  var fullCreditPerEmp=calcCreditPerEmp(employees);
+  var cs=(planType==='optimized')?OPT_EMP_CONTRIB:STD_EMP_CONTRIB;
+  var totalCredits=0,totalDeductibleEmpCost=0,totalEmpCost=0;
+  for(var y=0;y<years;y++){
+    var ec=cs[y];
+    totalEmpCost+=ec*employees;
+    if(y<3)totalCredits+=annualAdmin;
+    var creditable=Math.min(1000,ec);
+    var creditPerEmp=creditable*CREDIT_PHASE[y];
+    creditPerEmp=Math.min(creditPerEmp,fullCreditPerEmp*CREDIT_PHASE[y]);
+    totalCredits+=creditPerEmp*employees;
+    var deductPerEmp=ec-creditPerEmp;
+    if(deductPerEmp>0)totalDeductibleEmpCost+=deductPerEmp*employees;
+  }
+  return{totalCredits:totalCredits,totalDeductibleEmpCost:totalDeductibleEmpCost,totalEmpCost:totalEmpCost};
+}
+
+function getYears(tv){if(tv==='3year')return 3;if(tv==='5year')return 5;return 1}
+
+function calcColumn(planType,st,tabView){
+  var employees=st.employees,avgSalary=st.avgSalary,ownerSalary=st.ownerSalary;
+  var years=getYears(tabView);
+  var irsCap=Math.min(IRS_CAP_DOLLAR,ownerSalary*0.25);
+
+  if(planType==='typical'){
+    var typEmpAnn=employees*avgSalary*0.03;
+    var typOwnAnn=Math.min(ownerSalary*0.03,irsCap);
+    var typExp=(typEmpAnn+typOwnAnn)*years;
+    var typOwn=typOwnAnn*years;
+    var typDeduct=typExp;
+    var typTax=typDeduct*TAX_RATE;
+    var typNet=typExp-typOwn-typTax;
+    return{empCost:typEmpAnn*years,ownerCost:typOwn,expense:typExp,credits:0,deductible:typDeduct,taxSavings:typTax,netCost:typNet};
+  }
+
+  var cs=(planType==='optimized')?OPT_EMP_CONTRIB:STD_EMP_CONTRIB;
+  var bd=calcYearlyBreakdown(employees,years,planType);
+  var totalOwnerCost=0;
+  for(var y=0;y<years;y++){
+    var basePct=cs[y]/avgSalary;
+    var ownerRate=ownerProfitSharePct(st.age,st.crossTesting,st.ageTest,basePct,planType);
+    var oc=Math.min(ownerSalary*ownerRate,irsCap);
+    totalOwnerCost+=oc;
+  }
+  var totalCredits=bd.totalCredits;
+  var totalEmpCost=bd.totalEmpCost;
+  var totalExpense=totalEmpCost+totalOwnerCost;
+  var totalDeductible=totalOwnerCost+bd.totalDeductibleEmpCost;
+  var deductionSavings=totalDeductible*TAX_RATE;
+  var netCost=totalExpense-totalOwnerCost-totalCredits-deductionSavings;
+  return{empCost:totalEmpCost,ownerCost:totalOwnerCost,expense:totalExpense,credits:totalCredits,deductible:totalDeductible,taxSavings:deductionSavings,netCost:netCost};
+}
+
+function calcForfeitures(employees,turnoverPct,contribSchedule){
+  var results=[];
+  for(var yr=0;yr<5;yr++){
+    var perEmp;
+    if(yr===0){perEmp=contribSchedule[0]}
+    else if(yr===1){perEmp=(contribSchedule[0]+contribSchedule[1])*0.75}
+    else{
+      var one=contribSchedule[yr];
+      var two=contribSchedule[yr]+contribSchedule[yr-1];
+      perEmp=(one+two)/2;
+    }
+    perEmp*=Math.pow(1+TREASURY_GROWTH,Math.max(0,yr*0.5));
+    results.push(Math.round(turnoverPct*employees*perEmp));
+  }
+  return results;
+}
+
+function sumForf(arr,years){var t=0;for(var i=0;i<years&&i<arr.length;i++)t+=arr[i];return t}
+
+/* ── Render ── */
+function renderWaterfall(t,s,o){
+  var h='';
+  h+='<div class="pft-wf-header">';
+  h+='<div class="pft-wf-col-head"></div>';
+  h+='<div class="pft-wf-col-head pft-col-typ">Typical<br>3% Safe Harbor</div>';
+  h+='<div class="pft-wf-col-head pft-col-std">PlanForge<br>Standard</div>';
+  h+='<div class="pft-wf-col-head pft-col-opt" id="colOptimized">PlanForge<br>Optimized<span class="pft-best-badge">BEST VALUE</span></div>';
+  h+='</div>';
+  function wv(v){var c='pft-wf-val';if(v<0)c+=' neg';return'<div class="'+c+'">'+fmt(v)+'</div>'}
+  function nv(v){var c='pft-wf-val '+(v<0?'pft-net-neg':'pft-net-pos');return'<div class="'+c+'">'+fmt(v)+'</div>'}
+  function row(lbl,tv,sv,ov,cls){
+    h+='<div class="pft-wf-row'+(cls?' '+cls:'')+'">';
+    h+='<div class="pft-wf-label">'+lbl+'</div>';
+    h+=wv(tv)+wv(sv)+wv(ov);
+    h+='</div>';
+  }
+  row('Expense',t.expense,s.expense,o.expense);
+  row('Owner Share',-t.ownerCost,-s.ownerCost,-o.ownerCost);
+  row('Credits',-t.credits,-s.credits,-o.credits);
+  row('Tax Savings',-t.taxSavings,-s.taxSavings,-o.taxSavings);
+  h+='<div class="pft-wf-row pft-wf-total">';
+  h+='<div class="pft-wf-label">Net Cost</div>';
+  h+=nv(t.netCost)+nv(s.netCost)+nv(o.netCost);
+  h+='</div>';
+  G('waterfall').innerHTML=h;
+}
+
+function renderBadges(t,s,o){
+  var stdSav=t.netCost-s.netCost;
+  var optSav=t.netCost-o.netCost;
+  var stdP,optP;
+  if(t.netCost<=0){stdP='N/A';optP='N/A'}
+  else{stdP=fmtPct(((t.netCost-s.netCost)/t.netCost)*100);optP=fmtPct(((t.netCost-o.netCost)/t.netCost)*100)}
+  var h='';
+  h+='<div class="pft-savings-badge">';
+  h+='<span class="pft-badge-label">PlanForge Standard vs Typical Strategy</span>';
+  h+='<span class="pft-badge-amount">+'+fmt(stdSav)+' Savings</span>';
+  h+='<span class="pft-badge-pct">'+(stdP==='N/A'?'N/A':stdP+' Cost Reduction')+'</span>';
+  h+='</div>';
+  h+='<div class="pft-savings-badge">';
+  h+='<span class="pft-badge-label">PlanForge Optimized vs Typical Strategy</span>';
+  h+='<span class="pft-badge-amount">+'+fmt(optSav)+' Savings</span>';
+  h+='<span class="pft-badge-pct">'+(optP==='N/A'?'N/A':optP+' Cost Reduction')+'</span>';
+  h+='</div>';
+  G('badges').innerHTML=h;
+}
+
+function renderForfeitures(stdF,optF,tabView){
+  var years=getYears(tabView);
+  var h='';
+  h+='<div class="pft-forfeit-title">Estimated Forfeitures</div>';
+  h+='<div class="pft-forfeit-sub">With a 3-year cliff vesting schedule, employees who leave before 3 years forfeit employer contributions back to the plan. Forfeited amounts can be reallocated to remaining participants or used to offset future employer contributions.</div>';
+  h+='<div class="pft-fg-na">Typical Strategy (Safe Harbor): No forfeitures. Immediate vesting.</div>';
+  h+='<div class="pft-forfeit-grid">';
+  h+='<div class="pft-fg-head"></div><div class="pft-fg-head" style="text-align:right!important">Standard</div><div class="pft-fg-head" style="text-align:right!important">Optimized</div>';
+  for(var i=0;i<years;i++){
+    h+='<div class="pft-fg-label">Year '+(i+1)+'</div>';
+    h+='<div class="pft-fg-val">'+fmt(stdF[i])+'</div>';
+    h+='<div class="pft-fg-val">'+fmt(optF[i])+'</div>';
+  }
+  var sT=sumForf(stdF,years),oT=sumForf(optF,years);
+  var lbl=years===1?'Year 1 Total':years+'-Year Cumulative';
+  h+='<div class="pft-fg-label pft-fg-total">'+lbl+'</div>';
+  h+='<div class="pft-fg-val pft-fg-total">'+fmt(sT)+'</div>';
+  h+='<div class="pft-fg-val pft-fg-total">'+fmt(oT)+'</div>';
+  h+='</div>';
+  G('forfeitSection').innerHTML=h;
+}
+
+function renderBenefit(t,s,o,stdF,optF,tabView){
+  var years=getYears(tabView);
+  var sF=sumForf(stdF,years),oF=sumForf(optF,years);
+  var tTax=t.credits+t.taxSavings,sTax=s.credits+s.taxSavings,oTax=o.credits+o.taxSavings;
+  var tB=t.ownerCost+tTax,sB=s.ownerCost+sTax+sF,oB=o.ownerCost+oTax+oF;
+  var mx=Math.max(tB,sB,oB);
+  var h='<div class="pft-benefit-card">';
+  h+='<div class="pft-benefit-heading">Total Ownership Benefit</div>';
+  h+='<div class="pft-ben-header"><div class="pft-ben-col-head"></div><div class="pft-ben-col-head">Typical</div><div class="pft-ben-col-head">Standard</div><div class="pft-ben-col-head">Optimized</div></div>';
+  function br(lbl,tv,sv,ov,tot){
+    var c=tot?' pft-ben-total':'';
+    h+='<div class="pft-ben-row'+c+'">';
+    h+='<div class="pft-ben-label">'+lbl+'</div>';
+    if(tot){
+      h+='<div class="pft-ben-val'+(tv===mx?' pft-ben-highlight':'')+'">'+fmt(tv)+'</div>';
+      h+='<div class="pft-ben-val'+(sv===mx?' pft-ben-highlight':'')+'">'+fmt(sv)+'</div>';
+      h+='<div class="pft-ben-val'+(ov===mx?' pft-ben-highlight':'')+'">'+fmt(ov)+'</div>';
+    }else{
+      h+='<div class="pft-ben-val">'+fmt(tv)+'</div>';
+      h+='<div class="pft-ben-val">'+fmt(sv)+'</div>';
+      h+='<div class="pft-ben-val">'+fmt(ov)+'</div>';
+    }
+    h+='</div>';
+  }
+  br('Owner Profit Share',t.ownerCost,s.ownerCost,o.ownerCost,false);
+  br('Total Tax Savings',tTax,sTax,oTax,false);
+  br('Est. Forfeitures to Plan',0,sF,oF,false);
+  br('TOTAL BENEFIT',tB,sB,oB,true);
+  h+='</div>';
+  G('benefitSection').innerHTML=h;
+  return{sBenefit:sB,oBenefit:oB};
+}
+
+function renderMath(st,tabView){
+  var years=getYears(tabView),avgSalary=st.avgSalary,ownerSalary=st.ownerSalary,employees=st.employees;
+  var irsCap=Math.min(IRS_CAP_DOLLAR,ownerSalary*0.25);
+  var stdBase=STD_EMP_CONTRIB[0]/avgSalary;
+  var stdRate=ownerProfitSharePct(st.age,st.crossTesting,st.ageTest,stdBase,'standard');
+  var optBase=OPT_EMP_CONTRIB[0]/avgSalary;
+  var optRate=ownerProfitSharePct(st.age,st.crossTesting,st.ageTest,optBase,'optimized');
+  var h='';
+  h+='<div class="pft-math-section"><div class="pft-math-title">Typical Strategy (3% Safe Harbor)</div><div class="pft-math-text">';
+  h+='Typical Strategy uses a standard 3% Safe Harbor contribution for all participants.<br>';
+  h+='Employee contribution: 3% of average salary ('+fmt(avgSalary*0.03)+' per employee)<br>';
+  h+='Owner contribution: 3% of owner salary ('+fmt(Math.min(ownerSalary*0.03,irsCap))+')<br>';
+  h+='Safe harbor plans require immediate vesting, so there are no forfeitures.<br>';
+  h+='The full expense is tax-deductible since no credits apply.';
+  h+='</div></div><div class="pft-math-divider"></div>';
+
+  h+='<div class="pft-math-section"><div class="pft-math-title">PlanForge Standard</div><div class="pft-math-text">';
+  h+='PlanForge Standard contributes $1,000 per employee per year (flat, all 5 years) and uses cross-tested profit sharing to allocate a higher percentage to the business owner.<br>';
+  h+='Owner multiplier: '+(stdRate*100).toFixed(1)+'% of salary ('+fmt(Math.min(ownerSalary*stdRate,irsCap))+' per year)<br>';
+  h+='SECURE Act 2.0 provides tax credits on employee contributions (100% in Years 1-2, phasing down to 25% by Year 5). Any portion not covered by credits is tax-deductible.<br>';
+  h+='A 3-year cliff vesting schedule means employees who leave before 3 years forfeit employer contributions back to the plan.';
+  h+='</div></div><div class="pft-math-divider"></div>';
+
+  h+='<div class="pft-math-section"><div class="pft-math-title">PlanForge Optimized</div><div class="pft-math-text">';
+  h+='PlanForge Optimized maximizes credit utilization by increasing employee contributions in Years 3-5 ($1,000, $1,000, $1,333, $2,000, $4,000).<br>';
+  h+='Even though employee contributions increase, the SECURE Act credit is capped at $1,000 per employee. The excess above the credit is fully tax-deductible, and cross-testing still directs a larger proportion to the owner.<br>';
+  h+='Owner multiplier: '+(optRate*100).toFixed(1)+'% of salary ('+fmt(Math.min(ownerSalary*optRate,irsCap))+' per year)<br>';
+  h+='Higher contributions to employees who leave before vesting result in larger forfeitures flowing back to the plan.';
+  h+='</div></div>';
+
+  if(years>1){
+    h+='<div class="pft-math-divider"></div><div class="pft-math-section"><div class="pft-math-title">Year-by-Year Credit and Deduction Breakdown</div>';
+    h+='<table class="pft-math-table"><tr><th>Year</th><th>Std Contrib</th><th>Opt Contrib</th><th>Credit Rate</th><th>Credit/Emp</th><th>Std Deduct/Emp</th><th>Opt Deduct/Emp</th></tr>';
+    for(var y=0;y<years;y++){
+      var cr=CREDIT_PHASE[y],cpE=1000*cr;
+      var sD=STD_EMP_CONTRIB[y]-cpE,oD=OPT_EMP_CONTRIB[y]-cpE;
+      h+='<tr><td>Year '+(y+1)+'</td><td>'+fmt(STD_EMP_CONTRIB[y])+'</td><td>'+fmt(OPT_EMP_CONTRIB[y])+'</td><td>'+(cr*100)+'%</td><td>'+fmt(cpE)+'</td><td>'+fmt(Math.max(0,sD))+'</td><td>'+fmt(Math.max(0,oD))+'</td></tr>';
+    }
+    h+='</table></div>';
+  }
+  G('mathContent').innerHTML=h;
+}
+
+function render(){
+  var tabView=state.tabView,years=getYears(tabView);
+  var t=calcColumn('typical',state,tabView);
+  var s=calcColumn('standard',state,tabView);
+  var o=calcColumn('optimized',state,tabView);
+  var stdF=calcForfeitures(state.employees,state.turnover,STD_EMP_CONTRIB);
+  var optF=calcForfeitures(state.employees,state.turnover,OPT_EMP_CONTRIB);
+
+  renderWaterfall(t,s,o);
+  renderBadges(t,s,o);
+  renderForfeitures(stdF,optF,tabView);
+  var ben=renderBenefit(t,s,o,stdF,optF,tabView);
+
+  var col=G('colOptimized');
+  if(col){if(ben.oBenefit>ben.sBenefit){col.classList.add('pft-col-best')}else{col.classList.remove('pft-col-best')}}
+
+  renderMath(state,tabView);
+}
+
+/* ── Event Handlers ── */
+var sliders=[
+  {el:G('empSlider'),d:G('empDisplay'),k:'employees',f:function(v){return v}},
+  {el:G('salSlider'),d:G('salDisplay'),k:'avgSalary',f:function(v){return fmt(parseInt(v))}},
+  {el:G('ownerSlider'),d:G('ownerDisplay'),k:'ownerSalary',f:function(v){return fmt(parseInt(v))}},
+  {el:G('turnSlider'),d:G('turnDisplay'),k:'turnover',f:function(v){return v+'%'},t:function(v){return parseInt(v)/100}}
+];
+for(var i=0;i<sliders.length;i++){(function(s){
+  function h(){var v=s.el.value;s.d.textContent=s.f(v);state[s.k]=s.t?s.t(v):parseInt(v);sBg(s.el);render()}
+  s.el.addEventListener('input',h);s.el.addEventListener('change',h);
+})(sliders[i])}
+
+G('ageSelect').addEventListener('change',function(){state.age=this.value;render()});
+
+function setupToggle(cid,sk){
+  var c=G(cid);var btns=c.querySelectorAll('.pft-toggle-btn');
+  for(var i=0;i<btns.length;i++){(function(b){
+    b.addEventListener('click',function(){
+      for(var j=0;j<btns.length;j++)btns[j].classList.remove('active');
+      b.classList.add('active');state[sk]=b.getAttribute('data-val')==='true';render();
+    });
+  })(btns[i])}
+}
+setupToggle('crossToggle','crossTesting');
+setupToggle('ageTestToggle','ageTest');
+
+var tabs=document.querySelectorAll('#pft-calc .pft-tab');
+for(var i=0;i<tabs.length;i++){(function(tab){
+  tab.addEventListener('click',function(){
+    for(var j=0;j<tabs.length;j++)tabs[j].classList.remove('active');
+    tab.classList.add('active');state.tabView=tab.getAttribute('data-tab');render();
+  });
+})(tabs[i])}
+
+G('mathToggleBtn').addEventListener('click',function(){
+  var c=G('mathContent'),a=G('mathArrow');
+  if(c.classList.contains('open')){c.classList.remove('open');a.classList.remove('open')}
+  else{c.classList.add('open');a.classList.add('open')}
+});
+G('hiwToggleBtn').addEventListener('click',function(){
+  var c=G('hiwContent'),a=G('hiwArrow');
+  if(c.classList.contains('open')){c.classList.remove('open');a.classList.remove('open')}
+  else{c.classList.add('open');a.classList.add('open')}
+});
+
+function showStep(id){var steps=document.querySelectorAll('#pft-calc .pft-step');for(var i=0;i<steps.length;i++)steps[i].classList.remove('active');G(id).classList.add('active')}
+G('qYes').addEventListener('click',function(){showStep('formYesStep')});
+G('qNo').addEventListener('click',function(){showStep('formNoStep')});
+G('formBackYes').addEventListener('click',function(){showStep('qualifyStep')});
+G('formBackNo').addEventListener('click',function(){showStep('qualifyStep')});
+G('submitYes').addEventListener('click',function(e){e.preventDefault();showStep('confirmStep')});
+G('submitNo').addEventListener('click',function(e){e.preventDefault();showStep('confirmStep')});
+
+for(var i=0;i<sliders.length;i++)sBg(sliders[i].el);
+render();
+
+/* ── Sanity Check ── */
+window._pftTest=function(){
+  var pass=0,fail=0,results=[];
+  function chk(label,actual,expected,tol){
+    tol=tol||1;var ok=Math.abs(actual-expected)<=tol;
+    if(ok)pass++;else fail++;
+    results.push((ok?'PASS':'FAIL')+': '+label+' = '+Math.round(actual)+' (expected '+expected+')');
+  }
+  var ts={employees:25,avgSalary:100000,ownerSalary:300000,age:'50plus',crossTesting:true,ageTest:true,turnover:0.33};
+
+  // Multiplier spot checks
+  chk('Std 50+ cross ON',ownerProfitSharePct('50plus',true,true,0.01,'standard'),0.03,0.001);
+  chk('Opt 50+ cross ON',ownerProfitSharePct('50plus',true,true,0.01,'optimized'),0.20,0.001);
+  chk('Std 41-50 cross ON',ownerProfitSharePct('41to50',true,true,0.01,'standard'),0.03,0.001);
+  chk('Opt 41-50 cross ON',ownerProfitSharePct('41to50',true,true,0.01,'optimized'),0.04,0.001);
+  chk('Std 40under cross ON',ownerProfitSharePct('40under',true,true,0.01,'standard'),0.03,0.001);
+  chk('Opt 40under cross ON',ownerProfitSharePct('40under',true,true,0.01,'optimized'),0.04,0.001);
+  chk('Std ageTest OFF',ownerProfitSharePct('50plus',true,false,0.01,'standard'),0.03,0.001);
+  chk('Opt ageTest OFF',ownerProfitSharePct('50plus',true,false,0.01,'optimized'),0.03,0.001);
+
+  // Annual
+  var tA=calcColumn('typical',ts,'annual');
+  var sA=calcColumn('standard',ts,'annual');
+  var oA=calcColumn('optimized',ts,'annual');
+
+  chk('Typ Ann empCost',tA.empCost,75000);
+  chk('Typ Ann ownerCost',tA.ownerCost,9000);
+  chk('Typ Ann expense',tA.expense,84000);
+  chk('Typ Ann credits',tA.credits,0);
+  chk('Typ Ann taxSavings',tA.taxSavings,25200);
+  chk('Typ Ann netCost',tA.netCost,49800);
+
+  chk('Std Ann empCost',sA.empCost,25000);
+  chk('Std Ann ownerCost',sA.ownerCost,9000);
+  chk('Std Ann expense',sA.expense,34000);
+  chk('Std Ann credits',sA.credits,30500);
+  chk('Std Ann taxSavings',sA.taxSavings,2700);
+  chk('Std Ann netCost',sA.netCost,-8200);
+
+  chk('Opt Ann empCost',oA.empCost,25000);
+  chk('Opt Ann ownerCost',oA.ownerCost,60000);
+  chk('Opt Ann expense',oA.expense,85000);
+  chk('Opt Ann credits',oA.credits,30500);
+  chk('Opt Ann taxSavings',oA.taxSavings,18000);
+  chk('Opt Ann netCost',oA.netCost,-23500);
+
+  // 5-Year
+  var t5=calcColumn('typical',ts,'5year');
+  var s5=calcColumn('standard',ts,'5year');
+  var o5=calcColumn('optimized',ts,'5year');
+
+  chk('Typ 5yr empCost',t5.empCost,375000);
+  chk('Typ 5yr ownerCost',t5.ownerCost,45000);
+  chk('Typ 5yr expense',t5.expense,420000);
+  chk('Typ 5yr netCost',t5.netCost,249000);
+
+  chk('Std 5yr empCost',s5.empCost,125000);
+  chk('Std 5yr ownerCost',s5.ownerCost,45000);
+  chk('Std 5yr expense',s5.expense,170000);
+  chk('Std 5yr credits',s5.credits,104000);
+  chk('Std 5yr deductible',s5.deductible,82500);
+  chk('Std 5yr taxSavings',s5.taxSavings,24750);
+  chk('Std 5yr netCost',s5.netCost,-3750);
+
+  chk('Opt 5yr empCost',o5.empCost,233325);
+  chk('Opt 5yr ownerCost',o5.ownerCost,300000);
+  chk('Opt 5yr expense',o5.expense,533325);
+  chk('Opt 5yr credits',o5.credits,104000);
+  chk('Opt 5yr deductible',o5.deductible,445825);
+  chk('Opt 5yr taxSavings',o5.taxSavings,133748,2);
+  chk('Opt 5yr netCost',o5.netCost,-4423,2);
+
+  // Forfeitures
+  var stdF=calcForfeitures(25,0.33,STD_EMP_CONTRIB);
+  var optF=calcForfeitures(25,0.33,OPT_EMP_CONTRIB);
+  chk('StdF Y1',stdF[0],8250);
+  chk('StdF Y2',stdF[1],12620,10);
+  chk('StdF Y3',stdF[2],12870,10);
+  chk('StdF Y4',stdF[3],13125,10);
+  chk('StdF Y5',stdF[4],13385,10);
+  chk('StdF Total',sumForf(stdF,5),60250,50);
+
+  chk('OptF Y1',optF[0],8250);
+  chk('OptF Y2',optF[1],12620,10);
+  chk('OptF Y3',optF[2],15727,50);
+  chk('OptF Y4',optF[3],23332,50);
+  chk('OptF Y5',optF[4],44616,50);
+  chk('OptF Total',sumForf(optF,5),104545,100);
+
+  // Total Ownership Benefit
+  var tTax5=t5.credits+t5.taxSavings;
+  var sTax5=s5.credits+s5.taxSavings;
+  var oTax5=o5.credits+o5.taxSavings;
+  var tBen=t5.ownerCost+tTax5;
+  var sBen=s5.ownerCost+sTax5+sumForf(stdF,5);
+  var oBen=o5.ownerCost+oTax5+sumForf(optF,5);
+  chk('Typ 5yr benefit',tBen,171000,100);
+  chk('Std 5yr benefit',sBen,234000,100);
+  chk('Opt 5yr benefit',oBen,642293,200);
+
+  // IRS cap
+  var capTs={employees:25,avgSalary:100000,ownerSalary:350000,age:'50plus',crossTesting:true,ageTest:true,turnover:0.33};
+  var capOpt=calcColumn('optimized',capTs,'annual');
+  chk('IRS cap $350K',capOpt.ownerCost,69000);
+
+  console.log('=== PlanForge Tax Calculator V2 Sanity Check ===');
+  for(var i=0;i<results.length;i++)console.log(results[i]);
+  console.log('=== '+pass+' passed, '+fail+' failed ===');
+  return{pass:pass,fail:fail,results:results};
+};
+
+})();
+</script>
