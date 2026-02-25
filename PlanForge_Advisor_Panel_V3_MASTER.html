@@ -283,11 +283,11 @@
       <div class="panel-body">
         <div class="form-group">
           <label>Business Name</label>
-          <input type="text" id="bizName" placeholder="AlphaGraphics" oninput="recalc()">
+          <input type="text" id="bizName" placeholder="AlphaGraphics" oninput="debouncedRecalc()">
         </div>
         <div class="form-row">
-          <div class="form-group"><label>First Name</label><input type="text" id="firstName" placeholder="Sherry" oninput="recalc()"></div>
-          <div class="form-group"><label>Last Name</label><input type="text" id="lastName" placeholder="Perry" oninput="recalc()"></div>
+          <div class="form-group"><label>First Name</label><input type="text" id="firstName" placeholder="Sherry" oninput="debouncedRecalc()"></div>
+          <div class="form-group"><label>Last Name</label><input type="text" id="lastName" placeholder="Perry" oninput="debouncedRecalc()"></div>
         </div>
         <div class="form-row-3">
           <div class="form-group">
@@ -300,7 +300,7 @@
               <option value="Sole Prop">Sole Prop</option>
             </select>
           </div>
-          <div class="form-group"><label>Owner Age</label><input type="number" id="ownerAge" value="68" min="21" max="85" oninput="recalc()"></div>
+          <div class="form-group"><label>Owner Age</label><input type="number" id="ownerAge" value="68" min="21" max="85" oninput="debouncedRecalc()"></div>
           <div class="form-group">
             <label>Tax Year</label>
             <select id="taxYear" onchange="updateHcePayFloorNote();recalc()">
@@ -310,10 +310,10 @@
           </div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label>Owner W-2 Salary ($)</label><input type="number" id="ownerSalary" value="274345" step="1000" oninput="recalc()"></div>
-          <div class="form-group" id="k1Group"><label>Owner K-1 ($)</label><input type="number" id="ownerK1" value="0" step="1000" oninput="recalc()"></div>
+          <div class="form-group"><label>Owner W-2 Salary ($)</label><input type="number" id="ownerSalary" value="274345" step="1000" oninput="debouncedRecalc()"></div>
+          <div class="form-group" id="k1Group"><label>Owner K-1 ($)</label><input type="number" id="ownerK1" value="0" step="1000" oninput="debouncedRecalc()"></div>
         </div>
-        <div class="form-group"><label>Tax Rate (%)</label><input type="number" id="taxRate" value="30" min="10" max="50" step="1" oninput="recalc()"></div>
+        <div class="form-group"><label>Tax Rate (%)</label><input type="number" id="taxRate" value="30" min="10" max="50" step="1" oninput="debouncedRecalc()"></div>
       </div>
     </div>
 
@@ -335,33 +335,33 @@
       <div class="panel-header collapse-toggle" onclick="this.parentElement.classList.toggle('collapsed')">Employee Census</div>
       <div class="panel-body">
         <div class="form-row-3">
-          <div class="form-group"><label>NHCE Count</label><input type="number" id="nhceCount" value="20" min="0" max="500" oninput="recalc()"></div>
-          <div class="form-group"><label>Avg NHCE Pay ($)</label><input type="number" id="nhceAvgPay" value="46654" step="500" oninput="recalc()"></div>
-          <div class="form-group"><label>Avg NHCE Age</label><input type="number" id="nhceAvgAge" value="38" min="18" max="75" oninput="recalc()"></div>
+          <div class="form-group"><label>NHCE Count</label><input type="number" id="nhceCount" value="20" min="0" max="500" oninput="debouncedRecalc()"></div>
+          <div class="form-group"><label>Avg NHCE Pay ($)</label><input type="number" id="nhceAvgPay" value="46654" step="500" oninput="debouncedRecalc()"></div>
+          <div class="form-group"><label>Avg NHCE Age</label><input type="number" id="nhceAvgAge" value="38" min="18" max="75" oninput="debouncedRecalc()"></div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label>NHCE Pay Range — Low ($)</label><input type="number" id="nhcePayLow" value="28000" step="500" oninput="recalc()"></div>
-          <div class="form-group"><label>NHCE Pay Range — High ($)</label><input type="number" id="nhcePayHigh" value="85000" step="500" oninput="recalc()"></div>
+          <div class="form-group"><label>NHCE Pay Range — Low ($)</label><input type="number" id="nhcePayLow" value="28000" step="500" oninput="debouncedRecalc()"></div>
+          <div class="form-group"><label>NHCE Pay Range — High ($)</label><input type="number" id="nhcePayHigh" value="85000" step="500" oninput="debouncedRecalc()"></div>
         </div>
         <div class="form-row-3">
-          <div class="form-group"><label>Non-Owner HCE Count</label><input type="number" id="hceNonOwnerCount" value="0" min="0" max="100" oninput="recalc()"></div>
+          <div class="form-group"><label>Non-Owner HCE Count</label><input type="number" id="hceNonOwnerCount" value="0" min="0" max="100" oninput="debouncedRecalc()"></div>
           <div class="form-group">
             <label>Avg HCE Pay ($)</label>
             <input type="number" id="hceAvgPay" value="0" step="500" oninput="onHceAvgPayChange()">
             <div style="font-size:10px;color:var(--gray);margin-top:2px;" id="hcePayFloorNote"></div>
           </div>
-          <div class="form-group"><label>Avg HCE Age</label><input type="number" id="hceAvgAge" value="45" min="18" max="75" oninput="recalc()"></div>
+          <div class="form-group"><label>Avg HCE Age</label><input type="number" id="hceAvgAge" value="45" min="18" max="75" oninput="debouncedRecalc()"></div>
         </div>
         <div class="form-row">
           <div class="form-group">
             <label>HCE Allocation Rate (%)</label>
-            <input type="number" id="hceAllocRate" value="" step="0.5" min="0" max="100" placeholder="0% (maximize mode)" oninput="recalc()">
+            <input type="number" id="hceAllocRate" value="" step="0.5" min="0" max="100" placeholder="0% (maximize mode)" oninput="debouncedRecalc()">
             <div style="font-size:10px;color:var(--gray);margin-top:2px;">Leave blank = 0% in Maximize mode. Override to give HCEs a specific rate.</div>
             <div id="hceRateWarning" style="display:none;margin-top:4px;padding:6px 10px;border-radius:6px;font-size:11px;"></div>
           </div>
           <div class="form-group">
             <label>NHCEs with W-2 > $100K</label>
-            <input type="number" id="nhceOver100k" value="0" min="0" max="500" oninput="recalc()">
+            <input type="number" id="nhceOver100k" value="0" min="0" max="500" oninput="debouncedRecalc()">
             <div style="font-size:10px;color:var(--gray);margin-top:2px;">Excluded from SECURE Act 2.0 tax credits</div>
           </div>
         </div>
@@ -375,9 +375,9 @@
         <div style="margin-top:10px;padding:10px 12px;background:var(--lightGray);border-radius:6px;">
           <div style="font-size:11px;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Eligibility Requirements</div>
           <div class="form-row-3">
-            <div class="form-group" style="margin-bottom:0;"><label style="font-size:10px;">Deferral Elig. (months)</label><input type="number" id="deferralEligMonths" value="9" min="0" max="12" oninput="recalc()"></div>
-            <div class="form-group" style="margin-bottom:0;"><label style="font-size:10px;">PS Elig. (months)</label><input type="number" id="psEligMonths" value="3" min="0" max="12" oninput="recalc()"></div>
-            <div class="form-group" style="margin-bottom:0;"><label style="font-size:10px;">Excludable NHCEs</label><input type="number" id="excludableNhces" value="0" min="0" oninput="recalc()" style="background:#F9F9F9;"></div>
+            <div class="form-group" style="margin-bottom:0;"><label style="font-size:10px;">Deferral Elig. (months)</label><input type="number" id="deferralEligMonths" value="9" min="0" max="12" oninput="debouncedRecalc()"></div>
+            <div class="form-group" style="margin-bottom:0;"><label style="font-size:10px;">PS Elig. (months)</label><input type="number" id="psEligMonths" value="3" min="0" max="12" oninput="debouncedRecalc()"></div>
+            <div class="form-group" style="margin-bottom:0;"><label style="font-size:10px;">Excludable NHCEs</label><input type="number" id="excludableNhces" value="0" min="0" oninput="debouncedRecalc()" style="background:#F9F9F9;"></div>
           </div>
           <div style="font-size:10px;color:var(--gray);margin-top:4px;" id="eligExplain">
             Employees who haven't met deferral eligibility can be excluded from cross-testing.
@@ -401,7 +401,7 @@
               <strong>Maximize Owner:</strong> Uses real EBAR cross-testing to find the maximum owner allocation that passes §401(a)(4). NHCEs get 5% (gateway). Age-weighted actuarial factors determine feasibility.
             </div>
             <div class="form-row">
-              <div class="form-group"><label>Std Rate (%) — Benchmark</label><input type="number" id="stdRate" value="3" min="1" max="25" step="0.5" oninput="recalc()"></div>
+              <div class="form-group"><label>Std Rate (%) — Benchmark</label><input type="number" id="stdRate" value="3" min="1" max="25" step="0.5" oninput="debouncedRecalc()"></div>
               <div class="form-group"><label>SECURE Year (1-5)</label><input type="number" id="secureYear" value="2" min="1" max="5" oninput="onSecureYearChange('secureYear')"></div>
             </div>
             <div id="ratioTestResult" style="margin-top:8px;padding:8px 12px;background:var(--greenBg);border-radius:6px;font-size:12px;display:none;"></div>
@@ -411,7 +411,7 @@
               <strong>$1,000 Flat + 3x Gateway:</strong> Each NHCE gets $1,000 profit share. Owner's max rate = 3× the lowest NHCE rate (below-gateway approach).
             </div>
             <div class="form-row">
-              <div class="form-group"><label>NHCE Flat Amount ($)</label><input type="number" id="nhceFlatAmt" value="1000" step="100" oninput="recalc()"></div>
+              <div class="form-group"><label>NHCE Flat Amount ($)</label><input type="number" id="nhceFlatAmt" value="1000" step="100" oninput="debouncedRecalc()"></div>
               <div class="form-group"><label>SECURE Year (1-5)</label><input type="number" id="secureYear2" value="2" min="1" max="5" oninput="onSecureYearChange('secureYear2')"></div>
             </div>
             <div id="gatewayCalcResult" style="margin-top:8px;padding:8px 12px;background:var(--goldBg);border-radius:6px;font-size:12px;display:none;"></div>
@@ -421,13 +421,13 @@
               <strong>Custom:</strong> Manually set NHCE rate and owner allocation. Real cross-testing runs automatically.
             </div>
             <div class="form-row-3">
-              <div class="form-group"><label>Std Rate (%)</label><input type="number" id="stdRate3" value="3" min="1" max="25" step="0.5" oninput="recalc()"></div>
-              <div class="form-group"><label>NHCE Rate (%)</label><input type="number" id="optNhceRate3" value="5" min="0" max="25" step="0.5" oninput="recalc()"></div>
+              <div class="form-group"><label>Std Rate (%)</label><input type="number" id="stdRate3" value="3" min="1" max="25" step="0.5" oninput="debouncedRecalc()"></div>
+              <div class="form-group"><label>NHCE Rate (%)</label><input type="number" id="optNhceRate3" value="5" min="0" max="25" step="0.5" oninput="debouncedRecalc()"></div>
               <div class="form-group"><label>SECURE Year (1-5)</label><input type="number" id="secureYear3" value="2" min="1" max="5" oninput="onSecureYearChange('secureYear3')"></div>
             </div>
             <div class="form-row">
-              <div class="form-group"><label>Owner Alloc ($)</label><input type="number" id="optOwnerAlloc3" placeholder="Auto (cross-tested max)" step="1000" oninput="recalc()"></div>
-              <div class="form-group"><label>NHCE Flat $ (optional)</label><input type="number" id="nhceFlatAmt3" placeholder="Or leave blank for %" step="100" oninput="recalc()"></div>
+              <div class="form-group"><label>Owner Alloc ($)</label><input type="number" id="optOwnerAlloc3" placeholder="Auto (cross-tested max)" step="1000" oninput="debouncedRecalc()"></div>
+              <div class="form-group"><label>NHCE Flat $ (optional)</label><input type="number" id="nhceFlatAmt3" placeholder="Or leave blank for %" step="100" oninput="debouncedRecalc()"></div>
             </div>
             <div id="customGatewayInfo" style="margin-top:8px;padding:8px 12px;background:var(--goldBg);border-radius:6px;font-size:12px;display:none;"></div>
           </div>
@@ -456,7 +456,7 @@
               <span style="font-size:11px;color:var(--gray);">%</span>
             </div>
           </div>
-          <div class="form-group"><label>Est. Forfeitures ($) — Auto-calculated</label><input type="number" id="forfeitures" value="0" step="500" oninput="recalc()" style="background:#F9F9F9;"></div>
+          <div class="form-group"><label>Est. Forfeitures ($) — Auto-calculated</label><input type="number" id="forfeitures" value="0" step="500" oninput="debouncedRecalc()" style="background:#F9F9F9;"></div>
           <input type="hidden" id="realForfeituresValue" value="0">
           <input type="hidden" id="estimatedForfeituresValue" value="0">
         </div>
@@ -626,6 +626,17 @@ let lastRenderedCensus = null;  // Cache for departure table rendering
 let currentPlanDesign = 'maximize';
 let lastCrossTestResult = null;
 
+// ── Performance: Debounce & Census Cache ──
+let _recalcTimer = null;
+let _lastCensusKey = null;
+let _cachedCensus = null;
+
+/** Debounced recalc — coalesces rapid input events (typing) into a single computation */
+function debouncedRecalc() {
+  if (_recalcTimer) cancelAnimationFrame(_recalcTimer);
+  _recalcTimer = requestAnimationFrame(() => { _recalcTimer = null; recalc(); });
+}
+
 // ══════════════════════════════════════════════════════════════
 //  CROSS-TESTING MATH ENGINE (V3 Core)
 // ══════════════════════════════════════════════════════════════
@@ -740,10 +751,22 @@ function generateSyntheticCensus(nhceCount, avgPay, avgAge, payLow, payHigh, hce
 /**
  * Build the full participant census including owners
  * Uses parsed census if available, otherwise generates synthetic
+ * Results are cached when inputs haven't changed to avoid redundant computation
  */
 function buildFullCensus(input) {
   const limits = getLimits(parseInt(input.year || 2026));
   const excludableNhces = input.excludableNhces || 0;
+
+  // Cache key: serialize the inputs that affect census construction
+  const cacheKey = JSON.stringify([
+    input.ownerSalary, input.ownerK1, input.ownerAge, input.firstName, input.lastName,
+    input.year, input.nhceCount, input.nhceAvgPay, input.nhceAvgAge,
+    input.nhcePayLow, input.nhcePayHigh, input.hceNonOwnerCount, input.hceAvgPay,
+    input.hceAvgAge, excludableNhces,
+    (input.additionalOwners||[]).map(a => [a.name,a.age,a.salary,a.k1]),
+    parsedCensusEmployees ? parsedCensusEmployees.length : 0
+  ]);
+  if (_lastCensusKey === cacheKey && _cachedCensus) return _cachedCensus;
 
   // Build owner entries
   const ownerComp = Math.min((input.ownerSalary || 0) + (input.ownerK1 || 0), limits.compCap401a17);
@@ -793,7 +816,7 @@ function buildFullCensus(input) {
     return { ...e, excluded };
   });
 
-  return {
+  const result = {
     owners: [...owners, ...addlOwners],
     employees: [...processedNhces, ...hces],
     allParticipants: [...owners, ...addlOwners, ...processedNhces.filter(e => !e.excluded), ...hces],
@@ -801,6 +824,9 @@ function buildFullCensus(input) {
     eligibleNhces: processedNhces.filter(e => !e.excluded),
     nonOwnerHces: hces
   };
+  _lastCensusKey = cacheKey;
+  _cachedCensus = result;
+  return result;
 }
 
 /**
@@ -2026,10 +2052,10 @@ function renderOwners() {
   const showK1 = et === 'LLC' || et === 'Partnership' || et === 'Sole Prop';
   container.innerHTML = additionalOwnersList.map((ao, i) => `
     <div class="ao-row">
-      <input type="text" id="ao_name_${i}" value="${ao.name||''}" placeholder="Name" oninput="recalc()">
-      <input type="number" id="ao_age_${i}" value="${ao.age||40}" placeholder="Age" oninput="recalc()">
-      <input type="number" id="ao_salary_${i}" value="${ao.salary||0}" placeholder="W-2" oninput="recalc()">
-      <input type="number" id="ao_k1_${i}" value="${showK1?(ao.k1||0):0}" placeholder="K-1" ${!showK1?'disabled class="k1-disabled"':''} oninput="recalc()">
+      <input type="text" id="ao_name_${i}" value="${ao.name||''}" placeholder="Name" oninput="debouncedRecalc()">
+      <input type="number" id="ao_age_${i}" value="${ao.age||40}" placeholder="Age" oninput="debouncedRecalc()">
+      <input type="number" id="ao_salary_${i}" value="${ao.salary||0}" placeholder="W-2" oninput="debouncedRecalc()">
+      <input type="number" id="ao_k1_${i}" value="${showK1?(ao.k1||0):0}" placeholder="K-1" ${!showK1?'disabled class="k1-disabled"':''} oninput="debouncedRecalc()">
       <div style="text-align:center;padding-top:4px;"><input type="checkbox" id="ao_ps_${i}" ${ao.receivesPS !== false ? 'checked' : ''} onchange="recalc()" title="Include in profit sharing?"></div>
       <button class="ao-remove" onclick="removeOwner(${i})">×</button>
     </div>
