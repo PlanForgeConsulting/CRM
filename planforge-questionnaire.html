@@ -667,9 +667,12 @@ body{background:#F5F3EE;min-height:100vh;font-family:'Libre Franklin',-apple-sys
 // === STATE ===
 let currentStep = 1;
 const totalSteps = 6; // 6 visible (step 7 is success)
+let _cachedSteps = null; // Cache step elements to avoid repeated DOM queries
 // === NAVIGATION ===
 function showStep(n) {
-  document.querySelectorAll('.pf-step').forEach(s => s.classList.remove('active'));
+  // Cache step elements on first use
+  if (!_cachedSteps) _cachedSteps = document.querySelectorAll('.pf-step');
+  _cachedSteps.forEach(s => s.classList.remove('active'));
   document.getElementById('step' + n).classList.add('active');
   // Update progress
   const pct = n <= totalSteps ? Math.round((n / totalSteps) * 100) : 100;
@@ -1101,18 +1104,26 @@ function submitForm() {
   showStep(7);
 }
 // === AUTO-DETECT HCE BASED ON SALARY ===
+// IRS HCE thresholds by year (updated annually)
+const HCE_THRESHOLDS = { 2025: 160000, 2026: 165000 };
+function getHceThreshold() {
+  // Use current year or next year threshold, fallback to latest known
+  const year = new Date().getFullYear();
+  return HCE_THRESHOLDS[year] || HCE_THRESHOLDS[2026] || 165000;
+}
 function autoDetectHCE(input) {
   const val = parseInt(input.value) || 0;
   const row = input.closest('div[style*="display:flex"]');
   if (!row) return;
   const typeSelect = row.querySelector('.emp-type');
   if (!typeSelect) return;
-  // If salary >= $160K, auto-toggle to HCE (unless already set to Family)
-  if (val >= 160000 && typeSelect.value !== 'family') {
+  const threshold = getHceThreshold();
+  // Auto-toggle to HCE if salary >= threshold (unless already set to Family)
+  if (val >= threshold && typeSelect.value !== 'family') {
     typeSelect.value = 'hce';
     typeSelect.style.borderColor = '#C4952A';
     setTimeout(() => { typeSelect.style.borderColor = '#D1D5DB'; }, 1500);
-  } else if (val > 0 && val < 160000 && typeSelect.value === 'hce') {
+  } else if (val > 0 && val < threshold && typeSelect.value === 'hce') {
     typeSelect.value = 'nhce';
   }
 }
@@ -1165,7 +1176,14 @@ function shareWithAdvisor() {
 }
 // === AUTO-SAVE & RESUME ===
 const SAVE_KEY = 'pf_questionnaire_draft';
+let _autoSaveTimer = null;
 function autoSave() {
+  // Debounce: coalesce rapid calls (e.g. step transitions) into a single write
+  if (_autoSaveTimer) clearTimeout(_autoSaveTimer);
+  _autoSaveTimer = setTimeout(_doAutoSave, 300);
+}
+function _doAutoSave() {
+  _autoSaveTimer = null;
   try {
     const fields = document.querySelectorAll('.pf-q input[type="text"], .pf-q input[type="number"], .pf-q input[type="email"], .pf-q input[type="tel"], .pf-q input[type="date"], .pf-q select, .pf-q textarea');
     const data = { step: currentStep, values: {} };

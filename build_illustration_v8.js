@@ -67,9 +67,16 @@ function getLimits(year) {
 // ═══════════════════════════════════════════════════════════════════
 
 function computePlanData(input) {
+  if (!input || typeof input !== 'object') {
+    throw new Error('computePlanData requires an input object');
+  }
+
   const year = parseInt(input.year || new Date().getFullYear());
+  if (year < 2020 || year > 2100) {
+    throw new Error(`Invalid plan year: ${year}. Expected 2020-2100.`);
+  }
   const limits = getLimits(year);
-  const taxRate = input.taxRate || 0.30;
+  const taxRate = Math.max(0, Math.min(input.taxRate || 0.30, 1.0)); // Clamp 0-100%
 
   // ── Owner info ──
   const ownerName   = (input.firstName || '') + ' ' + (input.lastName || '');
@@ -100,11 +107,13 @@ function computePlanData(input) {
   // ── SECURE Year ──
   const secureYear = Math.max(1, Math.min(input.secureYear || 1, 5));
   const CREDIT_PHASE = [1.0, 1.0, 0.75, 0.50, 0.25];
-  // SECURE credits: $250 per NHCE, max $5K, times phase
-  const secureBase = Math.min(nhceCount * 250, 5000) * (nhceCount <= 50 ? 1 : 0); // simplified
-  // More realistic: up to $5K base + additional for small employers
-  // Using the same logic as v7: flat value passed from advisor panel, or estimate
-  const secureCredits = input.secureCredits || Math.round(nhceCount * 1000 * CREDIT_PHASE[secureYear - 1]);
+  // SECURE 2.0 credits: up to $1,000 per eligible NHCE (≤$100K comp), times phase
+  // Only available for employers with ≤50 NHCEs; credit phases down over 5 years
+  const nhcesOver100k = input.nhceOver100k || 0;
+  const nhceCreditEligible = Math.max(0, nhceCount - nhcesOver100k);
+  const secureCredits = input.secureCredits || (nhceCount <= 50
+    ? Math.round(nhceCreditEligible * 1000 * CREDIT_PHASE[secureYear - 1])
+    : 0);
 
   // ══════════════════════════════════════════════════════════════════
   //  STANDARD PLAN — 3% flat (same rate as safe harbor)
@@ -263,6 +272,7 @@ function computePlanData(input) {
 // ═══════════════════════════════════════════════════════════════════
 
 function generate(input, outputPath) {
+  if (!input) throw new Error('generate() requires input data');
   const D = computePlanData(input);
 
   // Determine output path
@@ -277,9 +287,10 @@ function generate(input, outputPath) {
   };
   const fmtPct = (n) => `${n.toFixed(1)}%`;
 
+  // Page dimensions (US Letter in points: 8.5" × 11" at 72 DPI)
   const W = 612, H = 792;
-  const M = 40;
-  const CW = W - 2 * M;
+  const M = 40;            // Page margin (left + right)
+  const CW = W - 2 * M;   // Content width
 
   const doc = new PDFDocument({
     size: 'letter',
@@ -293,18 +304,13 @@ function generate(input, outputPath) {
   const stream = fs.createWriteStream(outputPath);
   doc.pipe(stream);
 
-  // Register fonts
+  // Register fonts (single pass — no duplicates)
   Object.entries(FONTS).forEach(([key, fontPath]) => {
     const name = key === 'regular' ? 'Lato' : `Lato-${key.charAt(0).toUpperCase() + key.slice(1)}`;
-    try { doc.registerFont(name, fontPath); } catch(e) {}
+    try { doc.registerFont(name, fontPath); } catch(e) {
+      console.warn(`Font not found: ${fontPath} — falling back to Helvetica`);
+    }
   });
-  doc.registerFont('Lato-Bold', FONTS.bold);
-  doc.registerFont('Lato-Light', FONTS.light);
-  doc.registerFont('Lato-Medium', FONTS.medium);
-  doc.registerFont('Lato-Semibold', FONTS.semibold);
-  doc.registerFont('Lato-Black', FONTS.black);
-  doc.registerFont('Lato-Heavy', FONTS.heavy);
-  doc.registerFont('Lato-Italic', FONTS.italic);
 
   // ── Helpers (identical to V7) ──
   function rr(x, y, w, h, r, opts = {}) {
@@ -791,10 +797,17 @@ if (require.main === module) {
     process.exit(1);
   }
 
-  const input = JSON.parse(fs.readFileSync(inputFile, 'utf-8'));
+  let input;
+  try {
+    input = JSON.parse(fs.readFileSync(inputFile, 'utf-8'));
+  } catch (err) {
+    console.error(`Error reading ${inputFile}: ${err.message}`);
+    process.exit(1);
+  }
+
   generate(input, outputFile)
     .then(() => process.exit(0))
-    .catch(err => { console.error(err); process.exit(1); });
+    .catch(err => { console.error('PDF generation failed:', err.message || err); process.exit(1); });
 }
 
 

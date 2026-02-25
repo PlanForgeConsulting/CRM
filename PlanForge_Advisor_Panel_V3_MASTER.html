@@ -2634,6 +2634,7 @@ function parseCensusData(raw) {
   const detected = document.getElementById('censusDetected');
   departedEmployeeIndices = new Set(); // Clear departures when census changes
   lastRenderedCensus = null;
+  _lastCensusKey = null; _cachedCensus = null; // Invalidate census cache on new data
   if (!raw || raw.trim().length < 3) { detected.style.display = 'none'; parsedCensusEmployees = null; return; }
 
   const lines = raw.trim().split(/\r?\n/).filter(l => l.trim());
