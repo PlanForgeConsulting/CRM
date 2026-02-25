@@ -1,0 +1,1247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PlanForge — 401(k) Ownership & Business Questionnaire</title>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* === RESET & BASE === */
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#F5F3EE;min-height:100vh;font-family:'Libre Franklin',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#2D2D2D;font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+/* === LAYOUT === */
+.pf-q{max-width:820px;width:100%;margin:0 auto;padding:20px 12px 40px}
+/* === HEADER === */
+.pf-q-header{background:linear-gradient(135deg,#122840 0%,#1B3A5C 50%,#2A5580 100%);padding:40px 40px 34px;text-align:center;border-radius:14px 14px 0 0;position:relative;overflow:hidden}
+.pf-q-header::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:radial-gradient(ellipse at 20% 50%,rgba(196,149,42,0.1) 0%,transparent 60%)}
+.pf-q-header-inner{position:relative;z-index:1}
+.pf-q-brand{font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:#C4952A;margin-bottom:8px}
+.pf-q-title{font-size:22px;font-weight:800;color:#fff;margin-bottom:6px;line-height:1.2}
+.pf-q-subtitle{font-size:13px;color:rgba(255,255,255,0.7);font-weight:400;max-width:520px;margin:0 auto}
+.pf-accent{height:3px;background:linear-gradient(to right,#B22234,#C4952A)}
+/* === PROGRESS === */
+.pf-progress{background:#fff;padding:16px 40px;border-bottom:1px solid #E5E7EB}
+.pf-progress-bar{height:6px;background:#E5E7EB;border-radius:3px;overflow:hidden;margin-bottom:10px}
+.pf-progress-fill{height:100%;background:linear-gradient(to right,#C4952A,#D4A832);border-radius:3px;transition:width 0.4s ease}
+.pf-steps{display:flex;justify-content:space-between;font-size:11px;color:#9CA3AF;font-weight:500}
+.pf-steps span{cursor:pointer;transition:color 0.15s;padding:2px 4px;border-radius:4px;text-align:center;line-height:1.3;white-space:nowrap}
+.pf-steps span:hover{color:#C4952A}
+.pf-steps .active{color:#1B3A5C;font-weight:700}
+.pf-steps .active:hover{color:#C4952A}
+/* === FILE DROP ZONE === */
+.pf-drop-zone{border:2px dashed #D1D5DB;border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:all 0.2s;background:#FAFAF8;margin-bottom:14px}
+.pf-drop-zone:hover,.pf-drop-zone.dragover{border-color:#C4952A;background:#FFFDF5}
+.pf-drop-zone-icon{font-size:28px;margin-bottom:6px}
+.pf-drop-zone-text{font-size:13px;color:#6B7280;line-height:1.5}
+.pf-drop-zone-text strong{color:#1B3A5C}
+.pf-drop-zone-files{margin-top:10px;font-size:12px;color:#1B3A5C}
+.pf-drop-zone-files div{display:flex;align-items:center;justify-content:space-between;padding:4px 8px;background:#EEF2F7;border-radius:6px;margin-top:4px}
+.pf-drop-zone-files .remove-file{color:#B22234;cursor:pointer;font-weight:700;margin-left:8px}
+/* === FAMILY INFO BOX === */
+.pf-info-box{background:#EEF2F7;border-left:3px solid #C4952A;border-radius:0 8px 8px 0;padding:12px 14px;font-size:12px;color:#4B5563;line-height:1.6;margin-bottom:16px}
+.pf-info-box strong{color:#1B3A5C}
+/* === BODY === */
+.pf-q-body{background:#FAF8F3;padding:36px 40px;border-radius:0 0 14px 14px;box-shadow:0 4px 30px rgba(0,0,0,0.06)}
+/* === STEPS === */
+.pf-step{display:none}
+.pf-step.active{display:block;animation:fadeIn 0.3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+/* === SECTION TITLE === */
+.pf-step-title{font-size:18px;font-weight:800;color:#1B3A5C;margin-bottom:4px}
+.pf-step-desc{font-size:13px;color:#6B7280;margin-bottom:24px}
+/* === FORM ELEMENTS === */
+.pf-field{margin-bottom:22px}
+.pf-field-label{font-size:13px;font-weight:600;color:#1B3A5C;margin-bottom:6px;display:block}
+.pf-field-label .req{color:#B22234;margin-left:2px}
+.pf-field-hint{font-size:11px;color:#9CA3AF;margin-top:4px;display:block}
+.pf-q input[type="text"],
+.pf-q input[type="number"],
+.pf-q input[type="email"],
+.pf-q input[type="tel"],
+.pf-q input[type="date"],
+.pf-q select,
+.pf-q textarea{
+  width:100%;padding:12px 14px;border:1.5px solid #D1D5DB;border-radius:8px;
+  font-family:'Libre Franklin',sans-serif;font-size:14px;color:#1B3A5C;
+  background:#fff;outline:none;transition:border-color 0.2s,box-shadow 0.2s;
+  -webkit-appearance:none;appearance:none;
+}
+.pf-q input:focus,.pf-q select:focus,.pf-q textarea:focus{border-color:#1B3A5C;box-shadow:0 0 0 3px rgba(27,58,92,0.1)}
+.pf-q select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%231B3A5C' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.pf-q textarea{resize:vertical;min-height:80px}
+/* === RADIO / CHECKBOX CARDS === */
+.pf-option-group{display:flex;flex-direction:column;gap:8px}
+.pf-option{display:flex;align-items:center;gap:12px;padding:12px 16px;border:1.5px solid #E5E7EB;border-radius:8px;cursor:pointer;transition:all 0.15s;background:#fff}
+.pf-option:hover{border-color:#C4952A;background:#FFFDF5}
+.pf-option.selected{border-color:#C4952A;background:linear-gradient(135deg,#FFFDF5,#FFF9E8);box-shadow:0 0 0 3px rgba(196,149,42,0.1)}
+.pf-option input[type="radio"],.pf-option input[type="checkbox"]{display:none}
+.pf-option-dot{width:20px;height:20px;border-radius:50%;border:2px solid #D1D5DB;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s}
+.pf-option.selected .pf-option-dot{border-color:#C4952A;background:#C4952A}
+.pf-option.selected .pf-option-dot::after{content:'';width:8px;height:8px;border-radius:50%;background:#fff}
+.pf-option-text{font-size:14px;font-weight:500;color:#1B3A5C}
+.pf-option input[type="checkbox"]+.pf-option-dot{border-radius:4px}
+.pf-option input[type="checkbox"]:checked+.pf-option-dot::after,.pf-option.selected input[type="checkbox"]+.pf-option-dot::after{content:'✓';width:auto;height:auto;border-radius:0;background:none;color:#fff;font-size:12px;font-weight:700}
+/* === INLINE ROW === */
+.pf-row{display:flex;gap:14px;flex-wrap:wrap}
+.pf-row .pf-field{flex:1;min-width:180px}
+/* === SALARY INPUTS === */
+.pf-money-input{position:relative;display:flex;align-items:center}
+.pf-money-input::before{content:'$';position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#1B3A5C;font-size:14px;font-weight:600;pointer-events:none;z-index:1}
+.pf-q .pf-money-input input[type="number"]{padding-left:30px}
+/* === CONTROLLED GROUP SUB-SECTION === */
+.pf-sub-section{background:#fff;border:1.5px solid #E5E7EB;border-radius:10px;padding:20px;margin-top:12px;margin-bottom:22px;display:none}
+.pf-sub-section.visible{display:block;animation:fadeIn 0.3s ease}
+.pf-sub-title{font-size:14px;font-weight:700;color:#C4952A;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.pf-sub-title::before{content:'⚠';font-size:16px}
+/* === BUTTONS === */
+.pf-btn-row{display:flex;justify-content:space-between;align-items:center;margin-top:28px;gap:12px}
+.pf-btn{border:none;border-radius:8px;padding:12px 24px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Libre Franklin',sans-serif;transition:all 0.15s}
+.pf-btn:active{transform:scale(0.97)}
+.pf-btn-back{background:#EEF2F7;color:#1B3A5C}
+.pf-btn-back:hover{background:#D5E0EC}
+.pf-btn-next{background:linear-gradient(135deg,#C4952A,#D4A832);color:#fff;box-shadow:0 2px 8px rgba(196,149,42,0.3)}
+.pf-btn-next:hover{box-shadow:0 4px 16px rgba(196,149,42,0.4)}
+.pf-btn-next:disabled{opacity:0.5;cursor:not-allowed;box-shadow:none}
+.pf-btn-submit{background:linear-gradient(135deg,#1B3A5C,#2A5580);color:#fff;box-shadow:0 2px 8px rgba(27,58,92,0.3);padding:14px 32px;font-size:15px}
+.pf-btn-submit:hover{box-shadow:0 4px 16px rgba(27,58,92,0.4)}
+/* === VALIDATION === */
+.pf-field.error input,.pf-field.error select,.pf-field.error textarea{border-color:#B22234}
+.pf-field.error .pf-option-group .pf-option{border-color:#F5C6CB}
+.pf-error-msg{font-size:11px;color:#B22234;margin-top:4px;display:none}
+.pf-field.error .pf-error-msg{display:block}
+.pf-validation-toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#FEF2F2;border:1.5px solid #FECACA;color:#B22234;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;font-family:'Libre Franklin',sans-serif;z-index:9999;box-shadow:0 4px 16px rgba(178,34,52,0.15);animation:fadeIn 0.3s ease;pointer-events:none}
+/* === SUMMARY === */
+.pf-summary{background:#fff;border:1.5px solid #E5E7EB;border-radius:12px;overflow:hidden;margin-bottom:20px}
+.pf-summary-header{background:#EEF2F7;padding:12px 16px;font-size:12px;font-weight:700;color:#1B3A5C;text-transform:uppercase;letter-spacing:0.05em;display:flex;justify-content:space-between;align-items:center}
+.pf-summary-edit{font-size:11px;font-weight:600;color:#C4952A;cursor:pointer;text-transform:none;letter-spacing:0}
+.pf-summary-edit:hover{text-decoration:underline}
+.pf-summary-body{padding:14px 16px}
+.pf-summary-row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid #F3F4F6}
+.pf-summary-row:last-child{border-bottom:none}
+.pf-summary-row .label{color:#6B7280}
+.pf-summary-row .value{color:#1B3A5C;font-weight:600;text-align:right}
+/* === SUCCESS === */
+.pf-success{text-align:center;padding:40px 24px}
+.pf-success-icon{width:72px;height:72px;background:linear-gradient(135deg,#DCFCE7,#BBF7D0);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:32px}
+.pf-success h2{font-size:22px;font-weight:800;color:#1B3A5C;margin-bottom:8px}
+.pf-success p{color:#6B7280;font-size:14px;max-width:480px;margin:0 auto}
+/* === CALENDLY CTA === */
+.pf-calendly-cta{margin-top:24px;padding:20px 24px;background:linear-gradient(135deg,#FFFDF5,#FFF9E8);border:1.5px solid #E5D9A8;border-radius:12px;text-align:center}
+.pf-calendly-cta h3{font-size:16px;font-weight:700;color:#1B3A5C;margin-bottom:6px}
+.pf-calendly-cta p{font-size:13px;color:#6B7280;margin-bottom:14px}
+.pf-btn-calendly{display:inline-block;background:linear-gradient(135deg,#C4952A,#D4A832);color:#fff;border:none;border-radius:8px;padding:12px 28px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Libre Franklin',sans-serif;text-decoration:none;transition:all 0.15s;box-shadow:0 2px 8px rgba(196,149,42,0.3)}
+.pf-btn-calendly:hover{box-shadow:0 4px 16px rgba(196,149,42,0.4);transform:translateY(-1px)}
+.pf-or-divider{display:flex;align-items:center;gap:12px;margin:16px 0;font-size:12px;color:#9CA3AF}
+.pf-or-divider::before,.pf-or-divider::after{content:'';flex:1;height:1px;background:#E5E7EB}
+.pf-success-note{font-size:12px;color:#9CA3AF;margin-top:12px}
+/* === REFERRAL FIELD === */
+.pf-referral-box{margin-top:20px;padding:16px 20px;background:#fff;border:1.5px solid #E5E7EB;border-radius:10px;text-align:left}
+.pf-referral-box label{font-size:12px;font-weight:600;color:#1B3A5C;display:block;margin-bottom:6px}
+.pf-referral-box input[type="text"]{width:100%;padding:10px 14px;border:1.5px solid #D1D5DB;border-radius:8px;font-family:'Libre Franklin',sans-serif;font-size:13px;color:#1B3A5C;background:#fff;outline:none;transition:border-color 0.2s}
+.pf-referral-box input[type="text"]:focus{border-color:#1B3A5C}
+/* === ADVISOR SHARE === */
+.pf-advisor-share{margin-top:16px;padding:16px 20px;background:#F0F7FF;border:1.5px solid #C8DCF0;border-radius:10px;text-align:left}
+.pf-advisor-share label{font-size:12px;font-weight:600;color:#1B3A5C;display:block;margin-bottom:6px}
+.pf-advisor-share .pf-share-row{display:flex;gap:8px}
+.pf-advisor-share input{flex:1;padding:10px 14px;border:1.5px solid #D1D5DB;border-radius:8px;font-size:13px;font-family:'Libre Franklin',sans-serif;color:#1B3A5C;background:#fff;outline:none;transition:border-color 0.2s}
+.pf-advisor-share input:focus{border-color:#1B3A5C}
+.pf-btn-share{padding:10px 18px;background:#1B3A5C;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Libre Franklin',sans-serif;white-space:nowrap;transition:background 0.15s}
+.pf-btn-share:hover{background:#2A5580}
+.pf-share-sent{display:none;font-size:12px;color:#166534;font-weight:600;margin-top:6px}
+/* === RESUME BANNER === */
+.pf-resume-banner{background:#FFF9E8;border:1.5px solid #E5D9A8;border-radius:10px;padding:14px 20px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;font-size:13px;color:#1B3A5C}
+.pf-resume-banner strong{font-weight:700}
+.pf-resume-banner button{padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Libre Franklin',sans-serif;border:none;transition:all 0.15s}
+.pf-btn-resume{background:#C4952A;color:#fff;margin-right:6px}
+.pf-btn-resume:hover{background:#B38525}
+.pf-btn-discard{background:#fff;color:#6B7280;border:1px solid #D1D5DB !important}
+.pf-btn-discard:hover{border-color:#9CA3AF !important;color:#374151}
+/* === FOOTER === */
+.pf-q-footer{text-align:center;padding:16px;font-size:10px;color:#9CA3AF}
+.pf-q-footer a{color:#C4952A;text-decoration:none;font-weight:600}
+.pf-q-footer a:hover{text-decoration:underline}
+/* === RESPONSIVE === */
+@media(max-width:860px){
+  .pf-q{max-width:640px}
+  .pf-q-header{padding:36px 32px 30px}
+  .pf-q-body{padding:32px 28px}
+}
+@media(max-width:600px){
+  .pf-q{padding:12px 8px 30px}
+  .pf-q-header{padding:24px 18px 22px}
+  .pf-q-title{font-size:19px}
+  .pf-q-body{padding:24px 18px}
+  .pf-row{flex-direction:column;gap:0}
+  .pf-btn{padding:10px 18px;font-size:13px}
+  .pf-steps span{white-space:normal;max-width:60px;font-size:10px}
+  .pf-progress{padding:14px 16px}
+}
+@media(max-width:400px){
+  .pf-q-header{padding:20px 14px 18px;border-radius:10px 10px 0 0}
+  .pf-q-body{border-radius:0 0 10px 10px;padding:20px 14px}
+  .pf-q-title{font-size:17px}
+}
+</style>
+</head>
+<body>
+<div class="pf-q">
+  <div class="pf-q-header">
+    <div class="pf-q-header-inner">
+      <div class="pf-q-brand">PlanForge Consulting</div>
+      <div class="pf-q-title">401(k) Ownership & Business Questionnaire</div>
+      <div class="pf-q-subtitle">Help us design the ideal plan for your business — takes about 5 minutes</div>
+    </div>
+  </div>
+  <div class="pf-accent"></div>
+  <div class="pf-progress">
+    <div class="pf-progress-bar"><div class="pf-progress-fill" id="progressFill" style="width:20%"></div></div>
+    <div class="pf-steps" id="stepLabels">
+      <span class="active" onclick="goToStep(1)">Plan Status</span>
+      <span onclick="goToStep(2)">Business</span>
+      <span onclick="goToStep(3)">Pay Ranges</span>
+      <span onclick="goToStep(4)">Owners</span>
+      <span onclick="goToStep(5)">Contact</span>
+    </div>
+  </div>
+  <div class="pf-q-body">
+    <!-- Resume Banner (shown if saved draft exists) -->
+    <div class="pf-resume-banner" id="resumeBanner" style="display:none">
+      <span><strong>Welcome back!</strong> You have a saved draft.</span>
+      <div>
+        <button class="pf-btn-resume" onclick="resumeDraft()">Resume</button>
+        <button class="pf-btn-discard" onclick="discardDraft()">Start Over</button>
+      </div>
+    </div>
+    <!-- ============ STEP 1: PLAN STATUS & OWNERSHIP ============ -->
+    <div class="pf-step active" id="step1">
+      <div class="pf-step-title">Plan Status & Ownership</div>
+      <div class="pf-step-desc">Let's start with where you are today.</div>
+      <div class="pf-field" data-name="has401k">
+        <label class="pf-field-label">Do you currently offer a 401(k) or other employer-sponsored retirement plan?<span class="req">*</span></label>
+        <div class="pf-option-group" data-radio="has401k">
+          <label class="pf-option" onclick="selectRadio(this)">
+            <input type="radio" name="has401k" value="yes">
+            <span class="pf-option-dot"></span>
+            <span class="pf-option-text">Yes</span>
+          </label>
+          <label class="pf-option" onclick="selectRadio(this)">
+            <input type="radio" name="has401k" value="no">
+            <span class="pf-option-dot"></span>
+            <span class="pf-option-text">No — this would be a new plan</span>
+          </label>
+        </div>
+      </div>
+      <div class="pf-sub-section" id="planDuration">
+        <div class="pf-field" data-name="planAge">
+          <label class="pf-field-label">How long has the plan been in place?<span class="req">*</span></label>
+          <div class="pf-option-group" data-radio="planAge">
+            <label class="pf-option" onclick="selectRadio(this)">
+              <input type="radio" name="planAge" value="<1">
+              <span class="pf-option-dot"></span>
+              <span class="pf-option-text">Less than 1 year</span>
+            </label>
+            <label class="pf-option" onclick="selectRadio(this)">
+              <input type="radio" name="planAge" value="1-3">
+              <span class="pf-option-dot"></span>
+              <span class="pf-option-text">1–3 years</span>
+            </label>
+            <label class="pf-option" onclick="selectRadio(this)">
+              <input type="radio" name="planAge" value="3+">
+              <span class="pf-option-dot"></span>
+              <span class="pf-option-text">More than 3 years</span>
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="pf-field" data-name="controlledGroup">
+        <label class="pf-field-label">Do you own any other businesses with W-2 employees where your ownership is 80% or more?<span class="req">*</span></label>
+        <span class="pf-field-hint">This determines controlled group status for testing & tax credit eligibility.</span>
+        <div class="pf-option-group" data-radio="controlledGroup">
+          <label class="pf-option" onclick="selectRadio(this)">
+            <input type="radio" name="controlledGroup" value="yes">
+            <span class="pf-option-dot"></span>
+            <span class="pf-option-text">Yes</span>
+          </label>
+          <label class="pf-option" onclick="selectRadio(this)">
+            <input type="radio" name="controlledGroup" value="no">
+            <span class="pf-option-dot"></span>
+            <span class="pf-option-text">No</span>
+          </label>
+          <label class="pf-option" onclick="selectRadio(this)">
+            <input type="radio" name="controlledGroup" value="unsure">
+            <span class="pf-option-dot"></span>
+            <span class="pf-option-text">I'm not sure</span>
+          </label>
+        </div>
+      </div>
+      <div class="pf-sub-section" id="controlledGroupDetails">
+        <div class="pf-sub-title">Controlled Group Details</div>
+        <p style="font-size:12px;color:#6B7280;margin-bottom:14px">Family members (siblings, parents, grandparents) with ownership may also create a controlled group. This impacts tax credit eligibility — owners and their controlled group are not eligible for SECURE Act credits.</p>
+        <div class="pf-field">
+          <label class="pf-field-label">How many related businesses?</label>
+          <input type="number" id="controlledGroupCount" min="1" max="10" value="1" style="max-width:120px">
+        </div>
+        <div class="pf-field">
+          <label class="pf-field-label">Are any family members (siblings, parents, grandparents) involved in ownership?</label>
+          <div class="pf-option-group" data-radio="familyOwnership">
+            <label class="pf-option" onclick="selectRadio(this)">
+              <input type="radio" name="familyOwnership" value="yes">
+              <span class="pf-option-dot"></span>
+              <span class="pf-option-text">Yes</span>
+            </label>
+            <label class="pf-option" onclick="selectRadio(this)">
+              <input type="radio" name="familyOwnership" value="no">
+              <span class="pf-option-dot"></span>
+              <span class="pf-option-text">No</span>
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="pf-sub-section" id="controlledGroupFamilyEmp">
+        <div class="pf-sub-title" style="color:#1B3A5C">Controlled Group — Family Employees</div>
+        <div class="pf-info-box">
+          <strong>Who qualifies as a controlled group family member?</strong><br>
+          Under IRC attribution rules, the following relatives of an owner are considered related parties: <strong>spouse, children (and grandchildren), parents (and grandparents), and siblings</strong>. If any of these family members work at the company, they are classified differently for plan testing purposes.
+        </div>
+        <div class="pf-field" data-name="familyEmployees">
+          <label class="pf-field-label">Do any controlled group family members work at this company as employees?</label>
+          <div class="pf-option-group" data-radio="familyEmployees">
+            <label class="pf-option" onclick="selectRadio(this)">
+              <input type="radio" name="familyEmployees" value="yes">
+              <span class="pf-option-dot"></span>
+              <span class="pf-option-text">Yes</span>
+            </label>
+            <label class="pf-option" onclick="selectRadio(this)">
+              <input type="radio" name="familyEmployees" value="no">
+              <span class="pf-option-dot"></span>
+              <span class="pf-option-text">No</span>
+            </label>
+          </div>
+          <span class="pf-field-hint" id="familyEmpHint" style="display:none;margin-top:8px;color:#C4952A;font-weight:500">You'll be able to tag family employees in the employee detail section (Step 2).</span>
+        </div>
+      </div>
+      <div class="pf-field" data-name="turnover">
+        <label class="pf-field-label">About what percentage of employees typically stay more than 3 months but leave before 3 years?<span class="req">*</span></label>
+        <span class="pf-field-hint">This helps estimate vesting forfeitures.</span>
+        <select id="turnover">
+          <option value="">Select...</option>
+          <option value="0-10">0–10%</option>
+          <option value="10-25">10–25%</option>
+          <option value="25-50">25–50%</option>
+          <option value="50+">50%+</option>
+          <option value="unsure">Not sure</option>
+        </select>
+      </div>
+      <div class="pf-field" data-name="planGoals">
+        <label class="pf-field-label">What are your primary goals for the plan?<span class="req">*</span></label>
+        <span class="pf-field-hint">Select all that apply</span>
+        <div class="pf-option-group" data-checkbox="planGoals">
+          <label class="pf-option" onclick="toggleCheckbox(this)">
+            <input type="checkbox" name="planGoals" value="taxSavings">
+            <span class="pf-option-dot" style="border-radius:4px"></span>
+            <span class="pf-option-text">Tax savings</span>
+          </label>
+          <label class="pf-option" onclick="toggleCheckbox(this)">
+            <input type="checkbox" name="planGoals" value="retirementFunding">
+            <span class="pf-option-dot" style="border-radius:4px"></span>
+            <span class="pf-option-text">Retirement funding</span>
+          </label>
+          <label class="pf-option" onclick="toggleCheckbox(this)">
+            <input type="checkbox" name="planGoals" value="maxDefer">
+            <span class="pf-option-dot" style="border-radius:4px"></span>
+            <span class="pf-option-text">Maximize owner deferrals & contributions</span>
+          </label>
+          <label class="pf-option" onclick="toggleCheckbox(this)">
+            <input type="checkbox" name="planGoals" value="employeeRetention">
+            <span class="pf-option-dot" style="border-radius:4px"></span>
+            <span class="pf-option-text">Employee retention & recruitment</span>
+          </label>
+          <label class="pf-option" onclick="toggleCheckbox(this)">
+            <input type="checkbox" name="planGoals" value="reduceCosts">
+            <span class="pf-option-dot" style="border-radius:4px"></span>
+            <span class="pf-option-text">Reduce current plan costs</span>
+          </label>
+          <label class="pf-option" onclick="toggleCheckbox(this)">
+            <input type="checkbox" name="planGoals" value="other">
+            <span class="pf-option-dot" style="border-radius:4px"></span>
+            <span class="pf-option-text">Other</span>
+          </label>
+        </div>
+        <div id="planGoalsOther" style="display:none;margin-top:8px">
+          <input type="text" id="planGoalsOtherText" placeholder="Please describe...">
+        </div>
+      </div>
+      <div class="pf-field" data-name="currentProvider">
+        <label class="pf-field-label">Current plan provider (if applicable)</label>
+        <span class="pf-field-hint">e.g. Fidelity, Vanguard, John Hancock, ADP, Guideline</span>
+        <input type="text" id="currentProvider" placeholder="e.g. Fidelity">
+      </div>
+      <div class="pf-field" id="currentFeesField">
+        <label class="pf-field-label">Approximate current annual plan fees (if known)</label>
+        <span class="pf-field-hint">Total admin + recordkeeping + advisory fees — a rough estimate is fine</span>
+        <div class="pf-money-input">
+          <input type="number" id="currentFees" min="0" step="500" placeholder="e.g. 8000">
+        </div>
+      </div>
+      <div class="pf-btn-row">
+        <div></div>
+        <button class="pf-btn pf-btn-next" onclick="nextStep()">Continue →</button>
+      </div>
+    </div>
+    <!-- ============ STEP 2: BUSINESS BASICS ============ -->
+    <div class="pf-step" id="step2">
+      <div class="pf-step-title">Business Basics</div>
+      <div class="pf-step-desc">Tell us about your company structure and workforce.</div>
+      <div class="pf-field" data-name="bizStructure">
+        <label class="pf-field-label">Business structure<span class="req">*</span></label>
+        <div class="pf-option-group" data-radio="bizStructure">
+          <label class="pf-option" onclick="selectRadio(this)">
+            <input type="radio" name="bizStructure" value="scorp">
+            <span class="pf-option-dot"></span>
+            <span class="pf-option-text">S Corporation</span>
+          </label>
+          <label class="pf-option" onclick="selectRadio(this)">
+            <input type="radio" name="bizStructure" value="ccorp">
+            <span class="pf-option-dot"></span>
+            <span class="pf-option-text">C Corporation</span>
+          </label>
+          <label class="pf-option" onclick="selectRadio(this)">
+            <input type="radio" name="bizStructure" value="llc">
+            <span class="pf-option-dot"></span>
+            <span class="pf-option-text">LLC</span>
+          </label>
+          <label class="pf-option" onclick="selectRadio(this)">
+            <input type="radio" name="bizStructure" value="notsure">
+            <span class="pf-option-dot"></span>
+            <span class="pf-option-text">Not sure</span>
+          </label>
+        </div>
+      </div>
+      <div class="pf-row">
+        <div class="pf-field" data-name="ownerCount">
+          <label class="pf-field-label">Number of active owners (5%+ ownership)<span class="req">*</span></label>
+          <input type="number" id="ownerCount" min="1" max="20" placeholder="e.g. 2">
+        </div>
+        <div class="pf-field" data-name="hceCount">
+          <label class="pf-field-label">Number of HCEs (excluding owners)<span class="req">*</span></label>
+          <span class="pf-field-hint">Employees earning $160K+ (2025/2026)</span>
+          <input type="number" id="hceCount" min="0" max="100" placeholder="e.g. 1">
+        </div>
+      </div>
+      <div class="pf-field" data-name="nhceCount">
+        <label class="pf-field-label">Number of NHCEs (Non-Highly Compensated Employees)<span class="req">*</span></label>
+        <span class="pf-field-hint">All other eligible employees</span>
+        <input type="number" id="nhceCount" min="0" max="500" placeholder="e.g. 15">
+      </div>
+      <div class="pf-field" data-name="avgEmployeeAge">
+        <label class="pf-field-label">Approximate average employee age</label>
+        <span class="pf-field-hint">Helps estimate cross-testing benefit factors — a rough estimate is fine</span>
+        <input type="number" id="avgEmployeeAge" min="18" max="80" placeholder="e.g. 35">
+      </div>
+      <div class="pf-field">
+        <label class="pf-field-label">Would you like to enter specific employee details for a more accurate illustration?</label>
+        <span class="pf-field-hint">You can provide each employee's age and pay instead of averages</span>
+        <div class="pf-option-group" data-radio="wantEmployeeDetail">
+          <label class="pf-option" onclick="selectRadio(this)">
+            <input type="radio" name="wantEmployeeDetail" value="yes">
+            <span class="pf-option-dot"></span>
+            <span class="pf-option-text">Yes — I'd like to enter individual employee data</span>
+          </label>
+          <label class="pf-option" onclick="selectRadio(this)">
+            <input type="radio" name="wantEmployeeDetail" value="no">
+            <span class="pf-option-dot"></span>
+            <span class="pf-option-text">No — averages are fine for now</span>
+          </label>
+        </div>
+      </div>
+      <div class="pf-sub-section" id="employeeDetailSection">
+        <div class="pf-sub-title" style="color:#1B3A5C">Individual Employee Data</div>
+        <p style="font-size:12px;color:#6B7280;margin-bottom:14px">Enter each employee's age and annual pay, or upload a document below. This produces the most accurate cross-testing illustration.</p>
+        <div class="pf-drop-zone" id="fileDropZone" onclick="document.getElementById('fileInput').click()"
+             ondragover="event.preventDefault();this.classList.add('dragover')"
+             ondragleave="this.classList.remove('dragover')"
+             ondrop="event.preventDefault();this.classList.remove('dragover');handleFileDrop(event)">
+          <div class="pf-drop-zone-icon">📄</div>
+          <div class="pf-drop-zone-text">
+            <strong>Drop files here</strong> or click to upload<br>
+            Pay stubs, W-2s, census data, or any payroll document
+          </div>
+          <input type="file" id="fileInput" multiple accept=".csv,.xlsx,.xls,.pdf,.jpg,.jpeg,.png,.doc,.docx,.txt" style="display:none" onchange="handleFileSelect(this.files)">
+          <div class="pf-drop-zone-files" id="uploadedFiles"></div>
+        </div>
+        <div id="employeeDetailRows"></div>
+        <button class="pf-btn pf-btn-back" onclick="addEmployeeRow()" style="margin-top:8px;font-size:12px;padding:8px 14px">+ Add employee</button>
+      </div>
+      <div class="pf-btn-row">
+        <button class="pf-btn pf-btn-back" onclick="prevStep()">← Back</button>
+        <button class="pf-btn pf-btn-next" onclick="nextStep()">Continue →</button>
+      </div>
+    </div>
+    <!-- ============ STEP 3: PAY RANGES ============ -->
+    <div class="pf-step" id="step3">
+      <div class="pf-step-title">Pay Ranges</div>
+      <div class="pf-step-desc">Estimates are fine — we'll fine-tune during plan design.</div>
+      <div class="pf-field" id="hcePaySection">
+        <label class="pf-field-label">Average annual salary for HCEs (excluding owners)<span class="req">*</span></label>
+        <div class="pf-money-input">
+          <input type="number" id="hceAvgPay" min="0" step="1000" placeholder="e.g. 185000">
+        </div>
+      </div>
+      <div class="pf-field">
+        <label class="pf-field-label">HCE salary range (excluding owners)</label>
+        <div class="pf-row" style="margin-bottom:0">
+          <div class="pf-field" style="margin-bottom:0">
+            <span class="pf-field-hint">Low end</span>
+            <div class="pf-money-input"><input type="number" id="hceLow" min="0" step="1000" placeholder="160000"></div>
+          </div>
+          <div class="pf-field" style="margin-bottom:0">
+            <span class="pf-field-hint">High end</span>
+            <div class="pf-money-input"><input type="number" id="hceHigh" min="0" step="1000" placeholder="250000"></div>
+          </div>
+        </div>
+      </div>
+      <div class="pf-field">
+        <label class="pf-field-label">Average annual salary for NHCEs<span class="req">*</span></label>
+        <div class="pf-money-input">
+          <input type="number" id="nhceAvgPay" min="0" step="1000" placeholder="e.g. 55000">
+        </div>
+      </div>
+      <div class="pf-field">
+        <label class="pf-field-label">NHCE salary range</label>
+        <div class="pf-row" style="margin-bottom:0">
+          <div class="pf-field" style="margin-bottom:0">
+            <span class="pf-field-hint">Low end</span>
+            <div class="pf-money-input"><input type="number" id="nhceLow" min="0" step="1000" placeholder="30000"></div>
+          </div>
+          <div class="pf-field" style="margin-bottom:0">
+            <span class="pf-field-hint">High end</span>
+            <div class="pf-money-input"><input type="number" id="nhceHigh" min="0" step="1000" placeholder="90000"></div>
+          </div>
+        </div>
+      </div>
+      <div class="pf-btn-row">
+        <button class="pf-btn pf-btn-back" onclick="prevStep()">← Back</button>
+        <button class="pf-btn pf-btn-next" onclick="nextStep()">Continue →</button>
+      </div>
+    </div>
+    <!-- ============ STEP 4: OWNER PAY ============ -->
+    <div class="pf-step" id="step4">
+      <div class="pf-step-title">Owner Compensation</div>
+      <div class="pf-step-desc">How are the owners compensated?</div>
+      <div class="pf-row">
+        <div class="pf-field" data-name="ownerAge">
+          <label class="pf-field-label">Owner 1 age<span class="req">*</span></label>
+          <input type="number" id="ownerAge" min="18" max="80" placeholder="e.g. 52">
+        </div>
+        <div class="pf-field" style="flex:2">
+        </div>
+      </div>
+      <div id="ownerPayCorpSection">
+        <div class="pf-field">
+          <label class="pf-field-label">Owner 1 salary<span class="req">*</span></label>
+          <span class="pf-field-hint" id="ownerPayHint">W-2 salary for S-Corp or C-Corp owners</span>
+          <div class="pf-money-input">
+            <input type="number" id="ownerSalary" min="0" step="1000" placeholder="e.g. 275000">
+          </div>
+        </div>
+      </div>
+      <div id="ownerPayLLCSection" style="display:none">
+        <div class="pf-field">
+          <label class="pf-field-label">Expected K-1 per owner</label>
+          <span class="pf-field-hint">For LLC members — guaranteed payments or distributive share</span>
+          <div class="pf-money-input">
+            <input type="number" id="ownerK1" min="0" step="1000" placeholder="e.g. 300000">
+          </div>
+        </div>
+      </div>
+      <div id="multiOwnerSection" style="display:none">
+        <div class="pf-sub-section visible" style="display:block">
+          <div class="pf-sub-title" style="color:#1B3A5C">Additional Owner Details</div>
+          <p style="font-size:12px;color:#6B7280;margin-bottom:14px">If owners have different compensation, list each below. This helps us model accurate cross-testing.</p>
+          <div id="additionalOwners"></div>
+          <button class="pf-btn pf-btn-back" onclick="addOwnerRow()" style="margin-top:8px;font-size:12px;padding:8px 14px">+ Add another owner</button>
+        </div>
+      </div>
+      <div class="pf-btn-row">
+        <button class="pf-btn pf-btn-back" onclick="prevStep()">← Back</button>
+        <button class="pf-btn pf-btn-next" onclick="nextStep()">Continue →</button>
+      </div>
+    </div>
+    <!-- ============ STEP 5: CONTACT & PREFERENCES ============ -->
+    <div class="pf-step" id="step5">
+      <div class="pf-step-title">Preferences & Contact</div>
+      <div class="pf-step-desc">Almost done! Let us know how to reach you.</div>
+      <div class="pf-field" data-name="bizName">
+        <label class="pf-field-label">Name of business<span class="req">*</span></label>
+        <input type="text" id="bizName" placeholder="e.g. Acme Enterprises LLC">
+      </div>
+      <div class="pf-field" data-name="targetStart">
+        <label class="pf-field-label">Target start date</label>
+        <span class="pf-field-hint">When would you like the new plan (or upgrade) to go into effect?</span>
+        <select id="targetStart">
+          <option value="">Select...</option>
+          <option value="asap">As soon as possible</option>
+          <option value="q1">Q1 2026 (Jan–Mar)</option>
+          <option value="q2">Q2 2026 (Apr–Jun)</option>
+          <option value="q3">Q3 2026 (Jul–Sep)</option>
+          <option value="q4">Q4 2026 (Oct–Dec)</option>
+          <option value="2027">2027</option>
+          <option value="exploring">Just exploring for now</option>
+        </select>
+      </div>
+      <div class="pf-row">
+        <div class="pf-field" data-name="firstName">
+          <label class="pf-field-label">First Name<span class="req">*</span></label>
+          <input type="text" id="firstName" placeholder="John">
+        </div>
+        <div class="pf-field" data-name="lastName">
+          <label class="pf-field-label">Last Name<span class="req">*</span></label>
+          <input type="text" id="lastName" placeholder="Smith">
+        </div>
+      </div>
+      <div class="pf-row">
+        <div class="pf-field" data-name="email">
+          <label class="pf-field-label">Email<span class="req">*</span></label>
+          <input type="email" id="email" placeholder="john@business.com">
+        </div>
+        <div class="pf-field" data-name="phone">
+          <label class="pf-field-label">Phone Number</label>
+          <input type="tel" id="phone" placeholder="(555) 123-4567">
+        </div>
+      </div>
+      <div class="pf-field">
+        <label class="pf-field-label">Anything else you want us to know?</label>
+        <textarea id="notes" placeholder="Current provider, specific goals, timeline constraints, etc."></textarea>
+      </div>
+      <div class="pf-btn-row">
+        <button class="pf-btn pf-btn-back" onclick="prevStep()">← Back</button>
+        <button class="pf-btn pf-btn-next" onclick="nextStep()">Review & Submit →</button>
+      </div>
+    </div>
+    <!-- ============ STEP 6: REVIEW & SUBMIT ============ -->
+    <div class="pf-step" id="step6">
+      <div class="pf-step-title">Review Your Answers</div>
+      <div class="pf-step-desc">Make sure everything looks right before submitting.</div>
+      <div id="reviewContent"></div>
+      <div class="pf-btn-row">
+        <button class="pf-btn pf-btn-back" onclick="prevStep()">← Edit</button>
+        <button class="pf-btn pf-btn-submit" onclick="submitForm()">Submit Questionnaire</button>
+      </div>
+    </div>
+    <!-- ============ SUCCESS ============ -->
+    <div class="pf-step" id="step7">
+      <div class="pf-success">
+        <div class="pf-success-icon">✓</div>
+        <h2>Thank You!</h2>
+        <p>We've received your information. A PlanForge consultant will review your answers and reach out within 1 business day with a preliminary plan illustration.</p>
+        <!-- Calendly Scheduling CTA -->
+        <div class="pf-calendly-cta">
+          <h3>Want to get started sooner?</h3>
+          <p>Skip the wait — schedule a complimentary plan design consultation directly on our calendar.</p>
+          <a id="calendlyLink" href="#" target="_blank" class="pf-btn-calendly" onclick="this.href=buildCalendlyUrl()">Schedule a Consultation</a>
+          <div class="pf-or-divider">or</div>
+          <p class="pf-success-note">We'll reach out within 1 business day either way — no action needed.</p>
+        </div>
+        <!-- Share with my CPA -->
+        <div class="pf-advisor-share">
+          <label>Share with my CPA (optional)</label>
+          <div class="pf-share-row">
+            <input type="email" id="advisorEmail" placeholder="cpa@example.com">
+            <button class="pf-btn-share" onclick="shareWithAdvisor()">Send Copy</button>
+          </div>
+          <div class="pf-share-sent" id="shareSent">Sent! Your CPA will receive a summary.</div>
+        </div>
+        <!-- Who referred you -->
+        <div class="pf-referral-box">
+          <label>Were you referred by someone? (optional)</label>
+          <input type="text" id="referralName" placeholder="Name of person who referred you">
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="pf-q-footer">
+    <a href="https://planforge401k.com" target="_blank">PlanForge Consulting</a> — Confidential
+  </div>
+</div>
+<script>
+// === STATE ===
+let currentStep = 1;
+const totalSteps = 6; // 6 visible (step 7 is success)
+// === NAVIGATION ===
+function showStep(n) {
+  document.querySelectorAll('.pf-step').forEach(s => s.classList.remove('active'));
+  document.getElementById('step' + n).classList.add('active');
+  // Update progress
+  const pct = n <= totalSteps ? Math.round((n / totalSteps) * 100) : 100;
+  document.getElementById('progressFill').style.width = pct + '%';
+  // Update tab title with progress
+  if (n <= totalSteps) {
+    document.title = pct + '% — PlanForge Questionnaire';
+  } else {
+    document.title = 'Submitted — PlanForge Questionnaire';
+  }
+  // Update step labels
+  const labels = document.getElementById('stepLabels').children;
+  const stepMap = [1, 2, 3, 4, 5]; // step indices for labels
+  for (let i = 0; i < labels.length; i++) {
+    labels[i].classList.toggle('active', n >= (i + 1) && n <= totalSteps);
+  }
+  // If step 6 (review), build summary
+  if (n === 6) buildReview();
+  // Auto-save progress
+  autoSave();
+  // Scroll questionnaire into view (not page top — avoids jumping past WP hero)
+  var qEl = document.querySelector('.pf-q');
+  if (qEl) {
+    qEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+function shouldSkipPayRanges() {
+  return getRadioVal('wantEmployeeDetail') === 'yes';
+}
+// === VALIDATION ===
+function validateStep(stepNum) {
+  const step = document.getElementById('step' + stepNum);
+  if (!step) return true;
+  let valid = true;
+  let firstError = null;
+  // Clear previous errors on this step
+  step.querySelectorAll('.pf-field.error').forEach(f => f.classList.remove('error'));
+  // Find all required fields (those with a .req asterisk)
+  step.querySelectorAll('.pf-field').forEach(field => {
+    const label = field.querySelector('.pf-field-label .req');
+    if (!label) return; // not required
+    // Skip fields that are inside hidden sub-sections
+    const parentSub = field.closest('.pf-sub-section');
+    if (parentSub && !parentSub.classList.contains('visible')) return;
+    // Check radio groups
+    const radioGroup = field.querySelector('.pf-option-group[data-radio]');
+    if (radioGroup) {
+      const name = radioGroup.dataset.radio;
+      const checked = field.querySelector(`input[name="${name}"]:checked`);
+      if (!checked) {
+        field.classList.add('error');
+        valid = false;
+        if (!firstError) firstError = field;
+      }
+      return;
+    }
+    // Check checkbox groups
+    const checkGroup = field.querySelector('.pf-option-group[data-checkbox]');
+    if (checkGroup) {
+      const name = checkGroup.dataset.checkbox;
+      const anyChecked = field.querySelector(`input[name="${name}"]:checked`);
+      if (!anyChecked) {
+        field.classList.add('error');
+        valid = false;
+        if (!firstError) firstError = field;
+      }
+      return;
+    }
+    // Check text/number/email/select inputs
+    const input = field.querySelector('input, select, textarea');
+    if (input && !input.value.trim()) {
+      field.classList.add('error');
+      valid = false;
+      if (!firstError) firstError = field;
+    }
+  });
+  if (!valid && firstError) {
+    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    showValidationToast('Please fill in the required fields marked with *');
+  }
+  return valid;
+}
+function showValidationToast(msg) {
+  // Remove existing toast
+  const old = document.querySelector('.pf-validation-toast');
+  if (old) old.remove();
+  const toast = document.createElement('div');
+  toast.className = 'pf-validation-toast';
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; }, 2500);
+  setTimeout(() => { toast.remove(); }, 2800);
+}
+// Clear error state when user interacts with a field
+document.addEventListener('change', function(e) {
+  const field = e.target.closest('.pf-field');
+  if (field && field.classList.contains('error')) field.classList.remove('error');
+});
+document.addEventListener('input', function(e) {
+  const field = e.target.closest('.pf-field');
+  if (field && field.classList.contains('error')) field.classList.remove('error');
+});
+function nextStep() {
+  // Validate current step before advancing (skip validation on review step 6)
+  if (currentStep < 6 && !validateStep(currentStep)) return;
+  if (currentStep < 7) {
+    currentStep++;
+    // Skip Pay Ranges (step 3) if individual employee data was entered
+    if (currentStep === 3 && shouldSkipPayRanges()) currentStep = 4;
+    showStep(currentStep);
+  }
+}
+function prevStep() {
+  if (currentStep > 1) {
+    currentStep--;
+    // Skip Pay Ranges (step 3) going back if individual employee data was entered
+    if (currentStep === 3 && shouldSkipPayRanges()) currentStep = 2;
+    showStep(currentStep);
+  }
+}
+function goToStep(n) {
+  currentStep = n;
+  showStep(n);
+}
+// === CHECKBOX TOGGLE (multi-select) ===
+function toggleCheckbox(el) {
+  // Clear validation error on check
+  const parentField = el.closest('.pf-field');
+  if (parentField && parentField.classList.contains('error')) parentField.classList.remove('error');
+  const input = el.querySelector('input[type="checkbox"]');
+  input.checked = !input.checked;
+  el.classList.toggle('selected', input.checked);
+  // Show/hide "Other" text field for plan goals
+  if (input.name === 'planGoals' && input.value === 'other') {
+    document.getElementById('planGoalsOther').style.display = input.checked ? '' : 'none';
+  }
+}
+// === RADIO SELECTION ===
+function selectRadio(el) {
+  // Clear validation error when user picks a radio
+  const parentField = el.closest('.pf-field');
+  if (parentField && parentField.classList.contains('error')) parentField.classList.remove('error');
+  const group = el.closest('.pf-option-group');
+  group.querySelectorAll('.pf-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  el.querySelector('input').checked = true;
+  // Conditional logic
+  const name = el.querySelector('input').name;
+  const val = el.querySelector('input').value;
+  if (name === 'has401k') {
+    document.getElementById('planDuration').classList.toggle('visible', val === 'yes');
+    if (val !== 'yes') document.getElementById('planDuration').style.display = 'none';
+    else document.getElementById('planDuration').style.display = '';
+    document.getElementById('planDuration').classList.toggle('visible', val === 'yes');
+  }
+  if (name === 'controlledGroup') {
+    const show = val === 'yes' || val === 'unsure';
+    document.getElementById('controlledGroupDetails').style.display = show ? '' : 'none';
+    document.getElementById('controlledGroupDetails').classList.toggle('visible', show);
+    document.getElementById('controlledGroupFamilyEmp').style.display = show ? '' : 'none';
+    document.getElementById('controlledGroupFamilyEmp').classList.toggle('visible', show);
+  }
+  if (name === 'familyEmployees') {
+    const hint = document.getElementById('familyEmpHint');
+    if (hint) hint.style.display = val === 'yes' ? '' : 'none';
+  }
+  if (name === 'bizStructure') {
+    const isLLC = val === 'llc';
+    document.getElementById('ownerPayCorpSection').style.display = isLLC ? 'none' : '';
+    document.getElementById('ownerPayLLCSection').style.display = isLLC ? '' : 'none';
+    document.getElementById('ownerPayHint').textContent = val === 'ccorp'
+      ? 'W-2 salary for C-Corp owners'
+      : 'W-2 salary for S-Corp owners';
+  }
+  if (name === 'wantEmployeeDetail') {
+    const show = val === 'yes';
+    document.getElementById('employeeDetailSection').style.display = show ? '' : 'none';
+    document.getElementById('employeeDetailSection').classList.toggle('visible', show);
+    if (show && document.getElementById('employeeDetailRows').children.length === 0) {
+      // Seed with rows based on nhceCount
+      const nhceCount = parseInt(document.getElementById('nhceCount').value) || 3;
+      for (let i = 0; i < Math.min(nhceCount, 20); i++) addEmployeeRow();
+    }
+  }
+}
+// === OWNER COUNT LOGIC ===
+document.getElementById('ownerCount')?.addEventListener('change', function() {
+  const count = parseInt(this.value) || 1;
+  const section = document.getElementById('multiOwnerSection');
+  if (count > 1) {
+    section.style.display = '';
+    buildOwnerRows(count);
+  } else {
+    section.style.display = 'none';
+  }
+});
+function buildOwnerRows(count) {
+  const container = document.getElementById('additionalOwners');
+  container.innerHTML = '';
+  const isLLC = getRadioVal('bizStructure') === 'llc';
+  const payLabel = isLLC ? 'Expected K-1 Distribution' : 'Salary';
+  const payPlaceholder = isLLC ? 'K-1 amount' : 'Salary';
+  // Start from owner 2 since owner 1 is the primary
+  for (let i = 2; i <= count; i++) {
+    const div = document.createElement('div');
+    div.style.cssText = 'display:flex;gap:10px;margin-bottom:10px;align-items:end;flex-wrap:wrap';
+    div.innerHTML = `
+      <div style="flex:1;min-width:100px">
+        <label style="font-size:11px;color:#6B7280;display:block;margin-bottom:4px">Owner ${i} Age</label>
+        <input type="number" class="owner-age" min="18" max="80" placeholder="Age" style="width:100%;padding:8px 10px;border:1.5px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:inherit">
+      </div>
+      <div style="flex:2;min-width:150px">
+        <label style="font-size:11px;color:#6B7280;display:block;margin-bottom:4px">Owner ${i} ${payLabel}</label>
+        <div class="pf-money-input"><input type="number" class="owner-salary" min="0" step="1000" placeholder="${payPlaceholder}" style="width:100%;padding:8px 10px 8px 32px;border:1.5px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:inherit"></div>
+      </div>`;
+    container.appendChild(div);
+  }
+}
+function addOwnerRow() {
+  const countEl = document.getElementById('ownerCount');
+  countEl.value = parseInt(countEl.value || 1) + 1;
+  countEl.dispatchEvent(new Event('change'));
+}
+// === EMPLOYEE DETAIL ROWS ===
+let employeeRowCount = 0;
+function addEmployeeRow() {
+  employeeRowCount++;
+  const container = document.getElementById('employeeDetailRows');
+  const div = document.createElement('div');
+  div.style.cssText = 'display:flex;gap:10px;margin-bottom:8px;align-items:end;flex-wrap:wrap';
+  div.innerHTML = `
+    <div style="width:32px;font-size:12px;font-weight:600;color:#6B7280;padding-bottom:10px">${employeeRowCount}.</div>
+    <div style="flex:1;min-width:80px">
+      ${employeeRowCount === 1 ? '<label style="font-size:11px;color:#6B7280;display:block;margin-bottom:4px">Age</label>' : ''}
+      <input type="number" class="emp-age" min="18" max="80" placeholder="Age" style="width:100%;padding:8px 10px;border:1.5px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:inherit">
+    </div>
+    <div style="flex:2;min-width:140px">
+      ${employeeRowCount === 1 ? '<label style="font-size:11px;color:#6B7280;display:block;margin-bottom:4px">Annual Pay</label>' : ''}
+      <div class="pf-money-input"><input type="number" class="emp-pay" min="0" step="1000" placeholder="Salary" oninput="autoDetectHCE(this)" style="width:100%;padding:8px 10px 8px 32px;border:1.5px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:inherit"></div>
+    </div>
+    <div style="flex:1;min-width:80px">
+      ${employeeRowCount === 1 ? '<label style="font-size:11px;color:#6B7280;display:block;margin-bottom:4px">Type</label>' : ''}
+      <select class="emp-type" style="width:100%;padding:8px 10px;border:1.5px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:inherit;background:#fff">
+        <option value="nhce">NHCE</option>
+        <option value="hce">HCE</option>
+        <option value="family">Family</option>
+      </select>
+    </div>
+    <div style="width:28px;padding-bottom:2px">
+      <span onclick="removeEmployeeRow(this)" style="cursor:pointer;color:#B22234;font-size:16px;font-weight:700" title="Remove">×</span>
+    </div>`;
+  container.appendChild(div);
+}
+function removeEmployeeRow(btn) {
+  let row = btn.parentElement;
+  while (row && row.parentElement && row.parentElement.id !== 'employeeDetailRows') row = row.parentElement;
+  if (row && row.parentElement && row.parentElement.id === 'employeeDetailRows') row.remove();
+}
+// === HCE PAY SECTION VISIBILITY ===
+// Watch hceCount: if 0, hide the HCE pay section in step 3
+document.getElementById('hceCount')?.addEventListener('change', function() {
+  const count = parseInt(this.value) || 0;
+  document.getElementById('hcePaySection').style.display = count > 0 ? '' : 'none';
+});
+// === BUILD REVIEW ===
+function getRadioVal(name) {
+  const el = document.querySelector(`input[name="${name}"]:checked`);
+  return el ? el.value : '';
+}
+function getVal(id) {
+  const el = document.getElementById(id);
+  return el ? (el.value || '') : '';
+}
+function fmtMoney(v) {
+  const n = parseInt(v);
+  return isNaN(n) ? '—' : '$' + n.toLocaleString();
+}
+function getCheckedGoals() {
+  const checks = document.querySelectorAll('input[name="planGoals"]:checked');
+  if (!checks.length) return '—';
+  const goalLabels = { taxSavings:'Tax savings', retirementFunding:'Retirement funding', maxDefer:'Max deferrals', employeeRetention:'Employee retention', reduceCosts:'Reduce costs', other:'Other' };
+  const goals = Array.from(checks).map(c => goalLabels[c.value] || c.value);
+  const otherText = getVal('planGoalsOtherText');
+  if (goals.includes('Other') && otherText) goals[goals.indexOf('Other')] = 'Other: ' + otherText;
+  return goals.join(', ');
+}
+const LABELS = {
+  has401k: { yes: 'Yes', no: 'No — new plan' },
+  planAge: { '<1': 'Less than 1 year', '1-3': '1–3 years', '3+': 'More than 3 years' },
+  controlledGroup: { yes: 'Yes', no: 'No', unsure: 'Not sure' },
+  bizStructure: { scorp: 'S Corporation', ccorp: 'C Corporation', llc: 'LLC', notsure: 'Not sure' },
+  turnover: { '0-10': '0–10%', '10-25': '10–25%', '25-50': '25–50%', '50+': '50%+', unsure: 'Not sure' },
+  targetStart: { asap: 'ASAP', q1: 'Q1 2026', q2: 'Q2 2026', q3: 'Q3 2026', q4: 'Q4 2026', '2027': '2027', exploring: 'Just exploring' }
+};
+function friendlyVal(group, val) {
+  return (LABELS[group] && LABELS[group][val]) || val || '—';
+}
+function buildReview() {
+  const rc = document.getElementById('reviewContent');
+  let html = '';
+  // Section 1
+  html += `<div class="pf-summary">
+    <div class="pf-summary-header">Plan Status & Ownership <span class="pf-summary-edit" onclick="goToStep(1)">Edit</span></div>
+    <div class="pf-summary-body">
+      <div class="pf-summary-row"><span class="label">Current 401(k)?</span><span class="value">${friendlyVal('has401k', getRadioVal('has401k'))}</span></div>
+      ${getRadioVal('has401k') === 'yes' ? `<div class="pf-summary-row"><span class="label">Plan duration</span><span class="value">${friendlyVal('planAge', getRadioVal('planAge'))}</span></div>` : ''}
+      <div class="pf-summary-row"><span class="label">Controlled group?</span><span class="value">${friendlyVal('controlledGroup', getRadioVal('controlledGroup'))}</span></div>
+      <div class="pf-summary-row"><span class="label">Turnover estimate</span><span class="value">${friendlyVal('turnover', getVal('turnover'))}</span></div>
+      ${getRadioVal('familyEmployees') ? `<div class="pf-summary-row"><span class="label">Family employees?</span><span class="value">${getRadioVal('familyEmployees') === 'yes' ? 'Yes' : 'No'}</span></div>` : ''}
+      <div class="pf-summary-row"><span class="label">Plan goals</span><span class="value">${getCheckedGoals()}</span></div>
+      ${getVal('currentProvider') ? `<div class="pf-summary-row"><span class="label">Current provider</span><span class="value">${getVal('currentProvider')}</span></div>` : ''}
+      ${getVal('currentFees') ? `<div class="pf-summary-row"><span class="label">Current annual fees</span><span class="value">$${parseInt(getVal('currentFees')).toLocaleString()}</span></div>` : ''}
+    </div>
+  </div>`;
+  // Section 2
+  html += `<div class="pf-summary">
+    <div class="pf-summary-header">Business Basics <span class="pf-summary-edit" onclick="goToStep(2)">Edit</span></div>
+    <div class="pf-summary-body">
+      <div class="pf-summary-row"><span class="label">Structure</span><span class="value">${friendlyVal('bizStructure', getRadioVal('bizStructure'))}</span></div>
+      <div class="pf-summary-row"><span class="label">Active owners (5%+)</span><span class="value">${getVal('ownerCount') || '—'}</span></div>
+      <div class="pf-summary-row"><span class="label">HCEs (excl. owners)</span><span class="value">${getVal('hceCount') || '—'}</span></div>
+      <div class="pf-summary-row"><span class="label">NHCEs</span><span class="value">${getVal('nhceCount') || '—'}</span></div>
+      ${getVal('avgEmployeeAge') ? `<div class="pf-summary-row"><span class="label">Avg employee age</span><span class="value">${getVal('avgEmployeeAge')}</span></div>` : ''}
+      ${getRadioVal('wantEmployeeDetail') === 'yes' ? `<div class="pf-summary-row"><span class="label">Employee detail</span><span class="value">${document.querySelectorAll('#employeeDetailRows .emp-age').length} employees entered</span></div>` : ''}
+      ${uploadedFilesList.length ? `<div class="pf-summary-row"><span class="label">Uploaded files</span><span class="value">${uploadedFilesList.length} file${uploadedFilesList.length > 1 ? 's' : ''}</span></div>` : ''}
+    </div>
+  </div>`;
+  // Section 3 — only show if not using employee detail
+  if (getRadioVal('wantEmployeeDetail') !== 'yes') {
+    html += `<div class="pf-summary">
+      <div class="pf-summary-header">Pay Ranges <span class="pf-summary-edit" onclick="goToStep(3)">Edit</span></div>
+      <div class="pf-summary-body">
+        ${parseInt(getVal('hceCount')) > 0 ? `<div class="pf-summary-row"><span class="label">HCE avg salary</span><span class="value">${fmtMoney(getVal('hceAvgPay'))}</span></div>
+        <div class="pf-summary-row"><span class="label">HCE range</span><span class="value">${fmtMoney(getVal('hceLow'))} – ${fmtMoney(getVal('hceHigh'))}</span></div>` : ''}
+        <div class="pf-summary-row"><span class="label">NHCE avg salary</span><span class="value">${fmtMoney(getVal('nhceAvgPay'))}</span></div>
+        <div class="pf-summary-row"><span class="label">NHCE range</span><span class="value">${fmtMoney(getVal('nhceLow'))} – ${fmtMoney(getVal('nhceHigh'))}</span></div>
+      </div>
+    </div>`;
+  }
+  // Section 4
+  const biz = getRadioVal('bizStructure');
+  html += `<div class="pf-summary">
+    <div class="pf-summary-header">Owner Compensation <span class="pf-summary-edit" onclick="goToStep(4)">Edit</span></div>
+    <div class="pf-summary-body">
+      <div class="pf-summary-row"><span class="label">Owner 1 age</span><span class="value">${getVal('ownerAge') || '—'}</span></div>
+      ${biz === 'llc'
+        ? `<div class="pf-summary-row"><span class="label">K-1 per owner</span><span class="value">${fmtMoney(getVal('ownerK1'))}</span></div>`
+        : `<div class="pf-summary-row"><span class="label">Owner 1 salary</span><span class="value">${fmtMoney(getVal('ownerSalary'))}</span></div>`}
+    </div>
+  </div>`;
+  // Section 5
+  html += `<div class="pf-summary">
+    <div class="pf-summary-header">Contact <span class="pf-summary-edit" onclick="goToStep(5)">Edit</span></div>
+    <div class="pf-summary-body">
+      <div class="pf-summary-row"><span class="label">Business</span><span class="value">${getVal('bizName') || '—'}</span></div>
+      <div class="pf-summary-row"><span class="label">Target start</span><span class="value">${friendlyVal('targetStart', getVal('targetStart'))}</span></div>
+      <div class="pf-summary-row"><span class="label">Name</span><span class="value">${getVal('firstName')} ${getVal('lastName')}</span></div>
+      <div class="pf-summary-row"><span class="label">Email</span><span class="value">${getVal('email') || '—'}</span></div>
+      <div class="pf-summary-row"><span class="label">Phone</span><span class="value">${getVal('phone') || '—'}</span></div>
+      ${getVal('notes') ? `<div class="pf-summary-row"><span class="label">Notes</span><span class="value" style="max-width:280px;white-space:normal;text-align:right">${getVal('notes')}</span></div>` : ''}
+    </div>
+  </div>`;
+  rc.innerHTML = html;
+}
+// === SUBMIT ===
+function submitForm() {
+  // Collect all data
+  // Collect employee detail rows if provided
+  const employeeDetails = [];
+  document.querySelectorAll('#employeeDetailRows > div').forEach(row => {
+    const age = row.querySelector('.emp-age')?.value;
+    const pay = row.querySelector('.emp-pay')?.value;
+    const type = row.querySelector('.emp-type')?.value;
+    if (age || pay) employeeDetails.push({ age: age || '', pay: pay || '', type: type || 'nhce' });
+  });
+  // Collect additional owner data
+  const additionalOwners = [];
+  document.querySelectorAll('#additionalOwners > div').forEach(row => {
+    const age = row.querySelector('.owner-age')?.value;
+    const salary = row.querySelector('.owner-salary')?.value;
+    if (age || salary) additionalOwners.push({ age: age || '', salary: salary || '' });
+  });
+  const data = {
+    has401k: getRadioVal('has401k'),
+    planAge: getRadioVal('planAge'),
+    controlledGroup: getRadioVal('controlledGroup'),
+    familyOwnership: getRadioVal('familyOwnership'),
+    familyEmployees: getRadioVal('familyEmployees'),
+    controlledGroupCount: getVal('controlledGroupCount'),
+    turnover: getVal('turnover'),
+    planGoals: getCheckedGoals(),
+    currentProvider: getVal('currentProvider'),
+    currentFees: getVal('currentFees'),
+    bizStructure: getRadioVal('bizStructure'),
+    ownerCount: getVal('ownerCount'),
+    hceCount: getVal('hceCount'),
+    nhceCount: getVal('nhceCount'),
+    avgEmployeeAge: getVal('avgEmployeeAge'),
+    wantEmployeeDetail: getRadioVal('wantEmployeeDetail'),
+    employeeDetails: employeeDetails.length ? employeeDetails : null,
+    uploadedFiles: uploadedFilesList.length ? uploadedFilesList.map(f => f.name) : null,
+    hceAvgPay: getVal('hceAvgPay'),
+    hceLow: getVal('hceLow'),
+    hceHigh: getVal('hceHigh'),
+    nhceAvgPay: getVal('nhceAvgPay'),
+    nhceLow: getVal('nhceLow'),
+    nhceHigh: getVal('nhceHigh'),
+    ownerAge: getVal('ownerAge'),
+    ownerSalary: getVal('ownerSalary'),
+    ownerK1: getVal('ownerK1'),
+    additionalOwners: additionalOwners.length ? additionalOwners : null,
+    bizName: getVal('bizName'),
+    targetStart: getVal('targetStart'),
+    firstName: getVal('firstName'),
+    lastName: getVal('lastName'),
+    email: getVal('email'),
+    phone: getVal('phone'),
+    notes: getVal('notes'),
+    referralName: getVal('referralName'),
+    submittedAt: new Date().toISOString()
+  };
+  // Log for now — will be replaced with API endpoint / email webhook
+  console.log('PlanForge Questionnaire Submission:', JSON.stringify(data, null, 2));
+  // TODO: POST to webhook / email service
+  // fetch('https://your-endpoint.com/submit', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
+  // Clear saved draft after successful submission
+  clearSavedDraft();
+  currentStep = 7;
+  showStep(7);
+}
+// === AUTO-DETECT HCE BASED ON SALARY ===
+function autoDetectHCE(input) {
+  const val = parseInt(input.value) || 0;
+  const row = input.closest('div[style*="display:flex"]');
+  if (!row) return;
+  const typeSelect = row.querySelector('.emp-type');
+  if (!typeSelect) return;
+  // If salary >= $160K, auto-toggle to HCE (unless already set to Family)
+  if (val >= 160000 && typeSelect.value !== 'family') {
+    typeSelect.value = 'hce';
+    typeSelect.style.borderColor = '#C4952A';
+    setTimeout(() => { typeSelect.style.borderColor = '#D1D5DB'; }, 1500);
+  } else if (val > 0 && val < 160000 && typeSelect.value === 'hce') {
+    typeSelect.value = 'nhce';
+  }
+}
+// === FILE DROP HANDLING ===
+const uploadedFilesList = [];
+function handleFileDrop(e) {
+  const files = e.dataTransfer?.files;
+  if (files) handleFileSelect(files);
+}
+function handleFileSelect(files) {
+  for (let i = 0; i < files.length; i++) {
+    uploadedFilesList.push(files[i]);
+  }
+  renderUploadedFiles();
+}
+function renderUploadedFiles() {
+  const container = document.getElementById('uploadedFiles');
+  if (!uploadedFilesList.length) { container.innerHTML = ''; return; }
+  container.innerHTML = uploadedFilesList.map((f, i) =>
+    `<div><span>📎 ${f.name} (${(f.size / 1024).toFixed(1)} KB)</span><span class="remove-file" onclick="removeUploadedFile(${i})">×</span></div>`
+  ).join('');
+}
+function removeUploadedFile(index) {
+  uploadedFilesList.splice(index, 1);
+  renderUploadedFiles();
+}
+// === CALENDLY 48-HOUR MINIMUM ===
+function buildCalendlyUrl() {
+  // Compute date 48 hours from now as YYYY-MM-DD
+  const now = new Date();
+  now.setHours(now.getHours() + 48);
+  const minDate = now.toISOString().split('T')[0];
+  // Replace with your actual Calendly link:
+  return 'https://calendly.com/planforge401k/consultation?hide_event_type_details=1&min_date=' + minDate;
+}
+// === SHARE WITH ADVISOR ===
+function shareWithAdvisor() {
+  const email = document.getElementById('advisorEmail').value;
+  if (!email || !email.includes('@')) {
+    document.getElementById('advisorEmail').style.borderColor = '#B22234';
+    return;
+  }
+  console.log('Share with advisor:', email);
+  // TODO: POST advisor email + submission summary to your webhook
+  // fetch('https://your-endpoint.com/share-advisor', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ advisorEmail: email, submitter: getVal('email') }) });
+  document.getElementById('shareSent').style.display = 'block';
+  document.querySelector('.pf-btn-share').textContent = 'Sent!';
+  document.querySelector('.pf-btn-share').disabled = true;
+  document.querySelector('.pf-btn-share').style.opacity = '0.6';
+}
+// === AUTO-SAVE & RESUME ===
+const SAVE_KEY = 'pf_questionnaire_draft';
+function autoSave() {
+  try {
+    const fields = document.querySelectorAll('.pf-q input[type="text"], .pf-q input[type="number"], .pf-q input[type="email"], .pf-q input[type="tel"], .pf-q input[type="date"], .pf-q select, .pf-q textarea');
+    const data = { step: currentStep, values: {} };
+    fields.forEach(f => { if (f.id && f.value) data.values[f.id] = f.value; });
+    // Save radio selections
+    document.querySelectorAll('.pf-option.selected').forEach(opt => {
+      const field = opt.closest('.pf-field');
+      if (field) {
+        const name = field.dataset.name;
+        const radio = opt.querySelector('input[type="radio"]');
+        if (name && radio) data.values['radio_' + name] = radio.value;
+      }
+    });
+    localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+  } catch (e) { /* localStorage not available */ }
+}
+function autoRestore() {
+  try {
+    const saved = localStorage.getItem(SAVE_KEY);
+    if (!saved) return;
+    const data = JSON.parse(saved);
+    // Restore text/number/select values
+    Object.keys(data.values).forEach(id => {
+      if (id.startsWith('radio_')) return;
+      const el = document.getElementById(id);
+      if (el) el.value = data.values[id];
+    });
+    // Restore radio selections
+    Object.keys(data.values).forEach(key => {
+      if (!key.startsWith('radio_')) return;
+      const name = key.replace('radio_', '');
+      const val = data.values[key];
+      const field = document.querySelector(`.pf-field[data-name="${name}"]`);
+      if (!field) return;
+      field.querySelectorAll('.pf-option').forEach(opt => {
+        const radio = opt.querySelector('input[type="radio"]');
+        if (radio && radio.value === val) {
+          opt.classList.add('selected');
+          radio.checked = true;
+        }
+      });
+    });
+    // Restore step
+    if (data.step && data.step > 1 && data.step < 7) {
+      currentStep = data.step;
+    }
+  } catch (e) { /* ignore */ }
+}
+function clearSavedDraft() {
+  try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+}
+// === RESUME BANNER LOGIC ===
+function resumeDraft() {
+  document.getElementById('resumeBanner').style.display = 'none';
+  autoRestore();
+  showStep(currentStep);
+}
+function discardDraft() {
+  document.getElementById('resumeBanner').style.display = 'none';
+  clearSavedDraft();
+  currentStep = 1;
+  showStep(1);
+}
+// === INIT ===
+(function init() {
+  const hasDraft = localStorage.getItem(SAVE_KEY);
+  if (hasDraft) {
+    try {
+      const data = JSON.parse(hasDraft);
+      if (data.step && data.step > 1 && data.step < 7) {
+        document.getElementById('resumeBanner').style.display = 'flex';
+      }
+    } catch (e) {}
+  }
+  showStep(1);
+})();
+</script>
+</body>
+</html>
