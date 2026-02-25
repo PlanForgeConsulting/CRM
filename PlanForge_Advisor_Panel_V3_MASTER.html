@@ -237,6 +237,12 @@
 
   .hidden { display: none !important; }
 
+  /* ── Performance: layout containment for independent panels ── */
+  .panel { contain: layout style; }
+  .result-card { contain: layout style; }
+  .xt-detail { contain: layout style; }
+  .departure-scroll { contain: layout style; will-change: scroll-position; }
+
   /* Fee is auto-calculated: 20% of cross-test owner advantage — no fee panel needed */
 
   /* ── Generate Illustration Button ── */
@@ -981,20 +987,19 @@ function findMaxPassingAllocation(nhceAllocRate, hceAllocRate, census, limits, a
   let bestResult = null;
   let bestRate = lo;
 
-  // Binary search with 0.1% precision
-  for (let iter = 0; iter < 50; iter++) {
+  // Binary search with 0.1% precision — proper bisection for faster convergence
+  for (let iter = 0; iter < 30; iter++) {
+    if (hi - lo < 0.1) break; // Early exit when converged
     const mid = (lo + hi) / 2;
     const result = runCrossTest(mid, nhceAllocRate, hceAllocRate, census, limits, additionalOwnerRate);
 
     if (result.allPass) {
       bestResult = result;
       bestRate = mid;
-      lo = mid + 0.05;
+      lo = mid;
     } else {
-      hi = mid - 0.05;
+      hi = mid;
     }
-
-    if (hi - lo < 0.1) break;
   }
 
   // Also try the exact §415(c) cap rate — binary search may not converge to it
@@ -1025,23 +1030,23 @@ function findMaxHceRate(ownerMaxRate, nhceAllocRate, census, limits, additionalO
   let hi = ownerMaxRate;  // HCE can't exceed owner rate in cross-testing
   let bestHceRate = 0;
 
-  for (let iter = 0; iter < 50; iter++) {
+  const ownerPay = census.owners[0]?.pay || 1;
+  const ownerMaxDollar = Math.round(ownerPay * ownerMaxRate / 100);
+
+  for (let iter = 0; iter < 30; iter++) {
+    if (hi - lo < 0.1) break; // Early exit when converged
     const mid = (lo + hi) / 2;
     const maxResult = findMaxPassingAllocation(nhceAllocRate, mid, census, limits, additionalOwnerRate);
 
     // Check if owner can still get at least ownerMaxRate with this HCE rate
-    const ownerPay = census.owners[0]?.pay || 1;
-    const ownerMaxDollar = Math.round(ownerPay * ownerMaxRate / 100);
     const ownerCanStillMax = Math.round(ownerPay * maxResult.maxRate / 100) >= ownerMaxDollar - 1; // $1 tolerance
 
     if (ownerCanStillMax) {
       bestHceRate = mid;
-      lo = mid + 0.05;
+      lo = mid;
     } else {
-      hi = mid - 0.05;
+      hi = mid;
     }
-
-    if (hi - lo < 0.1) break;
   }
 
   return Math.round(bestHceRate * 10) / 10; // Round to 0.1%
