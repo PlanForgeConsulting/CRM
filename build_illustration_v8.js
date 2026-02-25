@@ -108,12 +108,15 @@ function computePlanData(input) {
   const secureYear = Math.max(1, Math.min(input.secureYear || 1, 5));
   const CREDIT_PHASE = [1.0, 1.0, 0.75, 0.50, 0.25];
   // SECURE 2.0 credits: up to $1,000 per eligible NHCE (≤$100K comp), times phase
-  // Only available for employers with ≤50 NHCEs; credit phases down over 5 years
+  // Employer size adjustment: full credit ≤50 employees, reduces 2% per employee
+  // over 50, reaches zero at 100 employees
   const nhcesOver100k = input.nhceOver100k || 0;
   const nhceCreditEligible = Math.max(0, nhceCount - nhcesOver100k);
-  const secureCredits = input.secureCredits || (nhceCount <= 50
-    ? Math.round(nhceCreditEligible * 1000 * CREDIT_PHASE[secureYear - 1])
-    : 0);
+  const employerSizeFactor = eligible <= 50 ? 1.0
+    : eligible >= 100 ? 0
+    : 1.0 - 0.02 * (eligible - 50);
+  const secureCredits = input.secureCredits ||
+    Math.round(nhceCreditEligible * 1000 * CREDIT_PHASE[secureYear - 1] * employerSizeFactor);
 
   // ══════════════════════════════════════════════════════════════════
   //  STANDARD PLAN — 3% flat (same rate as safe harbor)

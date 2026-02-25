@@ -1130,9 +1130,14 @@ function independentCompute(input) {
   const stdEstimatedForfeitures = Math.round(turnoverPctDecimal * stdForfeitablePS);
 
   const nhceCreditEligible = Math.max(0, nhceCountEligible - nhceOver100k);
+  // SECURE 2.0 employer size adjustment: full credit ≤50 employees,
+  // reduces 2% per employee over 50, reaches zero at 100 employees
+  const employerSizeFactor = eligible <= 50 ? 1.0
+    : eligible >= 100 ? 0
+    : 1.0 - 0.02 * (eligible - 50);
   const stdPerEmployeeContrib = nhceAvgPay > 0 ? Math.round(nhceAvgPay * stdRate / 100) : 0;
   const stdCreditPerEmployee = Math.min(CREDIT_PHASE[secureYear - 1] * stdPerEmployeeContrib, 1000);
-  const stdSecureCredits = Math.round(nhceCreditEligible * stdCreditPerEmployee);
+  const stdSecureCredits = Math.round(nhceCreditEligible * stdCreditPerEmployee * employerSizeFactor);
   const stdTaxSavings = Math.round((stdTotalPS - stdSecureCredits) * taxRate);
   let stdNetCost = stdTotalPS - stdOwnersRetained - stdTaxSavings - stdSecureCredits - realForfeitures;
 
@@ -1327,7 +1332,7 @@ function independentCompute(input) {
   }
   const creditPhase = CREDIT_PHASE[secureYear - 1];
   const optCreditPerEmployee = Math.min(creditPhase * optPerEmployeeContrib, 1000);
-  const secureCredits = Math.round(nhceCreditEligible * optCreditPerEmployee);
+  const secureCredits = Math.round(nhceCreditEligible * optCreditPerEmployee * employerSizeFactor);
 
   // SECURE 2.0 Phase-Down Analysis:
   // In years 3-5, credit % drops (75%, 50%, 25%), so PS contribution must be
@@ -1355,6 +1360,9 @@ function independentCompute(input) {
     totalCredits: secureCredits,
     isPhaseDown: secureYear >= 3,           // True if in phase-down period
     isCapturingFullCredit: creditShortfallPerEmployee < 1,  // True if at/above $1K
+    employerSizeFactor,                     // 1.0 for ≤50, phases down 2%/ee over 50, 0 at 100+
+    employerSizeReduced: employerSizeFactor < 1,  // True if credit reduced by employer size
+    eligible,                               // Total eligible employees (for size test)
   };
 
   const optOwnersRetained = optOwnerAlloc + (optAdditionalAllocs || []).reduce((s, a) => s + a, 0);
@@ -1422,7 +1430,7 @@ function independentCompute(input) {
     nhceAvgPay, hceAvgPay, nhceOver100k, nhceCreditEligible,
     nhceAvgAge: input.nhceAvgAge || 38, hceAvgAge: input.hceAvgAge || 45,
     nhcePayLow: input.nhcePayLow || 0, nhcePayHigh: input.nhcePayHigh || 0,
-    hceAllocRate, forfeitures, realForfeitures, estimatedForfeitures, stdEstimatedForfeitures, optEstimatedForfeitures, secureYear, secureCredits, stdSecureCredits,
+    hceAllocRate, forfeitures, realForfeitures, estimatedForfeitures, stdEstimatedForfeitures, optEstimatedForfeitures, secureYear, secureCredits, stdSecureCredits, employerSizeFactor,
     optPerEmployeeContrib, optCreditPerEmployee,
     stdRate, stdTotalPS, stdOwnerAlloc, stdOwnersRetained, stdHcePS, stdEmpPS,
     stdTaxSavings, stdNetCost,
@@ -1566,7 +1574,11 @@ function runComplianceChecks(input, computed) {
   }
 
   // SECURE 2.0
-  checks.push({ rule:'SECURE 2.0', status:'PASS', message:`Year ${computed.secureYear} — credit phase ${(CREDIT_PHASE[computed.secureYear-1]*100)}%` });
+  const sizeMsg = computed.employerSizeFactor < 1
+    ? ` | Employer size factor: ${Math.round(computed.employerSizeFactor * 100)}% (${computed.eligible} employees)`
+    : '';
+  checks.push({ rule:'SECURE 2.0', status: computed.employerSizeFactor === 0 ? 'WARN' : 'PASS',
+    message:`Year ${computed.secureYear} — credit phase ${(CREDIT_PHASE[computed.secureYear-1]*100)}%${sizeMsg}` });
 
   // IRC §280C
   const expOptTax = Math.round((computed.optTotalPS - computed.secureCredits) * computed.taxRate);
@@ -1788,7 +1800,17 @@ function recalc() {
   const secureCreditAlert = document.getElementById('secureCreditAlert');
   if (secureCreditAlert && c.secureCreditInfo) {
     const sci = c.secureCreditInfo;
-    if (sci.isPhaseDown && !sci.isCapturingFullCredit && sci.nhceCreditEligible > 0) {
+    const sizeNote = sci.employerSizeReduced
+      ? ` <em>(${sci.eligible} employees — credit reduced by ${Math.round((1 - sci.employerSizeFactor) * 100)}% due to employer size over 50)</em>`
+      : '';
+    if (sci.employerSizeFactor === 0) {
+      // 100+ employees — no credit available
+      secureCreditAlert.style.display = '';
+      secureCreditAlert.style.background = '#f8d7da';
+      secureCreditAlert.style.borderLeft = '4px solid #dc3545';
+      secureCreditAlert.innerHTML = `<strong>⚠ SECURE 2.0 Not Available:</strong>
+        ${sci.eligible} eligible employees exceeds the 100-employee limit for SECURE 2.0 startup credits.`;
+    } else if (sci.isPhaseDown && !sci.isCapturingFullCredit && sci.nhceCreditEligible > 0) {
       // In phase-down period and NOT capturing full $1K credit — alert advisor
       secureCreditAlert.style.display = '';
       secureCreditAlert.style.background = '#fff3cd';
@@ -1797,7 +1819,7 @@ function recalc() {
         Credit is ${sci.creditPhasePct}% — capturing only <strong>${fmt(sci.optCreditPerEmployee)}</strong>/employee of $1,000 max
         (${sci.creditCaptureDisplay}%). To get full $1,000 credit, increase NHCE rate to <strong>${sci.rateNeededForFullCredit}%</strong>
         (${fmt(sci.contribNeededForFullCredit)}/employee). Additional PS cost: <strong>${fmt(sci.additionalPSNeededForFullCredit)}</strong>
-        across ${sci.nhceCreditEligible} employees — but recaptures <strong>${fmt(sci.creditShortfallPerEmployee * sci.nhceCreditEligible)}</strong> in credits.`;
+        across ${sci.nhceCreditEligible} employees — but recaptures <strong>${fmt(sci.creditShortfallPerEmployee * sci.nhceCreditEligible)}</strong> in credits.${sizeNote}`;
     } else if (sci.isPhaseDown && sci.isCapturingFullCredit && sci.nhceCreditEligible > 0) {
       // In phase-down but already capturing full credit — show green confirmation
       secureCreditAlert.style.display = '';
@@ -1806,14 +1828,14 @@ function recalc() {
       secureCreditAlert.innerHTML = `<strong>✓ SECURE 2.0 (Year ${sci.secureYear}):</strong>
         Credit phase-down to ${sci.creditPhasePct}% — but PS rate of ${c.optNhceRate.toFixed(1)}%
         (${fmt(sci.optPerEmployeeContrib)}/employee) is high enough to capture the full <strong>$1,000/employee</strong> credit.
-        Total credits: <strong>${fmt(sci.totalCredits)}</strong>`;
+        Total credits: <strong>${fmt(sci.totalCredits)}</strong>${sizeNote}`;
     } else if (!sci.isPhaseDown && sci.nhceCreditEligible > 0) {
       // Years 1-2: full credit, just show info
       secureCreditAlert.style.display = '';
       secureCreditAlert.style.background = 'var(--greenBg)';
       secureCreditAlert.style.borderLeft = '4px solid var(--green)';
       secureCreditAlert.innerHTML = `<strong>✓ SECURE 2.0 (Year ${sci.secureYear}):</strong>
-        Full 100% credit — ${fmt(sci.optCreditPerEmployee)}/employee × ${sci.nhceCreditEligible} = <strong>${fmt(sci.totalCredits)}</strong> total credits`;
+        Full 100% credit — ${fmt(sci.optCreditPerEmployee)}/employee × ${sci.nhceCreditEligible} = <strong>${fmt(sci.totalCredits)}</strong> total credits${sizeNote}`;
     } else {
       secureCreditAlert.style.display = 'none';
     }
