@@ -1896,7 +1896,7 @@ function computeWhatIfScenarios(baseInput) {
 // ══════════════════════════════════════════════════════════════
 
 const TEST_SCENARIOS = [
-  { name: 'AlphaGraphics (Perry)', chip: 'AlphaGraphics', input: { bizName:'AlphaGraphics', firstName:'Sherry', lastName:'Perry', ownerAge:68, ownerSalary:274345, ownerK1:0, nhceCount:27, nhceAvgPay:69381, nhceAvgAge:45, nhcePayLow:2252, nhcePayHigh:116636, hceNonOwnerCount:0, hceAvgPay:0, hceAvgAge:0, hceAllocRate:0, nhceOver100k:0, secureYear:2, forfeitures:0, year:'2025', taxRate:0.30, entityType:'S-Corp', stdRate:5, deferralEligMonths:12, psEligMonths:3, excludableNhces:11, nhcesUnder1000hrs:6, stdNhceTotalComp:1358859, additionalOwners:[{name:'Spencer Perry',age:29,salary:182020,k1:0,receivesPS:true,allocRate:1.0}] },
+  { name: 'AlphaGraphics (Perry)', chip: 'AlphaGraphics', input: { bizName:'AlphaGraphics', firstName:'Sherry', lastName:'Perry', ownerAge:68, ownerSalary:274345, ownerK1:0, nhceCount:27, nhceAvgPay:69381, nhceAvgAge:45, nhcePayLow:2252, nhcePayHigh:116636, hceNonOwnerCount:0, hceAvgPay:0, hceAvgAge:0, hceAllocRate:0, nhceOver100k:0, secureYear:2, forfeitures:0, year:'2025', taxRate:0.30, entityType:'S-Corp', planDesignMode:'custom', stdRate:5, optNhceRate:5, deferralEligMonths:12, psEligMonths:3, excludableNhces:11, nhcesUnder1000hrs:6, stdNhceTotalComp:1358859, additionalOwners:[{name:'Spencer Perry',age:29,salary:182020,k1:0,receivesPS:true,allocRate:1.0}] },
     censusText: 'Darlene Scruggs\t09/01/1971\t83029.08\nCindy Aquila\t07/18/1968\t30950.41\nTammy Coil\t05/15/1965\t116636.23\nChristopher May\t04/16/1967\t108618.41\nJason Jones\t07/23/1978\t54053.42\nDerrick Rose\t07/26/1982\t11910.00\nMartha Rangel\t05/25/1999\t2252.25\nKevin Evans\t09/15/1986\t68581.80\nRoman De Leon\t10/02/1975\t73699.38\nEsteban Gomez\t04/30/1985\t96122.92\nElizabeth Castro\t08/16/1998\t53220.18\nScot Crispin\t07/17/1978\t58762.23\nKyle Foster\t01/13/1987\t53450.83\nTerri Ferguson\t04/02/1960\t15655.62\nRafael Garcia\t06/22/1970\t69210.35\nNicholas Crowder\t11/08/2000\t6601.01\nNancy Calderon Reyes\t09/27/1996\t55805.33\nTinisha Howard\t07/26/1980\t4268.00\nAnndrea Benavidez\t08/13/1993\t59099.03\nPete Mendoza\t03/19/1986\t67093.55\nKatrina Hilker\t08/27/1970\t61761.93\nTheresa Beatty\t07/16/1967\t63990.56\nAmber Batchelder\t07/17/1988\t54575.00\nJustin Sullivan\t12/30/1993\t50176.49\nZackery Daughtrey\t07/05/1992\t48894.53\nAldo Morales\t12/03/1978\t31127.80\nShaun Pamplin\t12/16/1966\t33346.07',
     departedIndices: [], overrideForfeitures: 0 },
   { name: 'Team North Texas (Council)', chip: 'Team North TX', input: { bizName:'Team North Texas', firstName:'Nathan', lastName:'Council', ownerAge:40, ownerSalary:54999.88, ownerK1:0, nhceCount:44, nhceAvgPay:48193, nhceAvgAge:39, nhcePayLow:7329, nhcePayHigh:120438, hceNonOwnerCount:0, hceAvgPay:0, nhceOver100k:1, secureYear:2, forfeitures:9000, year:'2025', taxRate:0.30, entityType:'S-Corp', stdRate:2, planDesignMode:'gateway', deferralEligMonths:12, psEligMonths:3, excludableNhces:0, turnoverPct:0, nhceFlatAmt:1000, additionalOwners:[{name:'Joseph Armstrong',age:39,salary:54999.88,k1:0}] },
@@ -2370,12 +2370,22 @@ function loadScenario(idx) {
   updateHcePayFloorNote();
 
   // Handle plan design mode (maximize/gateway/custom)
+  // Pre-populate mode-specific fields BEFORE setPlanDesign (which triggers recalc)
   const designMode = s.planDesignMode || s.mode || 'maximize';
-  setPlanDesign(designMode);
   if (designMode === 'gateway') {
     document.getElementById('nhceFlatAmt').value = s.nhceFlatAmt || 1000;
     syncSecureYear(s.secureYear || 2);
+  } else if (designMode === 'custom') {
+    // Custom mode reads from its own form fields (stdRate3, optNhceRate3, etc.)
+    document.getElementById('stdRate3').value = s.stdRate || 3;
+    document.getElementById('optNhceRate3').value = s.optNhceRate || s.stdRate || 5;
+    syncSecureYear(s.secureYear || 1);
+    const optOwnerAllocEl = document.getElementById('optOwnerAlloc3');
+    if (optOwnerAllocEl) optOwnerAllocEl.value = s.optOwnerAlloc || '';
+    const nhceFlatAmt3El = document.getElementById('nhceFlatAmt3');
+    if (nhceFlatAmt3El) nhceFlatAmt3El.value = s.nhceFlatAmt || '';
   }
+  setPlanDesign(designMode);
 
   // Handle turnover percentage
   if (s.turnoverPct != null) {
