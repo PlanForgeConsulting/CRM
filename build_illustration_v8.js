@@ -201,8 +201,9 @@ function computePlanData(input) {
   const optTotalTaxSavings = optTaxSavings + secureCredits;
 
   // Estimated forfeitures — neither PlanForge plan is safe harbor, full NHCE PS is forfeitable
-  const estForfeituresStd = input.estForfeituresStd || Math.round(turnoverDecimal * nhceTotalComp * stdRate / 100);
-  const estForfeitures = input.estForfeitures || Math.round(turnoverDecimal * (nhceFlatAmt > 0 ? nhceCount * nhceFlatAmt : nhceTotalComp * optNhceRate / 100));
+  // Use pre-computed values from advisor panel if provided (field names: estForfeitures* or estimatedForfeitures/stdEstimatedForfeitures)
+  const estForfeituresStd = input.estForfeituresStd || input.stdEstimatedForfeitures || Math.round(turnoverDecimal * nhceTotalComp * stdRate / 100);
+  const estForfeitures = input.estForfeitures || input.estimatedForfeitures || Math.round(turnoverDecimal * (nhceFlatAmt > 0 ? nhceCount * nhceFlatAmt : nhceTotalComp * optNhceRate / 100));
 
   // ══════════════════════════════════════════════════════════════════
   //  TYPICAL STRATEGY — baselines (no SECURE, no forfeitures, 100% vested)
