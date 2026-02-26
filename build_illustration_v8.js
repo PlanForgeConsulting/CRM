@@ -52,18 +52,20 @@ const FONTS = {
 // ── Brand Colors ──────────────────────────────────────────────────
 const C = {
   navy:       '#1B3A5C',
+  navyDark:   '#0F2137',
   gold:       '#C4952A',
+  goldLight:  '#D4A832',
   red:        '#B22234',
-  darkGray:   '#333333',
-  medGray:    '#666666',
-  lightGray:  '#F5F5F5',
-  borderGray: '#E0E0E0',
+  darkGray:   '#1E293B',
+  medGray:    '#64748B',
+  lightGray:  '#F4F6F9',
+  borderGray: '#DDE2E8',
   green:      '#2E7D32',
   greenBg:    '#E8F5E9',
   goldBg:     '#FFF8E1',
   goldBorder: '#FFD54F',
   white:      '#FFFFFF',
-  lightNavy:  '#AABBCC',
+  lightNavy:  '#94A3B8',
 };
 
 // ── IRS Limits by Year ────────────────────────────────────────────
@@ -376,32 +378,36 @@ function generate(input, outputPath) {
 
     // ── HEADER BAR ──
     const headerH = 68;
-    doc.rect(0, 0, W, headerH).fill(C.navy);
-    doc.rect(0, headerH, W, 4).fill(C.gold);
+    // Gradient effect: darker navy at top, lighter at bottom
+    doc.rect(0, 0, W, headerH * 0.5).fill(C.navyDark);
+    doc.rect(0, headerH * 0.5, W, headerH * 0.5).fill(C.navy);
+    // Subtle gold accent stripe
+    doc.rect(0, headerH, W, 3).fill(C.gold);
+    doc.rect(0, headerH + 3, W, 1).fill(C.goldLight);
 
-    doc.font('Lato-Bold').fontSize(11).fillColor(C.gold);
+    doc.font('Lato-Bold').fontSize(10.5).fillColor(C.gold);
     doc.text('PLANFORGE CONSULTING', M, 14, { lineBreak: false });
     doc.font('Lato-Bold').fontSize(22).fillColor(C.white);
     doc.text('Retirement Plan Illustration', M, 32, { lineBreak: false });
 
     rightText(D.company, M, 18, CW, 'Lato-Bold', 16, C.white);
-    rightText(`${D.year} Plan Year`, M, 40, CW, 'Lato', 11, C.white);
+    rightText(`${D.year} Plan Year`, M, 40, CW, 'Lato', 11, '#94A3B8');
 
     // ── OWNER INFO STRIP ──
-    const stripY = headerH + 4 + 10;
-    rr(M, stripY, CW, 44, 4, { fill: C.lightGray, stroke: C.borderGray, lineWidth: 0.8 });
-    doc.rect(M, stripY, 4, 44).fill(C.gold);
+    const stripY = headerH + 4 + 12;
+    rr(M, stripY, CW, 44, 5, { fill: '#F8F9FB', stroke: C.borderGray, lineWidth: 0.6 });
+    doc.rect(M, stripY + 4, 3, 36).fill(C.gold);
 
     doc.font('Lato-Semibold').fontSize(11).fillColor(C.darkGray);
     doc.text(`Owner: ${D.owner} (age ${D.ownerAge})`, M + 14, stripY + 8, { lineBreak: false });
-    doc.font('Lato').fontSize(10);
+    doc.font('Lato').fontSize(10).fillColor(C.medGray);
     doc.text(`${D.eligible} eligible employees  |  ${D.nhceCount} non-owner employees`, M + 14, stripY + 24, { lineBreak: false });
     doc.font('Lato-Semibold').fontSize(11).fillColor(C.darkGray);
     doc.text(`Compensation: $${D.ownerComp.toLocaleString()}`, CW / 2 + M, stripY + 8, { lineBreak: false });
 
     // ── VOLUNTARY NOTE ──
     const volY = stripY + 50;
-    rr(M, volY, CW, 22, 4, { fill: '#F0F4FA' });
+    rr(M, volY, CW, 22, 5, { fill: '#EFF4FA', stroke: '#BDD0E8', lineWidth: 0.4 });
     centerText('All employer contributions shown are voluntary and discretionary — there is no required contribution under this strategy.',
       M, volY + 5, CW, 'Lato-Italic', 8.5, C.navy);
 
@@ -410,10 +416,11 @@ function generate(input, outputPath) {
     const cardH = 388;
 
     // ── STANDARD CARD (left) ──
-    rr(leftX, cardTop, colW, cardH, 6, { fill: C.white, stroke: C.borderGray, lineWidth: 1.2 });
+    rr(leftX, cardTop, colW, cardH, 6, { fill: C.white, stroke: C.borderGray, lineWidth: 0.8 });
     doc.save();
     doc.roundedRect(leftX, cardTop, colW, 38, 6).clip();
-    doc.rect(leftX, cardTop, colW, 38).fill(C.navy);
+    doc.rect(leftX, cardTop, colW, 20).fill(C.navyDark);
+    doc.rect(leftX, cardTop + 20, colW, 18).fill(C.navy);
     doc.restore();
     doc.rect(leftX, cardTop + 26, colW, 12).fill(C.navy);
     centerText('PLANFORGE STANDARD', leftX, cardTop + 11, colW, 'Lato-Bold', 13, C.white);
@@ -462,10 +469,11 @@ function generate(input, outputPath) {
     centerText(`${D.stdSavPct}% less than a typical plan`, leftX, cy, colW, 'Lato-Semibold', 9.5, C.green);
 
     // ── OPTIMIZED CARD (right) ──
-    rr(rightX, cardTop, colW, cardH, 6, { fill: C.white, stroke: C.gold, lineWidth: 1.8 });
+    rr(rightX, cardTop, colW, cardH, 6, { fill: '#FFFEF8', stroke: C.gold, lineWidth: 1.5 });
     doc.save();
     doc.roundedRect(rightX, cardTop, colW, 38, 6).clip();
-    doc.rect(rightX, cardTop, colW, 38).fill(C.gold);
+    doc.rect(rightX, cardTop, colW, 20).fill('#A57B1B');
+    doc.rect(rightX, cardTop + 20, colW, 18).fill(C.gold);
     doc.restore();
     doc.rect(rightX, cardTop + 26, colW, 12).fill(C.gold);
     centerText('PLANFORGE OPTIMIZED', rightX, cardTop + 11, colW, 'Lato-Bold', 13, C.white);
@@ -517,19 +525,21 @@ function generate(input, outputPath) {
     // ── UPGRADE CALLOUT BANNER ──
     const bannerY = cardTop + cardH + 14;
     const bannerH = 48;
-    rr(M, bannerY, CW, bannerH, 6, { fill: C.navy });
+    rr(M, bannerY, CW, bannerH, 6, { fill: C.navyDark });
+    // Thin gold accent at top of banner
+    doc.rect(M + CW * 0.2, bannerY, CW * 0.6, 1.5).fill(C.gold);
 
     if (D.optNetCost <= D.stdNetCost) {
-      centerText('LOWER COST + MORE RETIREMENT SAVINGS', M, bannerY + 9, CW, 'Lato-Semibold', 10, C.lightNavy);
+      centerText('LOWER COST + MORE RETIREMENT SAVINGS', M, bannerY + 10, CW, 'Lato-Semibold', 10, C.lightNavy);
       centerText(`Save ${fmt(Math.abs(D.upgradeCostDiff))} more AND get +${fmt(D.upgradeAllocDiff)} in owner retirement`, M, bannerY + 27, CW, 'Lato-Bold', 14, C.gold);
     } else {
-      centerText(`FOR JUST ${fmt(D.upgradeCostDiff)} MORE IN NET COST`, M, bannerY + 9, CW, 'Lato-Semibold', 10, C.lightNavy);
+      centerText(`FOR JUST ${fmt(D.upgradeCostDiff)} MORE IN NET COST`, M, bannerY + 10, CW, 'Lato-Semibold', 10, C.lightNavy);
       centerText(`Owners get +${fmt(D.upgradeAllocDiff)} more in retirement savings`, M, bannerY + 27, CW, 'Lato-Bold', 16, C.gold);
     }
 
     // ── IRS COMPLIANCE BADGE ──
     const compY = bannerY + bannerH + 10;
-    rr(M, compY, CW * 0.60, 26, 4, { fill: C.greenBg });
+    rr(M, compY, CW * 0.62, 26, 5, { fill: '#E8F5E9', stroke: '#A5D6A7', lineWidth: 0.5 });
     const circX = M + 16, circY = compY + 13;
     doc.circle(circX, circY, 8).fill(C.green);
     doc.save();
@@ -549,6 +559,7 @@ function generate(input, outputPath) {
     doc.text('The Optimized plan goes further — cross-testing allows ownership to receive significantly higher allocations while employees still receive a competitive contribution.', M, noteY + 52, { width: CW, lineGap: 1.5 });
 
     // ── FOOTER ──
+    doc.moveTo(M, H - 34).lineTo(M + CW, H - 34).lineWidth(0.5).stroke(C.borderGray);
     doc.font('Lato-Italic').fontSize(7.5).fillColor(C.medGray);
     doc.text('PlanForge Consulting  |  Illustration Only, Not Tax or Legal Advice', M, H - 26, { lineBreak: false });
     rightText('Page 1 of 2', M, H - 26, CW, 'Lato-Italic', 7.5, C.medGray);
@@ -560,21 +571,33 @@ function generate(input, outputPath) {
   // ═══════════════════════════════════════════════════════════════════
   function drawPage2() {
     const headerH = 54;
-    doc.rect(0, 0, W, headerH).fill(C.navy);
-    doc.rect(0, headerH, W, 4).fill(C.gold);
+    doc.rect(0, 0, W, headerH * 0.5).fill(C.navyDark);
+    doc.rect(0, headerH * 0.5, W, headerH * 0.5).fill(C.navy);
+    doc.rect(0, headerH, W, 3).fill(C.gold);
+    doc.rect(0, headerH + 3, W, 1).fill(C.goldLight);
 
     doc.font('Lato-Bold').fontSize(10).fillColor(C.gold);
     doc.text('PLANFORGE CONSULTING', M, 8, { lineBreak: false });
     doc.font('Lato-Bold').fontSize(17).fillColor(C.white);
     doc.text(`${D.company} — Plan Details`, M, 26, { lineBreak: false });
-    rightText(`${D.year} Plan Year`, M, 22, CW, 'Lato', 10, C.white);
+    rightText(`${D.year} Plan Year`, M, 22, CW, 'Lato', 10, '#94A3B8');
 
     let cy = headerH + 4 + 14;
 
+    // ── Section heading helper ──
+    function sectionHead(label, y) {
+      doc.font('Lato-Bold').fontSize(11).fillColor(C.navy);
+      const tw = doc.widthOfString(label);
+      doc.text(label, M + 10, y, { lineBreak: false });
+      // Gold dot before label
+      doc.circle(M + 4, y + 5.5, 3).fill(C.gold);
+      // Underline: gold accent then navy fade
+      doc.moveTo(M, y + 15).lineTo(M + 8, y + 15).lineWidth(2).stroke(C.gold);
+      doc.moveTo(M + 8, y + 15).lineTo(M + 10 + tw, y + 15).lineWidth(1).stroke(C.navy);
+    }
+
     // ── HOW IT WORKS ──
-    doc.font('Lato-Bold').fontSize(11).fillColor(C.navy);
-    doc.text('HOW IT WORKS', M, cy, { lineBreak: false });
-    doc.moveTo(M, cy + 14).lineTo(M + doc.widthOfString('HOW IT WORKS'), cy + 14).lineWidth(1.5).stroke(C.navy);
+    sectionHead('HOW IT WORKS', cy);
     cy += 20;
 
     doc.font('Lato-Bold').fontSize(9.5).fillColor(C.darkGray);
@@ -592,9 +615,7 @@ function generate(input, outputPath) {
     cy += 34;
 
     // ── FINANCIAL IMPACT COMPARISON ──
-    doc.font('Lato-Bold').fontSize(11).fillColor(C.navy);
-    doc.text('FINANCIAL IMPACT COMPARISON', M, cy, { lineBreak: false });
-    doc.moveTo(M, cy + 14).lineTo(M + doc.widthOfString('FINANCIAL IMPACT COMPARISON'), cy + 14).lineWidth(1.5).stroke(C.navy);
+    sectionHead('FINANCIAL IMPACT COMPARISON', cy);
     cy += 20;
 
     const tc1 = M + 8;
@@ -603,13 +624,13 @@ function generate(input, outputPath) {
     const tc4 = M + CW * 0.78;
     const tcW = CW * 0.20;
 
-    rr(M, cy - 4, CW, 20, 3, { fill: C.navy });
-    centerText('TYPICAL', tc2, cy, tcW, 'Lato-Bold', 8, C.white);
+    rr(M, cy - 4, CW, 20, 4, { fill: C.navyDark });
+    centerText('TYPICAL', tc2, cy, tcW, 'Lato-Bold', 8, '#94A3B8');
     centerText('STANDARD', tc3, cy, tcW, 'Lato-Bold', 8, C.white);
-    centerText('OPTIMIZED', tc4, cy, tcW, 'Lato-Bold', 8, C.white);
+    centerText('OPTIMIZED', tc4, cy, tcW, 'Lato-Bold', 8, C.gold);
 
     cy += 20;
-    rr(M, cy - 3, CW, 16, 0, { fill: '#FAFAFA' });
+    rr(M, cy - 3, CW, 16, 0, { fill: C.lightGray });
     centerText(`${D.stdRate}% Safe Harbor`, tc2, cy - 1, tcW, 'Lato-Italic', 7, C.medGray);
     centerText(`${D.stdRate}% Flat PS`, tc3, cy - 1, tcW, 'Lato-Italic', 7, C.medGray);
     centerText('Cross-Tested', tc4, cy - 1, tcW, 'Lato-Italic', 7, C.medGray);
@@ -652,15 +673,13 @@ function generate(input, outputPath) {
 
     // ── OWNER'S RETIREMENT SNAPSHOT ──
     cy += 32;
-    doc.font('Lato-Bold').fontSize(11).fillColor(C.navy);
-    doc.text("OWNER'S RETIREMENT SNAPSHOT", M, cy, { lineBreak: false });
-    doc.moveTo(M, cy + 14).lineTo(M + doc.widthOfString("OWNER'S RETIREMENT SNAPSHOT"), cy + 14).lineWidth(1.5).stroke(C.navy);
+    sectionHead("OWNER'S RETIREMENT SNAPSHOT", cy);
     cy += 22;
 
     const snapCards = [
-      { label: 'Typical', sub: `${D.stdRate}% Safe Harbor`, amount: D.typOwnersRetained, color: C.red, bgColor: '#FFF0F0', borderColor: '#FFCCCC' },
-      { label: 'Standard', sub: `${D.stdRate}% Flat PS`, amount: D.stdOwnersRetained, color: C.navy, bgColor: '#F0F4FA', borderColor: '#C0D0E8' },
-      { label: 'Optimized', sub: 'Cross-Tested', amount: D.optOwnersRetained, color: C.gold, bgColor: C.goldBg, borderColor: C.goldBorder },
+      { label: 'Typical', sub: `${D.stdRate}% Safe Harbor`, amount: D.typOwnersRetained, color: C.red, bgColor: '#FEF2F2', borderColor: '#FECACA' },
+      { label: 'Standard', sub: `${D.stdRate}% Flat PS`, amount: D.stdOwnersRetained, color: C.navy, bgColor: '#EFF4FA', borderColor: '#BDD0E8' },
+      { label: 'Optimized', sub: 'Cross-Tested', amount: D.optOwnersRetained, color: C.gold, bgColor: '#FFF9E8', borderColor: C.goldBorder },
     ];
 
     const snapW = (CW - 2 * 14) / 3;
@@ -686,16 +705,14 @@ function generate(input, outputPath) {
     cy += snapH + 8;
     // Use gender-neutral language since we don't know the owner's pronouns
     const pronoun = 'their';
-    rr(M, cy, CW, 22, 4, { fill: C.goldBg, stroke: C.goldBorder, lineWidth: 0.8 });
+    rr(M, cy, CW, 22, 5, { fill: '#FFF9E8', stroke: C.goldBorder, lineWidth: 0.6 });
     const snapNote = `With PlanForge Optimized, ${D.ownerFirst} receives ${fmt(D.optOwnersRetained)} — that's ${fmt(D.optOwnersRetained - D.typOwnersRetained)} more than a typical plan, deposited directly into ${pronoun} retirement account.`;
     doc.font('Lato-Semibold').fontSize(8).fillColor(C.darkGray);
     doc.text(snapNote, M + 10, cy + 6, { width: CW - 20, lineBreak: true });
 
     // ── RATE SENSITIVITY ──
     cy += 30;
-    doc.font('Lato-Bold').fontSize(11).fillColor(C.navy);
-    doc.text('WHAT IF WE ADJUST THE EMPLOYEE RATE?', M, cy, { lineBreak: false });
-    doc.moveTo(M, cy + 14).lineTo(M + doc.widthOfString('WHAT IF WE ADJUST THE EMPLOYEE RATE?'), cy + 14).lineWidth(1.5).stroke(C.navy);
+    sectionHead('WHAT IF WE ADJUST THE EMPLOYEE RATE?', cy);
     cy += 22;
 
     doc.font('Lato').fontSize(8.5).fillColor(C.medGray);
@@ -715,37 +732,36 @@ function generate(input, outputPath) {
       const boxH = 88;
 
       if (isCurrent) {
-        rr(bx, cy, boxW, boxH, 4, { fill: C.goldBg, stroke: C.gold, lineWidth: 1.5 });
+        rr(bx, cy, boxW, boxH, 5, { fill: '#FFF9E8', stroke: C.gold, lineWidth: 1.5 });
+        // Gold header strip inside current box
+        rr(bx + 1, cy + 1, boxW - 2, 18, 4, { fill: C.gold });
+        centerText(`${fmtPct(rate)} NHCE`, bx, cy + 4, boxW, 'Lato-Bold', 9, C.white);
       } else {
-        rr(bx, cy, boxW, boxH, 4, { fill: C.lightGray, stroke: C.borderGray });
+        rr(bx, cy, boxW, boxH, 5, { fill: '#F8F9FB', stroke: C.borderGray, lineWidth: 0.6 });
+        centerText(`${fmtPct(rate)} NHCE`, bx, cy + 5, boxW, 'Lato-Bold', 9, C.darkGray);
       }
+      centerText(`Owner: ${fmt(calc.ownerAllocation)}`, bx, cy + 20, boxW, 'Lato', 7.5, C.medGray);
 
-      centerText(`${fmtPct(rate)} NHCE`, bx, cy + 5, boxW, 'Lato-Bold', 9, C.darkGray);
-      centerText(`Owner: ${fmt(calc.ownerAllocation)}`, bx, cy + 18, boxW, 'Lato', 7.5, C.medGray);
-
-      const netY = cy + 33;
+      const netY = cy + 34;
       centerText('Net Cost', bx, netY, boxW, 'Lato', 7, C.medGray);
       centerText(fmt(calc.net), bx, netY + 10, boxW, 'Lato-Bold', 11, isCurrent ? C.gold : C.darkGray);
       centerText(`Optimized Fee: ${fmt(fee)}`, bx, netY + 24, boxW, 'Lato', 6.5, C.medGray);
-      centerText(`Saves ${fmt(savings - fee)}`, bx, netY + 34, boxW, 'Lato-Bold', 7, C.green);
+      centerText(`Saves ${fmt(savings - fee)}`, bx, netY + 34, boxW, 'Lato-Bold', 7.5, C.green);
 
       if (isCurrent) {
         const labelY = cy + boxH + 4;
-        const barW = 30;
-        doc.moveTo(bx + (boxW - barW) / 2, labelY).lineTo(bx + (boxW + barW) / 2, labelY).lineWidth(2).stroke(C.gold);
-        centerText('CURRENT', bx, labelY + 4, boxW, 'Lato-Bold', 7.5, C.gold);
+        rr(bx + (boxW - 40) / 2, labelY, 40, 12, 6, { fill: C.gold });
+        centerText('CURRENT', bx, labelY + 2, boxW, 'Lato-Bold', 7, C.white);
       }
     });
 
     // ── FORFEITURE BENEFIT ──
     cy += 110;
-    doc.font('Lato-Bold').fontSize(11).fillColor(C.navy);
-    doc.text('FORFEITURE BENEFIT', M, cy, { lineBreak: false });
-    doc.moveTo(M, cy + 14).lineTo(M + doc.widthOfString('FORFEITURE BENEFIT'), cy + 14).lineWidth(1.5).stroke(C.navy);
+    sectionHead('FORFEITURE BENEFIT', cy);
     cy += 20;
 
-    rr(M, cy, CW, 30, 4, { fill: C.lightGray });
-    doc.rect(M, cy, 4, 30).fill(C.gold);
+    rr(M, cy, CW, 30, 5, { fill: '#F8F9FB', stroke: C.borderGray, lineWidth: 0.5 });
+    doc.rect(M, cy + 4, 3, 22).fill(C.gold);
     doc.font('Lato').fontSize(8.5).fillColor(C.darkGray);
 
     if (D.forfeitures > 0 || D.forfeituresStd > 0) {
@@ -778,6 +794,7 @@ function generate(input, outputPath) {
     });
 
     // ── FOOTER ──
+    doc.moveTo(M, H - 30).lineTo(M + CW, H - 30).lineWidth(0.5).stroke(C.borderGray);
     doc.font('Lato-Italic').fontSize(7.5).fillColor(C.medGray);
     doc.text('PlanForge Consulting  |  Illustration Only, Not Tax or Legal Advice', M, H - 22, { lineBreak: false });
     rightText('Page 2 of 2', M, H - 22, CW, 'Lato-Italic', 7.5, C.medGray);
