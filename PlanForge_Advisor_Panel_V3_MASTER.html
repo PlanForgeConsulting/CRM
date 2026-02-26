@@ -1154,6 +1154,12 @@ function independentCompute(input) {
   const stdPerEmployeeContrib = nhceAvgPay > 0 ? Math.round(nhceAvgPay * stdRate / 100) : 0;
   const stdCreditPerEmployee = Math.min(CREDIT_PHASE[secureYear - 1] * stdPerEmployeeContrib, 1000);
   const stdSecureCredits = Math.round(nhceCreditEligible * stdCreditPerEmployee * employerSizeFactor);
+
+  // §404(a)(3) deduction limit: employer PS deduction capped at 25% of total covered compensation
+  // For solo owner, total covered comp = owner comp only
+  // For plan with employees, total covered comp = all participants' comp
+  const deductionLimit404 = Math.round(totalComp * 0.25);
+
   // §404(a)(3): employer PS deduction capped at 25% of total covered compensation
   // IRC §280C: deduction must be reduced by SECURE credit amount
   const stdDeductiblePS = Math.min(stdTotalPS, deductionLimit404);
@@ -1162,11 +1168,6 @@ function independentCompute(input) {
 
   // ── Optimized plan with REAL cross-testing ──
   const maxOwnerAlloc415c = limits.additions415c;
-
-  // §404(a)(3) deduction limit: employer PS deduction capped at 25% of total covered compensation
-  // For solo owner, total covered comp = owner comp only
-  // For plan with employees, total covered comp = all participants' comp
-  const deductionLimit404 = Math.round(totalComp * 0.25);
 
   // §415(c) is the individual annual addition limit; §404(a)(3) is the PLAN-LEVEL deduction limit (25% of total comp)
   // There is NO individual 25% cap — §404 applies to the plan as a whole, not per participant
