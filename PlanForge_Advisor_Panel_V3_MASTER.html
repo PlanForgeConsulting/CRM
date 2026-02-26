@@ -799,7 +799,8 @@ function buildFullCensus(input) {
     age: ao.age || 40,
     pay: Math.min((ao.salary || 0) + (ao.k1 || 0), limits.compCap401a17),
     type: 'HCE',
-    isOwner: true
+    isOwner: true,
+    allocRate: ao.allocRate || null  // Per-owner rate override (null = use default)
   }));
 
   // Get employee census
@@ -909,7 +910,9 @@ function runCrossTest(ownerAllocRate, nhceAllocRate, hceAllocRate, census, limit
 
   // Add owners with their allocation rates
   for (const owner of census.owners) {
-    const allocRate = owner.isPrimaryOwner ? ownerAllocRate : addlRate;
+    // Per-owner allocRate override (from census data) takes priority, then addlRate fallback
+    const allocRate = owner.isPrimaryOwner ? ownerAllocRate
+      : (owner.allocRate != null ? owner.allocRate : addlRate);
     const alloc = Math.min(Math.round(owner.pay * allocRate / 100), limits.additions415c);
     const effectiveRate = owner.pay > 0 ? (alloc / owner.pay) * 100 : 0;
     allParticipants.push({
@@ -1093,6 +1096,7 @@ function independentCompute(input) {
     comp: Math.min((ao.salary || 0) + (ao.k1 || 0), limits.compCap401a17),
     age: ao.age || 40,
     receivesPS: ao.receivesPS !== false,
+    allocRate: ao.allocRate != null ? ao.allocRate : null,
   }));
 
   const nhceCountTotal = input.nhceCount || 0;
@@ -1235,12 +1239,13 @@ function independentCompute(input) {
     const optNhcePS = Math.round(nhceCountEligible * nhceAvgPay * optNhceRate / 100);
     const optHcePS = Math.round(hceTotalComp * effectiveHceRate / 100);
     optEmpPS = optNhcePS + optHcePS;
-    // In maximize mode, additional owners get optNhceRate (matching custom mode behavior)
-    // This ensures they receive a proportional allocation in the cross-tested plan
+    // Additional owners use per-owner allocRate if set (e.g. young owners need lower rate
+    // to pass cross-testing), otherwise default to optNhceRate
     optAdditionalAllocs = addlOwners.map(ao => {
       if (!ao.receivesPS) return 0;
+      const rate = ao.allocRate != null ? ao.allocRate : optNhceRate;
       const maxForAddl = Math.min(limits.additions415c, ao.comp);
-      return Math.min(Math.round(ao.comp * optNhceRate / 100), maxForAddl);
+      return Math.min(Math.round(ao.comp * rate / 100), maxForAddl);
     });
 
     exclusionInfo = {
@@ -1286,8 +1291,9 @@ function independentCompute(input) {
 
     optAdditionalAllocs = addlOwners.map(ao => {
       if (!ao.receivesPS) return 0;
+      const rate = ao.allocRate != null ? ao.allocRate : maxOwnerRate;
       const maxForAddl = Math.min(limits.additions415c, ao.comp);
-      return Math.min(Math.round(ao.comp * maxOwnerRate / 100), maxForAddl);
+      return Math.min(Math.round(ao.comp * rate / 100), maxForAddl);
     });
 
     gatewayInfo = { nhceFlatAmt, lowestNhceRate, maxOwnerRate, ownerAllocByGateway, effectiveCap: maxOwnerAllocPS, crossTestVerified: crossTestResult !== null };
@@ -1322,8 +1328,9 @@ function independentCompute(input) {
       }
       optAdditionalAllocs = addlOwners.map(ao => {
         if (!ao.receivesPS) return 0;
+        const rate = ao.allocRate != null ? ao.allocRate : optNhceRate;
         const maxForAddl = Math.min(limits.additions415c, ao.comp);
-        return Math.min(Math.round(ao.comp * optNhceRate / 100), maxForAddl);
+        return Math.min(Math.round(ao.comp * rate / 100), maxForAddl);
       });
     } else {
       // Below gateway
@@ -1333,8 +1340,9 @@ function independentCompute(input) {
       optOwnerAlloc = customOwnerAlloc ? Math.min(customOwnerAlloc, gatewayCapForOwner) : gatewayCapForOwner;
       optAdditionalAllocs = addlOwners.map(ao => {
         if (!ao.receivesPS) return 0;
+        const rate = ao.allocRate != null ? ao.allocRate : maxOwnerRate;
         const maxForAddl = Math.min(limits.additions415c, ao.comp);
-        return Math.min(Math.round(ao.comp * maxOwnerRate / 100), maxForAddl);
+        return Math.min(Math.round(ao.comp * rate / 100), maxForAddl);
       });
       gatewayInfo = { lowestNhceRate: optNhceRate, maxOwnerRate, ownerAllocByGateway, effectiveCap: Math.min(ownerAllocByGateway, maxOwnerAlloc415c), autoApplied: true };
     }
@@ -1761,7 +1769,7 @@ function computeWhatIfScenarios(baseInput) {
 // ══════════════════════════════════════════════════════════════
 
 const TEST_SCENARIOS = [
-  { name: 'AlphaGraphics (Perry)', chip: 'AlphaGraphics', input: { bizName:'AlphaGraphics', firstName:'Sherry', lastName:'Perry', ownerAge:68, ownerSalary:274345, ownerK1:0, nhceCount:27, nhceAvgPay:69381, nhceAvgAge:45, nhcePayLow:2252, nhcePayHigh:116636, hceNonOwnerCount:0, hceAvgPay:0, hceAvgAge:0, hceAllocRate:0, nhceOver100k:0, secureYear:2, forfeitures:0, year:'2025', taxRate:0.30, entityType:'S-Corp', stdRate:2, deferralEligMonths:12, psEligMonths:3, excludableNhces:11, additionalOwners:[{name:'Spencer Perry',age:29,salary:182020,k1:0,receivesPS:true}] },
+  { name: 'AlphaGraphics (Perry)', chip: 'AlphaGraphics', input: { bizName:'AlphaGraphics', firstName:'Sherry', lastName:'Perry', ownerAge:68, ownerSalary:274345, ownerK1:0, nhceCount:27, nhceAvgPay:69381, nhceAvgAge:45, nhcePayLow:2252, nhcePayHigh:116636, hceNonOwnerCount:0, hceAvgPay:0, hceAvgAge:0, hceAllocRate:0, nhceOver100k:0, secureYear:2, forfeitures:0, year:'2025', taxRate:0.30, entityType:'S-Corp', stdRate:2, deferralEligMonths:12, psEligMonths:3, excludableNhces:11, additionalOwners:[{name:'Spencer Perry',age:29,salary:182020,k1:0,receivesPS:true,allocRate:1.0}] },
     censusText: 'Darlene Scruggs\t09/01/1971\t83029.08\nCindy Aquila\t07/18/1968\t30950.41\nTammy Coil\t05/15/1965\t116636.23\nChristopher May\t04/16/1967\t108618.41\nJason Jones\t07/23/1978\t54053.42\nDerrick Rose\t07/26/1982\t11910.00\nMartha Rangel\t05/25/1999\t2252.25\nKevin Evans\t09/15/1986\t68581.80\nRoman De Leon\t10/02/1975\t73699.38\nEsteban Gomez\t04/30/1985\t96122.92\nElizabeth Castro\t08/16/1998\t53220.18\nScot Crispin\t07/17/1978\t58762.23\nKyle Foster\t01/13/1987\t53450.83\nTerri Ferguson\t04/02/1960\t15655.62\nRafael Garcia\t06/22/1970\t69210.35\nNicholas Crowder\t11/08/2000\t6601.01\nNancy Calderon Reyes\t09/27/1996\t55805.33\nTinisha Howard\t07/26/1980\t4268.00\nAnndrea Benavidez\t08/13/1993\t59099.03\nPete Mendoza\t03/19/1986\t67093.55\nKatrina Hilker\t08/27/1970\t61761.93\nTheresa Beatty\t07/16/1967\t63990.56\nAmber Batchelder\t07/17/1988\t54575.00\nJustin Sullivan\t12/30/1993\t50176.49\nZackery Daughtrey\t07/05/1992\t48894.53\nAldo Morales\t12/03/1978\t31127.80\nShaun Pamplin\t12/16/1966\t33346.07',
     departedIndices: [], overrideForfeitures: 0 },
   { name: 'Team North Texas (Council)', chip: 'Team North TX', input: { bizName:'Team North Texas', firstName:'Nathan', lastName:'Council', ownerAge:40, ownerSalary:54999.88, ownerK1:0, nhceCount:44, nhceAvgPay:48193, nhceAvgAge:39, nhcePayLow:7329, nhcePayHigh:120438, hceNonOwnerCount:0, hceAvgPay:0, nhceOver100k:1, secureYear:2, forfeitures:9000, year:'2025', taxRate:0.30, entityType:'S-Corp', stdRate:2, planDesignMode:'gateway', deferralEligMonths:12, psEligMonths:3, excludableNhces:0, turnoverPct:0, nhceFlatAmt:1000, additionalOwners:[{name:'Joseph Armstrong',age:39,salary:54999.88,k1:0}] },
@@ -1789,6 +1797,7 @@ function getInputFromForm() {
     name: val(`ao_name_${i}`), age: num(`ao_age_${i}`),
     salary: num(`ao_salary_${i}`), k1: num(`ao_k1_${i}`),
     receivesPS: document.getElementById(`ao_ps_${i}`)?.checked !== false,
+    allocRate: ao.allocRate != null ? ao.allocRate : null,
   })).filter(ao => ao.salary > 0);
   const designParams = getPlanDesignParams();
   return {
