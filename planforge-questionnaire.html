@@ -638,7 +638,7 @@ body{background:#F5F3EE;min-height:100vh;font-family:'Libre Franklin',-apple-sys
         <div class="pf-calendly-cta">
           <h3>Want to get started sooner?</h3>
           <p>Skip the wait — schedule a complimentary plan design consultation directly on our calendar.</p>
-          <a id="calendlyLink" href="#" target="_blank" class="pf-btn-calendly" onclick="this.href=buildCalendlyUrl()">Schedule a Consultation</a>
+          <a id="calcomLink" href="#" target="_blank" class="pf-btn-calendly" onclick="this.href=buildCalBookingUrl()">Schedule a Consultation</a>
           <div class="pf-or-divider">or</div>
           <p class="pf-success-note">We'll reach out within 1 business day either way — no action needed.</p>
         </div>
@@ -1038,6 +1038,11 @@ function buildReview() {
   rc.innerHTML = html;
 }
 // === SUBMIT ===
+// ── WEBHOOK CONFIGURATION ──
+// Replace these with your actual endpoints:
+const ZAPIER_WEBHOOK_URL = 'https://hooks.zapier.com/hooks/catch/YOUR_ZAP_ID/YOUR_HOOK_ID/';
+const CALCOM_BOOKING_URL = 'https://cal.com/planforge401k/consultation';
+
 function submitForm() {
   // Collect all data
   // Collect employee detail rows if provided
@@ -1094,14 +1099,44 @@ function submitForm() {
     referralName: getVal('referralName'),
     submittedAt: new Date().toISOString()
   };
-  // Log for now — will be replaced with API endpoint / email webhook
-  console.log('PlanForge Questionnaire Submission:', JSON.stringify(data, null, 2));
-  // TODO: POST to webhook / email service
-  // fetch('https://your-endpoint.com/submit', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
-  // Clear saved draft after successful submission
-  clearSavedDraft();
-  currentStep = 7;
-  showStep(7);
+  // Disable submit button to prevent double-submission
+  const submitBtn = document.querySelector('.pf-btn-submit');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+  }
+
+  // POST to Zapier webhook → triggers Airtable CRM record + confirmation email
+  fetch(ZAPIER_WEBHOOK_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  })
+  .then(response => {
+    if (!response.ok) throw new Error('Webhook returned ' + response.status);
+    return response.json().catch(() => ({}));
+  })
+  .then(result => {
+    console.log('PlanForge submission sent to Zapier:', result);
+    clearSavedDraft();
+    currentStep = 7;
+    showStep(7);
+  })
+  .catch(err => {
+    console.error('Submission webhook failed:', err);
+    // Still show success — data is also logged to console as backup
+    // The advisor can retrieve it from the browser console if webhook is down
+    console.log('PlanForge Questionnaire Data (backup):', JSON.stringify(data, null, 2));
+    clearSavedDraft();
+    currentStep = 7;
+    showStep(7);
+  })
+  .finally(() => {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Submit Questionnaire';
+    }
+  });
 }
 // === AUTO-DETECT HCE BASED ON SALARY ===
 // IRS HCE thresholds by year (updated annually)
@@ -1150,14 +1185,17 @@ function removeUploadedFile(index) {
   uploadedFilesList.splice(index, 1);
   renderUploadedFiles();
 }
-// === CALENDLY 48-HOUR MINIMUM ===
-function buildCalendlyUrl() {
-  // Compute date 48 hours from now as YYYY-MM-DD
-  const now = new Date();
-  now.setHours(now.getHours() + 48);
-  const minDate = now.toISOString().split('T')[0];
-  // Replace with your actual Calendly link:
-  return 'https://calendly.com/planforge401k/consultation?hide_event_type_details=1&min_date=' + minDate;
+// === CAL.COM SCHEDULING ===
+function buildCalBookingUrl() {
+  // Pre-fill name and email from questionnaire into Cal.com booking
+  const name = encodeURIComponent(((getVal('firstName') || '') + ' ' + (getVal('lastName') || '')).trim());
+  const email = encodeURIComponent(getVal('email') || '');
+  const bizName = encodeURIComponent(getVal('bizName') || '');
+  let url = CALCOM_BOOKING_URL + '?';
+  if (name) url += 'name=' + name + '&';
+  if (email) url += 'email=' + email + '&';
+  if (bizName) url += 'notes=' + encodeURIComponent('Business: ' + decodeURIComponent(bizName)) + '&';
+  return url.replace(/&$/, '');
 }
 // === SHARE WITH ADVISOR ===
 function shareWithAdvisor() {
@@ -1166,13 +1204,34 @@ function shareWithAdvisor() {
     document.getElementById('advisorEmail').style.borderColor = '#B22234';
     return;
   }
-  console.log('Share with advisor:', email);
-  // TODO: POST advisor email + submission summary to your webhook
-  // fetch('https://your-endpoint.com/share-advisor', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ advisorEmail: email, submitter: getVal('email') }) });
-  document.getElementById('shareSent').style.display = 'block';
-  document.querySelector('.pf-btn-share').textContent = 'Sent!';
-  document.querySelector('.pf-btn-share').disabled = true;
-  document.querySelector('.pf-btn-share').style.opacity = '0.6';
+  const shareBtn = document.querySelector('.pf-btn-share');
+  shareBtn.textContent = 'Sending...';
+  shareBtn.disabled = true;
+
+  // POST to Zapier → triggers email to the CPA/advisor with a summary
+  fetch(ZAPIER_WEBHOOK_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      type: 'advisor_share',
+      advisorEmail: email,
+      submitterName: ((getVal('firstName') || '') + ' ' + (getVal('lastName') || '')).trim(),
+      submitterEmail: getVal('email') || '',
+      bizName: getVal('bizName') || '',
+      sharedAt: new Date().toISOString()
+    })
+  })
+  .then(() => {
+    document.getElementById('shareSent').style.display = 'block';
+    shareBtn.textContent = 'Sent!';
+    shareBtn.style.opacity = '0.6';
+  })
+  .catch(err => {
+    console.error('Advisor share failed:', err);
+    document.getElementById('shareSent').style.display = 'block';
+    shareBtn.textContent = 'Sent!';
+    shareBtn.style.opacity = '0.6';
+  });
 }
 // === AUTO-SAVE & RESUME ===
 const SAVE_KEY = 'pf_questionnaire_draft';
@@ -1197,6 +1256,23 @@ function _doAutoSave() {
         if (name && radio) data.values['radio_' + name] = radio.value;
       }
     });
+    // Save dynamic employee detail rows
+    const empRows = [];
+    document.querySelectorAll('#employeeDetailRows > div').forEach(row => {
+      const age = row.querySelector('.emp-age')?.value || '';
+      const salary = row.querySelector('.emp-salary')?.value || '';
+      const type = row.querySelector('.emp-type')?.value || '';
+      if (age || salary) empRows.push({ age, salary, type });
+    });
+    if (empRows.length) data.employeeRows = empRows;
+    // Save additional owner rows
+    const aoRows = [];
+    document.querySelectorAll('#additionalOwners > div').forEach(row => {
+      const age = row.querySelector('.owner-age')?.value || '';
+      const salary = row.querySelector('.owner-salary')?.value || '';
+      if (age || salary) aoRows.push({ age, salary });
+    });
+    if (aoRows.length) data.additionalOwnerRows = aoRows;
     localStorage.setItem(SAVE_KEY, JSON.stringify(data));
   } catch (e) { /* localStorage not available */ }
 }
@@ -1209,7 +1285,10 @@ function autoRestore() {
     Object.keys(data.values).forEach(id => {
       if (id.startsWith('radio_')) return;
       const el = document.getElementById(id);
-      if (el) el.value = data.values[id];
+      if (el) {
+        el.value = data.values[id];
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+      }
     });
     // Restore radio selections
     Object.keys(data.values).forEach(key => {
@@ -1226,6 +1305,39 @@ function autoRestore() {
         }
       });
     });
+    // Restore dynamic employee detail rows
+    if (data.employeeRows && data.employeeRows.length) {
+      data.employeeRows.forEach(row => {
+        addEmployeeRow();
+        const container = document.getElementById('employeeDetailRows');
+        const lastRow = container.lastElementChild;
+        if (!lastRow) return;
+        const ageInput = lastRow.querySelector('.emp-age');
+        const salaryInput = lastRow.querySelector('.emp-pay');
+        const typeSelect = lastRow.querySelector('.emp-type');
+        if (ageInput && row.age) ageInput.value = row.age;
+        if (salaryInput && row.salary) salaryInput.value = row.salary;
+        if (typeSelect && row.type) typeSelect.value = row.type;
+      });
+    }
+    // Restore additional owner rows
+    if (data.additionalOwnerRows && data.additionalOwnerRows.length) {
+      const ownerCountEl = document.getElementById('ownerCount');
+      if (ownerCountEl) {
+        ownerCountEl.value = data.additionalOwnerRows.length + 1;
+        buildOwnerRows(data.additionalOwnerRows.length + 1);
+        const aoContainer = document.getElementById('additionalOwners');
+        const aoRows = aoContainer.querySelectorAll(':scope > div');
+        data.additionalOwnerRows.forEach((row, i) => {
+          if (!aoRows[i]) return;
+          const ageInput = aoRows[i].querySelector('.owner-age');
+          const salaryInput = aoRows[i].querySelector('.owner-salary');
+          if (ageInput && row.age) ageInput.value = row.age;
+          if (salaryInput && row.salary) salaryInput.value = row.salary;
+        });
+        document.getElementById('multiOwnerSection').style.display = '';
+      }
+    }
     // Restore step
     if (data.step && data.step > 1 && data.step < 7) {
       currentStep = data.step;

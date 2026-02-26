@@ -613,9 +613,10 @@ const UP1984_MONTHLY_ANNUITY_FACTORS = {
 };
 
 function getAnnuityFactor(age) {
-  if (age < 65) return UP1984_MONTHLY_ANNUITY_FACTORS[65]; // 7.9486
-  if (age > 100) return UP1984_MONTHLY_ANNUITY_FACTORS[100];
-  return UP1984_MONTHLY_ANNUITY_FACTORS[age];
+  const ageInt = Math.floor(age || 65);
+  if (ageInt < 65) return UP1984_MONTHLY_ANNUITY_FACTORS[65]; // 7.9486
+  if (ageInt > 100) return UP1984_MONTHLY_ANNUITY_FACTORS[100];
+  return UP1984_MONTHLY_ANNUITY_FACTORS[ageInt];
 }
 
 // Permitted disparity reduction factor for NRA 65 (SSRA 67):
@@ -1125,7 +1126,7 @@ function independentCompute(input) {
   const stdEmpPS = stdTotalPS - stdOwnersRetained;
   const stdNhcePS = Math.round(nhceCountEligible * nhceAvgPay * stdRate / 100);
   // Standard plan is NOT safe harbor — entire NHCE PS is subject to vesting schedule
-  // Only the optimized plan uses a safe harbor 3% nonelective (immediately vested)
+  // Only the Typical baseline plan uses safe harbor (3% immediately vested)
   const stdForfeitablePS = stdNhcePS;
   const stdEstimatedForfeitures = Math.round(turnoverPctDecimal * stdForfeitablePS);
 
@@ -1594,6 +1595,13 @@ function runComplianceChecks(input, computed) {
     : { rule:'Net Cost', status:'PASS', message:`${fmt(computed.optTotalPS)} − ${fmt(computed.optOwnersRetained)} − ${fmt(computed.optTaxSavings)} − ${fmt(computed.secureCredits)} − ${fmt(computed.realForfeitures)} = ${fmt(computed.optNetCost)}` }
   );
 
+  // ACP reminder — employer matching contributions require separate testing
+  checks.push({
+    rule: '§401(m) ACP',
+    status: 'INFO',
+    message: 'This analysis covers profit sharing (§401(a)(4)). If the plan includes employer matching contributions, verify ACP separately — matching must satisfy §401(m) average contribution percentage test or use safe harbor match formula.'
+  });
+
   return checks;
 }
 
@@ -1744,6 +1752,15 @@ function recalc() {
   const input = getInputFromForm();
   const c = independentCompute(input);
   currentComputed = c;
+
+  if (c.error) {
+    document.getElementById('stdResults').innerHTML =
+      `<div style="color:#B22234;padding:16px;font-weight:600;">${c.error}</div>`;
+    document.getElementById('optResults').innerHTML = '';
+    const verify = document.getElementById('verifyBody');
+    if (verify) verify.innerHTML = '';
+    return;
+  }
 
   document.getElementById('stdRateDisplay').textContent = c.stdRate;
   document.getElementById('yearDisplay').textContent = c.year;
@@ -2607,9 +2624,9 @@ function calculateRealForfeitures() {
   let total = 0;
   lastRenderedCensus.forEach(emp => {
     if (departedEmployeeIndices.has(emp.index) && !emp.excluded) {
-      // Safe harbor 3%: first 3% of comp is immediately vested, only excess is forfeitable
-      const safeHarbor3Pct = Math.round(emp.pay * 0.03);
-      total += Math.max(0, emp.psAlloc - safeHarbor3Pct);
+      // Standard and Optimized plans are NOT safe harbor —
+      // 100% of NHCE profit sharing is subject to vesting/forfeitures
+      total += emp.psAlloc;
     }
   });
   return total;
