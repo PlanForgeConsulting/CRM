@@ -101,8 +101,9 @@ function computePlanData(input) {
   const ownersTotalComp = ownerComp + additionalOwners.reduce((s, ao) => s + ao.comp, 0);
   const totalComp = nhceTotalComp + ownersTotalComp;
 
-  // ── Forfeitures ──
-  const forfeitures = input.forfeitures || 0;
+  // ── Forfeitures (plan-specific) ──
+  const forfeitures = input.forfeitures || 0;           // optimized plan forfeitures (actual PS alloc)
+  const forfeituresStd = input.forfeituresStd || forfeitures; // standard plan forfeitures (stdRate × pay)
 
   // ── SECURE Year ──
   const secureYear = Math.max(1, Math.min(input.secureYear || 1, 5));
@@ -132,7 +133,7 @@ function computePlanData(input) {
 
   // IRC §280C: Must reduce deduction by credit amount
   const stdTaxSavings = Math.round((stdTotalPS - secureCredits) * taxRate);
-  const stdNetCost = stdTotalPS - stdOwnersRetained - stdTaxSavings - secureCredits - forfeitures;
+  const stdNetCost = stdTotalPS - stdOwnersRetained - stdTaxSavings - secureCredits - forfeituresStd;
   const stdTotalTaxSavings = stdTaxSavings + secureCredits;
 
   // ══════════════════════════════════════════════════════════════════
@@ -241,7 +242,7 @@ function computePlanData(input) {
     eligible,
     nhceCount,
     taxRate,
-    forfeitures,
+    forfeitures, forfeituresStd,
     additionalOwners,
 
     // Comp totals
@@ -413,7 +414,7 @@ function generate(input, outputPath) {
       ["Owner's Retained Share", `(${fmt(D.stdOwnersRetained)})`, C.navy],
       ['Tax Deductions (30%)', `(${fmt(D.stdTaxSavings)})`, C.darkGray],
       ['SECURE 2.0 Credits', `(${fmt(D.stdSecureCredits)})`, C.green],
-      [D.forfeitures > 0 ? 'Forfeitures (actual)' : 'Forfeitures', D.forfeitures > 0 ? `(${fmt(D.forfeitures)})` : '$0', C.darkGray],
+      [D.forfeituresStd > 0 ? 'Forfeitures (actual)' : 'Forfeitures', D.forfeituresStd > 0 ? `(${fmt(D.forfeituresStd)})` : '$0', C.darkGray],
     ];
     for (const [label, val, valColor] of stdItems) {
       doc.font('Lato').fontSize(9).fillColor(C.darkGray);
@@ -597,7 +598,7 @@ function generate(input, outputPath) {
       ["Less: Owner's Retained", `(${fmt(D.typOwnersRetained)})`, `(${fmt(D.stdOwnersRetained)})`, `(${fmt(D.optOwnersRetained)})`],
       ['Less: Tax Deductions (30%)', `(${fmt(D.typTaxSavings)})`, `(${fmt(D.stdTaxSavings)})`, `(${fmt(D.optTaxSavings)})`],
       ['Less: SECURE 2.0 Credits', '$0', `(${fmt(D.stdSecureCredits)})`, `(${fmt(D.optSecureCredits)})`],
-      ['Less: Forfeitures', '$0', D.forfeitures > 0 ? `(${fmt(D.forfeitures)})` : '$0', D.forfeitures > 0 ? `(${fmt(D.forfeitures)})` : '$0'],
+      ['Less: Forfeitures', '$0', D.forfeituresStd > 0 ? `(${fmt(D.forfeituresStd)})` : '$0', D.forfeitures > 0 ? `(${fmt(D.forfeitures)})` : '$0'],
       ['Net Cost', fmt(D.typNetCost), fmt(D.stdNetCost), fmt(D.optNetCost)],
     ];
 
@@ -724,13 +725,17 @@ function generate(input, outputPath) {
     doc.rect(M, cy, 4, 30).fill(C.gold);
     doc.font('Lato').fontSize(8.5).fillColor(C.darkGray);
 
-    if (D.forfeitures > 0) {
+    if (D.forfeitures > 0 || D.forfeituresStd > 0) {
       doc.text('Employees who leave before fully vested forfeit their unvested balance, reducing future costs.', M + 14, cy + 4, { lineBreak: false });
-      doc.text('Actual forfeitures from departed employees:', M + 14, cy + 17, { lineBreak: false });
-      doc.font('Lato-Bold').fontSize(9.5).fillColor(C.gold);
-      doc.text(fmt(D.forfeitures), M + 226, cy + 16, { lineBreak: false });
+      doc.text(`Standard: ${fmt(D.forfeituresStd)}`, M + 14, cy + 17, { lineBreak: false });
+      doc.font('Lato-Bold').fontSize(9.5).fillColor(C.navy);
+      doc.text(fmt(D.forfeituresStd), M + 75, cy + 16, { lineBreak: false });
+      doc.font('Lato').fontSize(8.5).fillColor(C.darkGray);
+      doc.text(`Optimized:`, M + 145, cy + 17, { lineBreak: false });
+      doc.font('Lato-Bold').fontSize(9.5).fillColor(C.green);
+      doc.text(fmt(D.forfeitures), M + 200, cy + 16, { lineBreak: false });
       doc.font('Lato').fontSize(8).fillColor(C.medGray);
-      doc.text('(already included in Net Cost)', M + 280, cy + 17, { lineBreak: false });
+      doc.text('(included in each plan\'s Net Cost)', M + 265, cy + 17, { lineBreak: false });
     } else {
       doc.text('Employees who leave before fully vested forfeit their unvested balance, reducing future plan costs.', M + 14, cy + 4, { lineBreak: false });
       doc.text('Forfeiture estimates will be available after the first plan year based on actual turnover.', M + 14, cy + 17, { lineBreak: false });
@@ -742,7 +747,7 @@ function generate(input, outputPath) {
     const discLines = [
       'This illustration is based on current census data and IRS limits for the plan year shown. Actual results may vary based on final compensation, employee changes, and plan amendments.',
       'This is not tax or legal advice. Consult your tax advisor and ERISA counsel. All contributions are voluntary and discretionary. SECURE 2.0 credits subject to eligibility requirements.',
-      `Forfeitures reflect ${D.forfeitures > 0 ? 'actual departed employees' : 'estimated turnover'}. "Typical Strategy" assumes a ${D.stdRate}% safe harbor with immediate vesting, no forfeitures, no SECURE credits. Tax rate: ${Math.round(D.taxRate * 100)}%.`,
+      `Forfeitures reflect ${(D.forfeitures > 0 || D.forfeituresStd > 0) ? 'actual departed employees\u2019 unvested profit sharing — amounts differ between Standard and Optimized because employee allocations differ' : 'estimated turnover'}. "Typical Strategy" assumes a ${D.stdRate}% safe harbor with immediate vesting, no forfeitures, no SECURE credits. Tax rate: ${Math.round(D.taxRate * 100)}%.`,
       "Owner's retained share is not a business expense — it goes directly into the owner's retirement account and is deducted from net cost.",
     ];
     discLines.forEach((line, i) => {

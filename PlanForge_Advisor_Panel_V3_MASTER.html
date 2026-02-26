@@ -464,6 +464,7 @@
           </div>
           <div class="form-group"><label>Est. Forfeitures ($) — Auto-calculated</label><input type="number" id="forfeitures" value="0" step="500" oninput="debouncedRecalc()" style="background:#F9F9F9;"></div>
           <input type="hidden" id="realForfeituresValue" value="0">
+          <input type="hidden" id="realForfeituresStdValue" value="0">
           <input type="hidden" id="estimatedForfeituresValue" value="0">
         </div>
         <div style="font-size:11px;color:var(--gray);padding-top:4px;" id="forfeitureExplain">3-year cliff vesting assumed.</div>
@@ -1104,7 +1105,8 @@ function independentCompute(input) {
   // Real forfeitures = from departed employees (included in net cost)
   // Estimated forfeitures = from turnover % projection (informational only, NOT in net cost)
   //   Estimated is rate-specific: std vs opt have different PS amounts → different forfeitable amounts
-  const realForfeitures = input.realForfeitures || 0;
+  const realForfeitures = input.realForfeitures || 0;       // optimized plan real forfeitures
+  const realForfeituresStd = input.realForfeituresStd || 0; // standard plan real forfeitures (stdRate × pay)
   const turnoverPctDecimal = (input.turnoverPct || 0) / 100;
   // safeHarbor3% is immediately vested → only PS ABOVE 3% is forfeitable
   // Note: safeHarbor3PctPerNhce removed — neither Standard nor Optimized is safe harbor
@@ -1140,7 +1142,7 @@ function independentCompute(input) {
   const stdCreditPerEmployee = Math.min(CREDIT_PHASE[secureYear - 1] * stdPerEmployeeContrib, 1000);
   const stdSecureCredits = Math.round(nhceCreditEligible * stdCreditPerEmployee * employerSizeFactor);
   const stdTaxSavings = Math.round((stdTotalPS - stdSecureCredits) * taxRate);
-  let stdNetCost = stdTotalPS - stdOwnersRetained - stdTaxSavings - stdSecureCredits - realForfeitures;
+  let stdNetCost = stdTotalPS - stdOwnersRetained - stdTaxSavings - stdSecureCredits - realForfeituresStd;
 
   // ── Optimized plan with REAL cross-testing ──
   const maxOwnerAlloc415c = limits.additions415c;
@@ -1431,7 +1433,7 @@ function independentCompute(input) {
     nhceAvgPay, hceAvgPay, nhceOver100k, nhceCreditEligible,
     nhceAvgAge: input.nhceAvgAge || 38, hceAvgAge: input.hceAvgAge || 45,
     nhcePayLow: input.nhcePayLow || 0, nhcePayHigh: input.nhcePayHigh || 0,
-    hceAllocRate, forfeitures, realForfeitures, estimatedForfeitures, stdEstimatedForfeitures, optEstimatedForfeitures, secureYear, secureCredits, stdSecureCredits, employerSizeFactor,
+    hceAllocRate, forfeitures, realForfeitures, realForfeituresStd, estimatedForfeitures, stdEstimatedForfeitures, optEstimatedForfeitures, secureYear, secureCredits, stdSecureCredits, employerSizeFactor,
     optPerEmployeeContrib, optCreditPerEmployee,
     stdRate, stdTotalPS, stdOwnerAlloc, stdOwnersRetained, stdHcePS, stdEmpPS,
     stdTaxSavings, stdNetCost,
@@ -1469,7 +1471,7 @@ function verifyIndependent(input) {
   const addlPS = addlRaw.map(a => a.receivesPS !== false);
   const sYear = Math.max(1, Math.min(input.secureYear||1, 5));
   const sRate = input.stdRate || 3;
-  const forf = input.realForfeitures || 0;   // Must use REAL forfeitures only (not estimated)
+  const forf = input.realForfeituresStd || input.realForfeitures || 0;   // Standard plan forfeitures (stdRate × pay)
   const nOvr = Math.min(input.nhceOver100k||0, nCnt);
   const nCred = Math.max(0, nCnt - nOvr);
 
@@ -1505,7 +1507,7 @@ function verifyIndependent(input) {
     ownerComp: oCmp, totalComp: stdAllComp,
     stdTotalPS: vStdPS, stdOwnerAlloc: vStdOwn, stdNetCost: vStdNet,
     stdOwnersRetained: vStdRet, stdSecureCredits: vStdSC, stdTaxSavings: vStdTax,
-    stdFicaSavings: vStdFica, realForfeitures: forf,
+    stdFicaSavings: vStdFica, realForfeitures: input.realForfeitures || 0, realForfeituresStd: forf,
     nhceCountEligible: nCnt, excludableNhces: input.excludableNhces||0
   };
 }
@@ -1589,10 +1591,16 @@ function runComplianceChecks(input, computed) {
   );
 
   // Net cost waterfall — only real forfeitures are subtracted from net cost (estimated are informational only)
+  // Standard uses stdRate-based forfeitures; Optimized uses actual PS allocation forfeitures
+  const expStdNet = computed.stdTotalPS - computed.stdOwnersRetained - computed.stdTaxSavings - computed.stdSecureCredits - computed.realForfeituresStd;
+  checks.push(Math.abs(computed.stdNetCost - expStdNet + computed.stdFicaSavings) > 1
+    ? { rule:'Std Net Cost', status:'FAIL', message:`${fmt(computed.stdNetCost)} ≠ expected ${fmt(expStdNet - computed.stdFicaSavings)}` }
+    : { rule:'Std Net Cost', status:'PASS', message:`${fmt(computed.stdTotalPS)} − ${fmt(computed.stdOwnersRetained)} − ${fmt(computed.stdTaxSavings)} − ${fmt(computed.stdSecureCredits)} − ${fmt(computed.realForfeituresStd)} − ${fmt(computed.stdFicaSavings)} = ${fmt(computed.stdNetCost)}` }
+  );
   const expOptNet = computed.optTotalPS - computed.optOwnersRetained - computed.optTaxSavings - computed.secureCredits - computed.realForfeitures;
-  checks.push(computed.optNetCost !== expOptNet
-    ? { rule:'Net Cost', status:'FAIL', message:`${fmt(computed.optNetCost)} ≠ ${fmt(expOptNet)}` }
-    : { rule:'Net Cost', status:'PASS', message:`${fmt(computed.optTotalPS)} − ${fmt(computed.optOwnersRetained)} − ${fmt(computed.optTaxSavings)} − ${fmt(computed.secureCredits)} − ${fmt(computed.realForfeitures)} = ${fmt(computed.optNetCost)}` }
+  checks.push(Math.abs(computed.optNetCost - expOptNet + computed.optFicaSavings) > 1
+    ? { rule:'Opt Net Cost', status:'FAIL', message:`${fmt(computed.optNetCost)} ≠ expected ${fmt(expOptNet - computed.optFicaSavings)}` }
+    : { rule:'Opt Net Cost', status:'PASS', message:`${fmt(computed.optTotalPS)} − ${fmt(computed.optOwnersRetained)} − ${fmt(computed.optTaxSavings)} − ${fmt(computed.secureCredits)} − ${fmt(computed.realForfeitures)} − ${fmt(computed.optFicaSavings)} = ${fmt(computed.optNetCost)}` }
   );
 
   // ACP reminder — employer matching contributions require separate testing
@@ -1658,6 +1666,7 @@ function computeWhatIfScenarios(baseInput) {
       optOwnerAlloc: null,   // let engine find max
       nhceFlatAmt: null,     // use percentage mode
       realForfeitures: 0,        // what-if uses 0 — only include forfeitures with actual termination data
+      realForfeituresStd: 0,
       estimatedForfeitures: 0,
       turnoverPct: 0,           // what-if uses 0 — no estimated forfeitures in scenario cards
     });
@@ -1739,6 +1748,7 @@ function getInputFromForm() {
     stdRate: designParams.stdRate || 3, optNhceRate: designParams.optNhceRate || 5,
     secureYear: designParams.secureYear || num('secureYear') || 1,
     realForfeitures: num('realForfeituresValue') || 0,
+    realForfeituresStd: num('realForfeituresStdValue') || 0,
     estimatedForfeitures: num('estimatedForfeituresValue') || 0,
     optOwnerAlloc: designParams.optOwnerAlloc || null,
     nhceFlatAmt: designParams.nhceFlatAmt || null,
@@ -1770,9 +1780,9 @@ function recalc() {
   document.getElementById('limSecure').textContent = (CREDIT_PHASE[c.secureYear-1]*100) + '%';
 
   // Standard card — show both real AND estimated forfeitures when present
-  // Estimated forfeitures are rate-specific: std uses stdEstimatedForfeitures
+  // Real forfeitures are plan-specific: std uses stdRate × pay, opt uses actual psAlloc
   const stdForfeitureRows = [
-    ...(c.realForfeitures > 0 ? [['Forfeitures (actual)', fmt(c.realForfeitures), true]] : []),
+    ...(c.realForfeituresStd > 0 ? [['Forfeitures (actual)', fmt(c.realForfeituresStd), true]] : []),
     ...((c.stdEstimatedForfeitures > 0 || c.optEstimatedForfeitures > 0) ? [['Est. Forfeitures* (not in net cost)', fmt(c.stdEstimatedForfeitures), true]] : []),
   ];
   document.getElementById('stdResults').innerHTML = buildMetrics([
@@ -2050,7 +2060,7 @@ function runVerify() {
     ['ownerComp','Owner Comp'],['stdTotalPS','Std Total PS'],['stdOwnerAlloc','Std Owner Alloc'],
     ['stdOwnersRetained','Std Owners Retained'],['stdTaxSavings','Std Tax Savings'],
     ['stdSecureCredits','Std SECURE Credits'],['stdFicaSavings','Std FICA Savings'],
-    ['realForfeitures','Real Forfeitures'],['stdNetCost','Std Net Cost'],
+    ['realForfeituresStd','Std Forfeitures'],['realForfeitures','Opt Forfeitures'],['stdNetCost','Std Net Cost'],
     ['nhceCountEligible','Eligible NHCEs'],['excludableNhces','Excludable NHCEs'],
   ];
 
@@ -2191,6 +2201,7 @@ function loadScenario(idx) {
     // force that value instead of the checkbox-derived calculation.
     if (scenario.overrideForfeitures != null) {
       document.getElementById('realForfeituresValue').value = scenario.overrideForfeitures;
+      document.getElementById('realForfeituresStdValue').value = scenario.overrideForfeituresStd != null ? scenario.overrideForfeituresStd : scenario.overrideForfeitures;
       document.getElementById('forfeitures').value = document.getElementById('estimatedForfeituresValue').value || 0;
       const explain = document.getElementById('forfeitureExplain');
       if (explain) explain.textContent = `Prior-year forfeitures: ${fmt(scenario.overrideForfeitures)} (from vesting schedules, not current-year allocations)`;
@@ -2309,6 +2320,7 @@ function doImport() {
       // Handle forfeiture override (e.g. prior-year forfeitures from questionnaire)
       if (input.overrideForfeitures != null) {
         document.getElementById('realForfeituresValue').value = input.overrideForfeitures;
+        document.getElementById('realForfeituresStdValue').value = input.overrideForfeituresStd != null ? input.overrideForfeituresStd : input.overrideForfeitures;
         document.getElementById('forfeitures').value = document.getElementById('estimatedForfeituresValue').value || 0;
         const explain = document.getElementById('forfeitureExplain');
         if (explain) explain.textContent = `Prior-year forfeitures: ${fmt(input.overrideForfeitures)} (from vesting schedules)`;
@@ -2426,15 +2438,21 @@ function syncTurnoverFromManual() {
 // Dual model: always compute BOTH real (from departed employees) AND estimated (from turnover %).
 // Real forfeitures are included in net cost; estimated are informational only.
 function recalcForfeitures() {
-  let realForf = 0;
+  let realForf = 0;      // optimized plan forfeitures (actual psAlloc)
+  let realForfStd = 0;   // standard plan forfeitures (stdRate × pay)
   let estimatedForf = 0;
   const explain = document.getElementById('forfeitureExplain');
   const explanParts = [];
+  const designParams = getPlanDesignParams();
+  const stdRate = designParams.stdRate || 3;
 
   // 1) Always compute real forfeitures if departed employees are checked
+  //    Returns { std, opt } — standard uses stdRate × pay, optimized uses actual psAlloc
   if (departedEmployeeIndices.size > 0 && lastRenderedCensus) {
-    realForf = calculateRealForfeitures();
-    explanParts.push(`Real: ${departedEmployeeIndices.size} departed → ${fmt(realForf)}`);
+    const result = calculateRealForfeitures(stdRate);
+    realForf = result.opt;
+    realForfStd = result.std;
+    explanParts.push(`Real: ${departedEmployeeIndices.size} departed → Std ${fmt(realForfStd)} | Opt ${fmt(realForf)}`);
   }
 
   // 2) Always compute estimated forfeitures from turnover %
@@ -2443,7 +2461,6 @@ function recalcForfeitures() {
   if (turnoverRow) turnoverRow.classList.remove('turnover-disabled');
   const turnoverPct = parseFloat(document.getElementById('turnoverManual').value || 0) / 100;
   const eligible = num('nhceCount') - num('excludableNhces');
-  const designParams = getPlanDesignParams();
   const avgPay = num('nhceAvgPay');
   let nhceTotalPS = designParams.mode === 'gateway'
     ? (designParams.nhceFlatAmt || 1000) * eligible
@@ -2453,8 +2470,9 @@ function recalcForfeitures() {
   estimatedForf = Math.round(turnoverPct * forfeitablePS);
   explanParts.push(`Est: ${(turnoverPct*100).toFixed(1)}% turnover × ${fmt(forfeitablePS)} = ${fmt(estimatedForf)}`);
 
-  // 3) Write both values to hidden inputs
+  // 3) Write all values to hidden inputs
   document.getElementById('realForfeituresValue').value = realForf;
+  document.getElementById('realForfeituresStdValue').value = realForfStd;
   document.getElementById('estimatedForfeituresValue').value = estimatedForf;
   // Keep the visible forfeitures input showing estimated (for display in the panel form)
   document.getElementById('forfeitures').value = estimatedForf;
@@ -2617,19 +2635,23 @@ function toggleDeparture(empIndex, isDeparted) {
 }
 
 /**
- * Calculate real forfeitures from departed employees' PS allocations
+ * Calculate real forfeitures from departed employees' PS allocations.
+ * Returns { std, opt } — standard forfeitures use stdRate × pay,
+ * optimized forfeitures use the actual psAlloc (may be flat-dollar or cross-tested rate).
  */
-function calculateRealForfeitures() {
-  if (!lastRenderedCensus || departedEmployeeIndices.size === 0) return 0;
-  let total = 0;
+function calculateRealForfeitures(stdRate) {
+  if (!lastRenderedCensus || departedEmployeeIndices.size === 0) return { std: 0, opt: 0 };
+  let stdTotal = 0, optTotal = 0;
+  const rate = stdRate || 3;
   lastRenderedCensus.forEach(emp => {
     if (departedEmployeeIndices.has(emp.index) && !emp.excluded) {
-      // Standard and Optimized plans are NOT safe harbor —
-      // 100% of NHCE profit sharing is subject to vesting/forfeitures
-      total += emp.psAlloc;
+      // Standard plan: flat stdRate % of pay for every employee
+      stdTotal += Math.round(emp.pay * rate / 100);
+      // Optimized plan: actual PS allocation (flat-dollar or cross-tested rate)
+      optTotal += emp.psAlloc;
     }
   });
-  return total;
+  return { std: stdTotal, opt: optTotal };
 }
 
 /**
@@ -2642,11 +2664,14 @@ function updateDepartureSummary() {
   if (!summary || !summaryText || !summaryAmount) return;
 
   if (departedEmployeeIndices.size > 0) {
-    const realForf = calculateRealForfeitures();
+    const designParams = getPlanDesignParams();
+    const realForfResult = calculateRealForfeitures(designParams.stdRate || 3);
     summary.style.display = '';
     summary.className = 'departure-summary has-departures';
     summaryText.textContent = `${departedEmployeeIndices.size} employee(s) departed (3-yr cliff unvested)`;
-    summaryAmount.textContent = `Real Forfeitures: ${fmt(realForf)}`;
+    summaryAmount.textContent = realForfResult.std !== realForfResult.opt
+      ? `Forfeitures — Std: ${fmt(realForfResult.std)} | Opt: ${fmt(realForfResult.opt)}`
+      : `Real Forfeitures: ${fmt(realForfResult.opt)}`;
   } else if (lastRenderedCensus && lastRenderedCensus.length > 0) {
     summary.style.display = '';
     summary.className = 'departure-summary no-departures';
@@ -2997,7 +3022,7 @@ function generateIllustrationPDF() {
             <tr style="border-bottom:1px solid #eee;"><td style="padding:3px 0;">Tax Deductions (${tp}%)</td><td style="text-align:right;padding:3px 0;">${P(c.stdTaxSavings)}</td></tr>
             <tr style="border-bottom:1px solid #eee;"><td style="padding:3px 0;">SECURE 2.0 Credits</td><td style="text-align:right;padding:3px 0;">${P(c.stdSecureCredits)}</td></tr>
             ${c.stdFicaSavings > 0 ? `<tr style="border-bottom:1px solid #eee;"><td style="padding:3px 0;">${ficaLabel}</td><td style="text-align:right;padding:3px 0;">${P(c.stdFicaSavings)}</td></tr>` : ''}
-            ${c.realForfeitures > 0 ? `<tr style="border-bottom:1px solid #eee;"><td style="padding:3px 0;">Forfeitures (actual)</td><td style="text-align:right;padding:3px 0;">${P(c.realForfeitures)}</td></tr>` : ''}
+            ${c.realForfeituresStd > 0 ? `<tr style="border-bottom:1px solid #eee;"><td style="padding:3px 0;">Forfeitures (actual)</td><td style="text-align:right;padding:3px 0;">${P(c.realForfeituresStd)}</td></tr>` : ''}
             ${(c.stdEstimatedForfeitures > 0 || c.optEstimatedForfeitures > 0) ? `<tr style="color:#999;"><td style="padding:3px 0;">Est. Forfeitures* (not in net cost)</td><td style="text-align:right;padding:3px 0;">${P(c.stdEstimatedForfeitures)}</td></tr>` : ''}
           </table>
           <div style="display:flex;justify-content:space-between;align-items:center;background:#f5f6f8;padding:7px 14px;margin:8px -16px 0;border-top:2px solid #ddd;">
@@ -3125,7 +3150,7 @@ function generateIllustrationPDF() {
         ${trow("Less: Owner's Retained", P(typ3.ownersRetained), P(c.stdOwnersRetained), P(c.optOwnersRetained), {c3: GREEN})}
         ${trow('Less: Tax Deductions (' + tp + '%)', P(typ3.taxDeductions), P(c.stdTaxSavings), P(c.optTaxSavings))}
         ${trow('Less: SECURE 2.0 Credits', '$0', P(c.stdSecureCredits), P(c.secureCredits))}
-        ${c.realForfeitures > 0 ? trow('Less: Forfeitures (actual)', '$0', P(c.realForfeitures), P(c.realForfeitures)) : ''}
+        ${(c.realForfeituresStd > 0 || c.realForfeitures > 0) ? trow('Less: Forfeitures (actual)', '$0', P(c.realForfeituresStd), P(c.realForfeitures)) : ''}
         ${(c.stdEstimatedForfeitures > 0 || c.optEstimatedForfeitures > 0) ? trow('Est. Forfeitures* (not in net cost)', '$0', P(c.stdEstimatedForfeitures), P(c.optEstimatedForfeitures), {c1:'#aaa', c2:'#aaa', c3:'#aaa', labelColor:'#aaa'}) : ''}
         ${c.stdFicaSavings > 0 || c.optFicaSavings > 0 ? trow('Less: ' + ficaLabel, P(typ3.ficaSavings), P(c.stdFicaSavings), P(c.optFicaSavings)) : ''}
         ${trow('Net Cost (before fee)', $(typ3.netCost), $(c.stdNetCost), $(c.optNetCost), {bold:true, bg:'#f5f6f8', borderTop:true, c1:'#B22234', c2:NAVY, c3:NAVY})}
@@ -3176,13 +3201,19 @@ function generateIllustrationPDF() {
 
     <div style="border-left:4px solid ${GOLD};background:#f8f9fa;padding:6px 14px;margin-bottom:5px;">
       <div style="font-size:10px;color:#666;margin-bottom:3px;line-height:1.3;">Employees who leave before fully vested forfeit their unvested profit sharing balance, reducing future plan costs.</div>
-      ${c.realForfeitures > 0
-        ? `<div style="font-size:11px;">Actual forfeitures from departed employees: &nbsp;<strong style="font-size:14px;color:${NAVY};font-family:Georgia,serif;">${$(c.realForfeitures)}</strong>&nbsp; <span style="color:#999;font-size:9.5px;">(already included in Net Cost)</span></div>`
+      ${(c.realForfeituresStd > 0 || c.realForfeitures > 0)
+        ? `<div style="font-size:11px;">Actual forfeitures from departed employees:</div>
+           <div style="display:flex;gap:20px;margin:3px 0;">
+             <div><span style="font-size:10px;color:#666;">Standard (${c.stdRate}% flat):</span> <strong style="font-size:14px;color:${NAVY};font-family:Georgia,serif;">${$(c.realForfeituresStd)}</strong></div>
+             <div><span style="font-size:10px;color:#666;">Optimized:</span> <strong style="font-size:14px;color:${GREEN};font-family:Georgia,serif;">${$(c.realForfeitures)}</strong></div>
+             ${c.realForfeitures !== c.realForfeituresStd ? `<div><span style="font-size:10px;color:#666;">Difference:</span> <strong style="font-size:14px;color:${c.realForfeitures > c.realForfeituresStd ? GREEN : NAVY};font-family:Georgia,serif;">${c.realForfeitures > c.realForfeituresStd ? '+' : ''}${$(c.realForfeitures - c.realForfeituresStd)}</strong></div>` : ''}
+           </div>
+           <div style="font-size:9.5px;color:#999;">(already included in each plan's Net Cost)</div>`
         : ''}
       ${(c.stdEstimatedForfeitures > 0 || c.optEstimatedForfeitures > 0)
-        ? `<div style="font-size:11px;${c.realForfeitures > 0 ? 'margin-top:3px;' : ''}">Estimated forfeitures based on selected turnover rate: &nbsp;<strong style="font-size:14px;color:${GOLD};font-family:Georgia,serif;">Standard: ${$(c.stdEstimatedForfeitures)} &nbsp;|&nbsp; Optimized: ${$(c.optEstimatedForfeitures)}</strong>&nbsp; <span style="color:#999;font-size:9.5px;">(estimate only — not included in Net Cost)</span></div>`
+        ? `<div style="font-size:11px;${(c.realForfeituresStd > 0 || c.realForfeitures > 0) ? 'margin-top:3px;' : ''}">Estimated forfeitures based on selected turnover rate: &nbsp;<strong style="font-size:14px;color:${GOLD};font-family:Georgia,serif;">Standard: ${$(c.stdEstimatedForfeitures)} &nbsp;|&nbsp; Optimized: ${$(c.optEstimatedForfeitures)}</strong>&nbsp; <span style="color:#999;font-size:9.5px;">(estimate only — not included in Net Cost)</span></div>`
         : ''}
-      ${c.realForfeitures === 0 && c.stdEstimatedForfeitures === 0 && c.optEstimatedForfeitures === 0
+      ${(c.realForfeituresStd === 0 && c.realForfeitures === 0 && c.stdEstimatedForfeitures === 0 && c.optEstimatedForfeitures === 0)
         ? `<div style="font-size:11px;color:#999;">No forfeitures currently calculated. Use the employee departure checkboxes or turnover % to model forfeiture scenarios.</div>`
         : ''}
     </div>
@@ -3190,7 +3221,7 @@ function generateIllustrationPDF() {
     <!-- DISCLAIMERS -->
     <div style="font-size:8px;color:#aaa;line-height:1.35;margin-top:4px;">
       <div>This illustration is based on current census data and IRS limits for the plan year shown. Actual results may vary based on final compensation, employee changes, and plan amendments. This is not tax or legal advice. Consult your tax advisor and ERISA counsel. All contributions are voluntary and discretionary. SECURE 2.0 credits subject to eligibility requirements.</div>
-      <div style="margin-top:1px;">${c.realForfeitures > 0 ? 'Forfeitures reflect actual departed employees (unvested amounts above 3% safe harbor) and are included in Net Cost.' : ''}${c.realForfeitures > 0 && (c.stdEstimatedForfeitures > 0 || c.optEstimatedForfeitures > 0) ? ' ' : ''}${(c.stdEstimatedForfeitures > 0 || c.optEstimatedForfeitures > 0) ? '*Estimated forfeitures are based on the selected turnover rate and are shown for informational purposes only — they are not included in Net Cost calculations.' : ''}${c.realForfeitures === 0 && c.stdEstimatedForfeitures === 0 && c.optEstimatedForfeitures === 0 ? 'No forfeitures included.' : ''} "Typical Strategy" assumes a ${c.stdRate}% safe harbor with immediate vesting, no forfeitures, no SECURE credits. Tax rate: ${tp}%.</div>
+      <div style="margin-top:1px;">${(c.realForfeituresStd > 0 || c.realForfeitures > 0) ? 'Forfeitures reflect actual departed employees\u2019 unvested profit sharing and are included in each plan\u2019s Net Cost. Standard and Optimized plans may have different forfeiture amounts because employee allocations differ.' : ''}${(c.realForfeituresStd > 0 || c.realForfeitures > 0) && (c.stdEstimatedForfeitures > 0 || c.optEstimatedForfeitures > 0) ? ' ' : ''}${(c.stdEstimatedForfeitures > 0 || c.optEstimatedForfeitures > 0) ? '*Estimated forfeitures are based on the selected turnover rate and are shown for informational purposes only — they are not included in Net Cost calculations.' : ''}${(c.realForfeituresStd === 0 && c.realForfeitures === 0 && c.stdEstimatedForfeitures === 0 && c.optEstimatedForfeitures === 0) ? 'No forfeitures included.' : ''} "Typical Strategy" assumes a ${c.stdRate}% safe harbor with immediate vesting, no forfeitures, no SECURE credits. Tax rate: ${tp}%.</div>
       <div style="margin-top:1px;">Owner's retained share is not a business expense — it goes directly into the owner's retirement account and is deducted from net cost.</div>
     </div>
 
