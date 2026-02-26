@@ -1988,19 +1988,9 @@ function recalc() {
     ...(c.realForfeituresStd > 0 ? [['Forfeitures (actual)', fmt(c.realForfeituresStd), true]] : []),
     ...((c.stdEstimatedForfeitures > 0 || c.optEstimatedForfeitures > 0) ? [['Est. Forfeitures* (not in net cost)', fmt(c.stdEstimatedForfeitures), true]] : []),
   ];
-  // Per-owner breakdown for standard plan
-  const stdOwnerRows = [];
-  if (c.additionalOwners && c.additionalOwners.length > 0) {
-    const ownerName = [c.firstName, c.lastName].filter(Boolean).join(' ') || 'Primary Owner';
-    stdOwnerRows.push([`  ${ownerName}`, fmt(c.stdOwnerAlloc)]);
-    c.additionalOwners.forEach((ao, i) => {
-      stdOwnerRows.push([`  ${ao.name || 'Add. Owner'}`, fmt((c.stdAdditionalAllocs || [])[i] || 0)]);
-    });
-  }
   document.getElementById('stdResults').innerHTML = buildMetrics([
     ['Total Profit Share', fmt(c.stdTotalPS)],
-    ['Owner Retained', fmt(c.stdOwnersRetained)],
-    ...stdOwnerRows,
+    ['Owners\' Profit Share', fmt(c.stdOwnersRetained)],
     ['Employee PS Cost', fmt(c.stdEmpPS)],
     ['Tax Savings (§280C)', fmt(c.stdTaxSavings)],
     ['FICA Savings (' + c.entityType + ')', fmt(c.stdFicaSavings)],
@@ -2023,21 +2013,9 @@ function recalc() {
     ? (c.crossTestResult.allPass ? ' <span class="xt-badge pass">✓ Cross-Test Pass</span>' : ' <span class="xt-badge fail">✗ Cross-Test Fail</span>')
     : '';
 
-  // Per-owner breakdown for optimized plan
-  const optOwnerRows = [];
-  if (c.additionalOwners && c.additionalOwners.length > 0) {
-    const ownerName = [c.firstName, c.lastName].filter(Boolean).join(' ') || 'Primary Owner';
-    optOwnerRows.push([`  ${ownerName}`, fmt(c.optOwnerAlloc) + ' (' + ownerPct + ')']);
-    c.additionalOwners.forEach((ao, i) => {
-      const addlAlloc = (c.optAdditionalAllocs || [])[i] || 0;
-      const addlPct = ao.comp > 0 ? (addlAlloc / ao.comp * 100).toFixed(1) + '%' : '';
-      optOwnerRows.push([`  ${ao.name || 'Add. Owner'}`, fmt(addlAlloc) + (addlPct ? ' (' + addlPct + ')' : '')]);
-    });
-  }
   document.getElementById('optResults').innerHTML = buildMetrics([
     ['Total Profit Share', fmt(c.optTotalPS)],
-    ['Owner Allocation' + xtTag, c.additionalOwners?.length > 0 ? fmt(c.optOwnersRetained) : fmt(c.optOwnerAlloc) + ' (' + ownerPct + ')'],
-    ...optOwnerRows,
+    ['Owners\' Profit Share' + xtTag, fmt(c.optOwnersRetained)],
     ['Employee PS Cost' + eligibleLabel + hceLabel, fmt(c.optEmpPS)],
     ['Tax Savings (§280C)', fmt(c.optTaxSavings)],
     ['FICA Savings (' + c.entityType + ')', fmt(c.optFicaSavings)],
@@ -3346,7 +3324,7 @@ function generateIllustrationPDF() {
     <!-- CLIENT INFO BAR -->
     <div style="border-left:4px solid ${GOLD};background:#f8f9fa;padding:7px 18px;margin:10px 0 8px;display:flex;justify-content:space-between;align-items:center;">
       <div>
-        <div style="font-weight:700;font-size:12px;color:#222;">Owner: ${name} (age ${c.ownerAge})${(c.additionalOwners||[]).map(ao => ` &nbsp;|&nbsp; ${ao.name} (age ${ao.age})`).join('')}</div>
+        <div style="font-weight:700;font-size:12px;color:#222;">Owners: ${name} (age ${c.ownerAge})${(c.additionalOwners||[]).map(ao => `, ${ao.name} (age ${ao.age})`).join('')}</div>
         <div style="color:#777;font-size:10.5px;margin-top:1px;">${elig} eligible employees &nbsp;|&nbsp; ${nonOwn} non-owner employees</div>
       </div>
       <div style="text-align:right;font-size:11px;color:#777;">
