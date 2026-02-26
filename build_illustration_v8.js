@@ -125,8 +125,9 @@ function computePlanData(input) {
   const forfeitures = input.forfeitures || 0;           // optimized plan forfeitures (actual PS alloc)
   const forfeituresStd = input.forfeituresStd || forfeitures; // standard plan forfeitures (stdRate × pay)
   // Estimated forfeitures (informational only — not in net cost)
-  const estForfeitures = input.estForfeitures || 0;         // optimized estimated
-  const estForfeituresStd = input.estForfeituresStd || 0;   // standard estimated
+  // Use pre-computed values if provided, otherwise compute from turnover %
+  const turnoverPct = input.turnoverPct || 0;
+  const turnoverDecimal = turnoverPct / 100;
 
   // ── SECURE Year ──
   const secureYear = Math.max(1, Math.min(input.secureYear || 1, 5));
@@ -199,6 +200,10 @@ function computePlanData(input) {
   const optNetCost = optTotalPS - optOwnersRetained - optTaxSavings - secureCredits - forfeitures;
   const optTotalTaxSavings = optTaxSavings + secureCredits;
 
+  // Estimated forfeitures — neither PlanForge plan is safe harbor, full NHCE PS is forfeitable
+  const estForfeituresStd = input.estForfeituresStd || Math.round(turnoverDecimal * nhceTotalComp * stdRate / 100);
+  const estForfeitures = input.estForfeitures || Math.round(turnoverDecimal * (nhceFlatAmt > 0 ? nhceCount * nhceFlatAmt : nhceTotalComp * optNhceRate / 100));
+
   // ══════════════════════════════════════════════════════════════════
   //  TYPICAL STRATEGY — baselines (no SECURE, no forfeitures, 100% vested)
   // ══════════════════════════════════════════════════════════════════
@@ -207,12 +212,18 @@ function computePlanData(input) {
   const typOwnersRetained = Math.round(ownersTotalComp * 0.03);
   const typTaxSavings = Math.round(typTotalPS * taxRate);
   const typNetCost = typTotalPS - typOwnersRetained - typTaxSavings;
+  // Typical plan IS safe harbor — first 3% vested, only excess is forfeitable
+  // At 3%, nothing is forfeitable (entire contribution = safe harbor minimum)
+  const typEstForfeitures = 0; // 3% rate = 3% floor → 0% forfeitable
 
   // 5% safe harbor (baseline for Optimized — same employee rate)
   const typ5TotalPS = Math.round(totalComp * 0.05);
   const typ5OwnersRetained = Math.round(ownersTotalComp * 0.05);
   const typ5TaxSavings = Math.round(typ5TotalPS * taxRate);
   const typ5NetCost = typ5TotalPS - typ5OwnersRetained - typ5TaxSavings;
+  // At 5% safe harbor, 2% above the 3% floor is forfeitable
+  const typ5ForfeitableRate = Math.max(0, 0.05 - 0.03); // 2%
+  const typ5EstForfeitures = Math.round((turnoverPct / 100) * nhceTotalComp * typ5ForfeitableRate);
 
   // Savings vs baselines
   const stdSavings = typNetCost - stdNetCost;
@@ -289,8 +300,8 @@ function computePlanData(input) {
     optNetCost,
 
     // Typical baselines
-    typTotalPS, typOwnersRetained, typTaxSavings, typNetCost,
-    typ5TotalPS, typ5OwnersRetained, typ5TaxSavings, typ5NetCost,
+    typTotalPS, typOwnersRetained, typTaxSavings, typNetCost, typEstForfeitures,
+    typ5TotalPS, typ5OwnersRetained, typ5TaxSavings, typ5NetCost, typ5EstForfeitures,
 
     // Comparisons
     stdSavings, optSavings, stdSavPct, optSavPct,
@@ -649,9 +660,9 @@ function generate(input, outputPath) {
       ['Less: SECURE 2.0 Credits', '$0', `(${fmt(D.stdSecureCredits)})`, `(${fmt(D.optSecureCredits)})`],
       ['Less: Forfeitures (actual)', '$0', D.forfeituresStd > 0 ? `(${fmt(D.forfeituresStd)})` : '$0', D.forfeitures > 0 ? `(${fmt(D.forfeitures)})` : '$0'],
     ];
-    // Insert estimated forfeitures row before Net Cost if estimates exist
-    if (D.estForfeitures > 0 || D.estForfeituresStd > 0) {
-      vsRows.push(['Est. Forfeitures*', '$0', D.estForfeituresStd > 0 ? fmt(D.estForfeituresStd) : '$0', D.estForfeitures > 0 ? fmt(D.estForfeitures) : '$0']);
+    // Insert estimated forfeitures row before Net Cost if any plan has estimates
+    if (D.estForfeitures > 0 || D.estForfeituresStd > 0 || D.typEstForfeitures > 0) {
+      vsRows.push(['Est. Forfeitures*', D.typEstForfeitures > 0 ? fmt(D.typEstForfeitures) : '$0', D.estForfeituresStd > 0 ? fmt(D.estForfeituresStd) : '$0', D.estForfeitures > 0 ? fmt(D.estForfeitures) : '$0']);
     }
     vsRows.push(['Net Cost', fmt(D.typNetCost), fmt(D.stdNetCost), fmt(D.optNetCost)]);
 

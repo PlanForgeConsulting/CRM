@@ -1135,8 +1135,8 @@ function independentCompute(input) {
   const realForfeitures = input.realForfeitures || 0;       // optimized plan real forfeitures
   const realForfeituresStd = input.realForfeituresStd || 0; // standard plan real forfeitures (stdRate × pay)
   const turnoverPctDecimal = (input.turnoverPct || 0) / 100;
-  // Standard plan IS safe harbor — first 3% is immediately vested, only PS above 3% is forfeitable
-  // Optimized plan is NOT safe harbor — entire NHCE PS is subject to vesting/forfeiture
+  // Neither Standard nor Optimized PlanForge plans are safe harbor — full NHCE PS is forfeitable
+  // Only the Typical baseline plan (computed separately) uses safe harbor vesting (first 3% vested)
   const secureYear = Math.max(1, Math.min(input.secureYear || 1, 5));
   const stdRate = input.stdRate || 3.0;
   const planMode = input.planDesignMode || 'maximize';
@@ -1153,12 +1153,9 @@ function independentCompute(input) {
   const stdHcePS = Math.round(hceTotalComp * stdRate / 100);
   const stdEmpPS = stdTotalPS - stdOwnersRetained;
   const stdNhcePS = Math.round(stdNhceTotalComp * stdRate / 100);
-  // Standard plan IS safe harbor — first 3% of PS is immediately vested (non-forfeitable)
-  // Only the portion above the 3% safe harbor floor is subject to vesting schedule
-  // If stdRate <= 3%, nothing is forfeitable (entire contribution is safe harbor vested)
-  const SAFE_HARBOR_FLOOR = 0.03; // 3%
-  const stdForfeitableRate = Math.max(0, stdRate / 100 - SAFE_HARBOR_FLOOR);
-  const stdForfeitablePS = Math.round(stdNhceTotalComp * stdForfeitableRate);
+  // Standard PlanForge plan is NOT safe harbor — entire NHCE PS is subject to vesting schedule
+  // Full NHCE PS amount is forfeitable upon employee departure
+  const stdForfeitablePS = stdNhcePS;
   const stdEstimatedForfeitures = Math.round(turnoverPctDecimal * stdForfeitablePS);
 
   const nhceCreditEligible = Math.max(0, nhceCountEligible - nhceOver100k);
@@ -1779,7 +1776,18 @@ function computeTypicalBaseline(c, rate) {
   }
   // Include FICA savings in net cost
   netCost -= ficaSavings;
-  return { totalPS, ownerAlloc, ownersRetained, addlAllocs, taxDeductions, netCost, secureCredits: 0, forfeitures: 0, realForfeitures: 0, estimatedForfeitures: 0, stdEstimatedForfeitures: 0, optEstimatedForfeitures: 0, ficaSavings };
+
+  // Typical plan IS safe harbor — first 3% is immediately vested (non-forfeitable)
+  // Only the portion above 3% is subject to vesting and thus forfeitable
+  // Safe harbor never shows below 3% in the illustration (required minimum)
+  const safeHarborFloor = 0.03;
+  const forfeitableRate = Math.max(0, rate / 100 - safeHarborFloor);
+  const nhceTotalComp = c.stdNhceTotalComp || c.nhceTotalComp;
+  const turnoverEl = typeof document !== 'undefined' && document.getElementById('turnoverManual');
+  const turnoverPctDecimal = turnoverEl ? (parseFloat(turnoverEl.value) || 0) / 100 : 0;
+  const typEstimatedForfeitures = Math.round(turnoverPctDecimal * nhceTotalComp * forfeitableRate);
+
+  return { totalPS, ownerAlloc, ownersRetained, addlAllocs, taxDeductions, netCost, secureCredits: 0, forfeitures: 0, realForfeitures: 0, estimatedForfeitures: typEstimatedForfeitures, stdEstimatedForfeitures: 0, optEstimatedForfeitures: 0, ficaSavings };
 }
 
 /**
@@ -2668,11 +2676,8 @@ function recalcForfeitures() {
   const eligible = num('nhceCount') - num('excludableNhces');
   const avgPay = num('nhceAvgPay');
 
-  // Standard estimated: safe harbor — first 3% is non-forfeitable, only excess is forfeitable
-  const safeHarborFloor = 0.03;
-  const stdRateDecimal = stdRate / 100;
-  const stdForfeitableRate = Math.max(0, stdRateDecimal - safeHarborFloor);
-  const stdForfeitablePS = Math.round(eligible * avgPay * stdForfeitableRate);
+  // Standard estimated: NOT safe harbor — full NHCE PS is forfeitable
+  const stdForfeitablePS = Math.round(eligible * avgPay * stdRate / 100);
   const stdEstimatedForf = Math.round(turnoverPct * stdForfeitablePS);
 
   // Optimized estimated: NOT safe harbor — full NHCE PS is forfeitable
@@ -2681,7 +2686,7 @@ function recalcForfeitures() {
     : Math.round(eligible * avgPay * (designParams.optNhceRate || 5) / 100);
   estimatedForf = Math.round(turnoverPct * optNhceTotalPS);
 
-  explanParts.push(`Est Std: ${(turnoverPct*100).toFixed(1)}% × ${fmt(stdForfeitablePS)} forfeitable = ${fmt(stdEstimatedForf)}`);
+  explanParts.push(`Est Std: ${(turnoverPct*100).toFixed(1)}% × ${fmt(stdForfeitablePS)} = ${fmt(stdEstimatedForf)}`);
   explanParts.push(`Est Opt: ${(turnoverPct*100).toFixed(1)}% × ${fmt(optNhceTotalPS)} = ${fmt(estimatedForf)}`);
 
   // 3) Write all values to hidden inputs
@@ -2871,13 +2876,10 @@ function calculateRealForfeitures(stdRate) {
   if (!lastRenderedCensus || departedEmployeeIndices.size === 0) return { std: 0, opt: 0 };
   let stdTotal = 0, optTotal = 0;
   const rate = stdRate || 3;
-  // Standard plan is safe harbor — first 3% is immediately vested, only excess is forfeitable
-  const safeHarborFloor = 0.03;
-  const stdForfeitableRate = Math.max(0, rate / 100 - safeHarborFloor);
   lastRenderedCensus.forEach(emp => {
     if (departedEmployeeIndices.has(emp.index) && !emp.excluded) {
-      // Standard plan: only the portion above 3% safe harbor floor is forfeitable
-      stdTotal += Math.round(emp.pay * stdForfeitableRate);
+      // Standard plan: NOT safe harbor — full stdRate % of pay is forfeitable
+      stdTotal += Math.round(emp.pay * rate / 100);
       // Optimized plan: NOT safe harbor — full PS allocation forfeited
       optTotal += emp.psAlloc;
     }
@@ -3466,7 +3468,7 @@ function generateIllustrationPDF() {
         ${trow('Less: Tax Deductions (' + tp + '%)', P(typ3.taxDeductions), P(c.stdTaxSavings), P(c.optTaxSavings))}
         ${trow('Less: SECURE 2.0 Credits', '$0', P(c.stdSecureCredits), P(c.secureCredits))}
         ${(c.realForfeituresStd > 0 || c.realForfeitures > 0) ? trow('Less: Forfeitures (actual)', '$0', P(c.realForfeituresStd), P(c.realForfeitures)) : ''}
-        ${(c.stdEstimatedForfeitures > 0 || c.optEstimatedForfeitures > 0) ? trow('Est. Forfeitures* (not in net cost)', '$0', P(c.stdEstimatedForfeitures), P(c.optEstimatedForfeitures), {c1:'#aaa', c2:'#aaa', c3:'#aaa', labelColor:'#aaa'}) : ''}
+        ${(c.stdEstimatedForfeitures > 0 || c.optEstimatedForfeitures > 0 || typ3.estimatedForfeitures > 0) ? trow('Est. Forfeitures* (not in net cost)', typ3.estimatedForfeitures > 0 ? P(typ3.estimatedForfeitures) : '$0', P(c.stdEstimatedForfeitures), P(c.optEstimatedForfeitures), {c1:'#aaa', c2:'#aaa', c3:'#aaa', labelColor:'#aaa'}) : ''}
         ${c.stdFicaSavings > 0 || c.optFicaSavings > 0 ? trow('Less: ' + ficaLabel, P(typ3.ficaSavings), P(c.stdFicaSavings), P(c.optFicaSavings)) : ''}
         ${trow('Net Cost (before fee)', $(typ3.netCost), $(c.stdNetCost), $(c.optNetCost), {bold:true, bg:'#f5f6f8', borderTop:true, c1:'#B22234', c2:NAVY, c3:NAVY})}
         ${optFee > 0 ? trow('Plus: PlanForge Optimized Fee (20%)', '—', '—', $(optFee), {c3: GOLD}) : ''}
