@@ -1567,8 +1567,13 @@ function verifyIndependent(input) {
   const ssWageBase = lim.ssWageBase || 176100;
   const ownerW2 = input.ownerSalary || 0;
 
-  // Standard — HCE non-owners participate only in the optimized plan, NOT the standard plan
-  const stdAllComp = ((input.nhceCount||0) * nPay) + oCmp + addl.reduce((s,c)=>s+c,0);
+  // Standard plan: excludes NHCEs with <1,000 hours (nhcesUnder1000hrs)
+  // HCE non-owners participate only in the optimized plan, NOT the standard plan
+  const u1k = input.nhcesUnder1000hrs || 0;
+  const stdNhceCount = (input.nhceCount||0) - u1k;
+  const stdNhceTotalComp = input.stdNhceTotalComp || (stdNhceCount * nPay);
+  const ownersComp = oCmp + addl.reduce((s,c)=>s+c,0);
+  const stdAllComp = stdNhceTotalComp + ownersComp;
   const vStdPS = Math.round(stdAllComp * sRate / 100);
   const vStdOwn = Math.round(oCmp * sRate / 100);
   const vStdAddl = addl.map((c, i) => addlPS[i] ? Math.round(c * sRate / 100) : 0);
@@ -1581,7 +1586,11 @@ function verifyIndependent(input) {
   const vStdCPE = Math.min(CREDIT_PHASE[sYear-1] * vStdPEC, 1000);
   const vStdSC = Math.round(nCred * vStdCPE * sizeFactor);
   // §404(a)(3): deduction capped at 25% of total covered compensation
-  const vDeductionLimit = Math.round(stdAllComp * 0.25);
+  // Must match independentCompute: totalComp = nhceCountEligible*pay + HCE comp + owners comp
+  const nhceTotalComp = nCnt * nPay;
+  const hceTotalComp = hCnt * hPay;
+  const totalComp = nhceTotalComp + hceTotalComp + ownersComp;
+  const vDeductionLimit = Math.round(totalComp * 0.25);
   const vStdDeductible = Math.min(vStdPS, vDeductionLimit);
   const vStdTax = Math.round((vStdDeductible - vStdSC) * tr);
 
@@ -2372,7 +2381,7 @@ function loadScenario(idx) {
     const nhceFlatAmt3El = document.getElementById('nhceFlatAmt3');
     if (nhceFlatAmt3El) nhceFlatAmt3El.value = s.nhceFlatAmt || '';
   }
-  setPlanDesign(designMode);
+  setPlanDesign(designMode, true); // Suppress recalc — will run once at the end with all data loaded
 
   // Handle turnover percentage
   if (s.turnoverPct != null) {
@@ -2586,7 +2595,7 @@ function syncSecureYear(v) {
 }
 function onSecureYearChange(sourceId) { syncSecureYear(num(sourceId)); recalc(); }
 
-function setPlanDesign(mode) {
+function setPlanDesign(mode, suppressRecalc) {
   currentPlanDesign = mode;
   document.getElementById('planDesign1').style.display = mode === 'maximize' ? '' : 'none';
   document.getElementById('planDesign2').style.display = mode === 'gateway' ? '' : 'none';
@@ -2594,7 +2603,7 @@ function setPlanDesign(mode) {
   document.getElementById('planTab1').className = 'plan-tab' + (mode === 'maximize' ? ' active' : '');
   document.getElementById('planTab2').className = 'plan-tab' + (mode === 'gateway' ? ' active' : '');
   document.getElementById('planTab3').className = 'plan-tab' + (mode === 'custom' ? ' active' : '');
-  recalcForfeitures(); recalc();
+  if (!suppressRecalc) { recalcForfeitures(); recalc(); }
 }
 
 function getPlanDesignParams() {
@@ -3393,7 +3402,7 @@ function generateIllustrationPDF() {
     <!-- COMPLIANCE -->
     <div style="text-align:center;margin:5px 0 4px;font-size:11.5px;">
       <span style="display:inline-block;width:16px;height:16px;background:${GREEN};color:#fff;border-radius:50%;text-align:center;line-height:16px;font-size:11px;font-weight:700;vertical-align:middle;">&#10003;</span>
-      <strong style="vertical-align:middle;margin-left:4px;"> Both plans pass all IRS nondiscrimination requirements.</strong>
+      <strong style="vertical-align:middle;margin-left:4px;"> ${c.crossTestResult && !c.crossTestResult.allPass ? 'Cross-test may need adjustment — see details above.' : 'Both plans pass all IRS nondiscrimination requirements.'}</strong>
     </div>
 
     <!-- EXPLAINER -->
