@@ -1855,6 +1855,7 @@ function computeWhatIfScenarios(baseInput) {
     // Use 'custom' mode so that input.optNhceRate is respected at the exact rate.
     // Custom mode handles: gateway 3× cap below 5%, cross-testing at 5%+
     const scenarioInput = Object.assign({}, baseInput, {
+      stdRate: nhceRate,          // Fee compares standard vs optimized at the SAME rate
       optNhceRate: nhceRate,
       planDesignMode: 'custom',
       optOwnerAlloc: null,   // let engine find max
@@ -3218,11 +3219,14 @@ function generateIllustrationPDF() {
   const typ3 = computeTypicalBaseline(c, c.stdRate);
   const typ5 = computeTypicalBaseline(c, c.optNhceRate);
 
-  // PlanForge fee: 20% of (standard net cost − optimized net cost)
-  // Standard plan uses its own benchmark rate; optimized uses the cross-tested rate
-  // The fee captures the advantage of optimized plan design over a standard flat-rate plan
+  // PlanForge fee: 20% of (standard net cost − optimized net cost) at the SAME NHCE rate
+  // Always compares standard flat plan vs optimized cross-tested plan at the opt NHCE rate
+  // This isolates the pure cross-testing advantage — changing the benchmark stdRate has no effect
   const ficaLabel = c.entityType === 'LLC' ? 'FICA Savings (SE Tax)' : 'S-Corp FICA Savings';
-  const netCostSavings = Math.max(0, c.stdNetCost - c.optNetCost);
+  const feeBaseInput = getInputFromForm();
+  feeBaseInput.stdRate = c.optNhceRate;  // standard at same rate as optimized
+  const feeBase = independentCompute(feeBaseInput);
+  const netCostSavings = Math.max(0, feeBase.stdNetCost - c.optNetCost);
   const optFee = Math.round(0.20 * netCostSavings);
   const stdFee = 0; // No fee on standard plan
 
