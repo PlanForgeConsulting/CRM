@@ -413,8 +413,9 @@
             <div style="font-size:12px;color:var(--gray);margin-bottom:10px;line-height:1.5;">
               <strong>Maximize Owner:</strong> Uses real EBAR cross-testing to find the maximum owner allocation that passes §401(a)(4). NHCEs get 5% (gateway). Age-weighted actuarial factors determine feasibility.
             </div>
-            <div class="form-row">
+            <div class="form-row-3">
               <div class="form-group"><label>Std Rate (%) — Benchmark</label><input type="number" id="stdRate" value="3" min="1" max="25" step="0.5" oninput="debouncedRecalc()"></div>
+              <div class="form-group"><label>Opt NHCE Rate (%)</label><input type="number" id="optNhceRate1" value="5" min="1" max="25" step="0.5" oninput="debouncedRecalc()"></div>
               <div class="form-group"><label>SECURE Year (1-5)</label><input type="number" id="secureYear" value="2" min="1" max="5" oninput="onSecureYearChange('secureYear')"></div>
             </div>
             <div id="ratioTestResult" style="margin-top:8px;padding:8px 12px;background:var(--greenBg);border-radius:6px;font-size:12px;display:none;"></div>
@@ -521,7 +522,7 @@
         <div id="stdResults"></div>
       </div>
       <div class="result-card optimized" id="optCard">
-        <h3>PlanForge Optimized (Cross-Tested)</h3>
+        <h3>PlanForge Optimized (<span id="optRateDisplay">5</span>% NHCE)</h3>
         <div id="optResults"></div>
         <div id="secureCreditAlert" style="display:none;margin-top:8px;padding:8px 12px;border-radius:6px;font-size:11px;line-height:1.5;"></div>
       </div>
@@ -1976,6 +1977,7 @@ function recalc() {
   }
 
   document.getElementById('stdRateDisplay').textContent = c.stdRate;
+  document.getElementById('optRateDisplay').textContent = c.optNhceRate;
   document.getElementById('yearDisplay').textContent = c.year;
   document.getElementById('lim415c').textContent = fmt(c.limits.additions415c);
   document.getElementById('lim401a17').textContent = fmt(c.limits.compCap401a17);
@@ -2353,6 +2355,7 @@ function loadScenario(idx) {
   document.getElementById('hceAllocRate').value = s.hceAllocRate != null ? s.hceAllocRate : '';
   document.getElementById('nhceOver100k').value = s.nhceOver100k || 0;
   document.getElementById('stdRate').value = s.stdRate || 3;
+  document.getElementById('optNhceRate1').value = s.optNhceRate || 5;
   syncSecureYear(s.secureYear || 1);
   document.getElementById('forfeitures').value = s.forfeitures || 0;
   document.getElementById('deferralEligMonths').value = s.deferralEligMonths || 12;
@@ -2422,11 +2425,11 @@ function loadScenario(idx) {
       recalcForfeitures();
     }
 
-    // Step 4: In maximize mode, run the optimizer ONCE with all data loaded to set the initial rate
+    // Step 4: In maximize mode, run the optimizer ONCE with all data loaded to set the initial opt rate
     if (designMode === 'maximize') {
       const optInput = getInputFromForm();
       const bestRate = findOptimalNhceRate(optInput);
-      document.getElementById('stdRate').value = bestRate;
+      document.getElementById('optNhceRate1').value = bestRate;
     }
 
     // Step 5: Final recalc with correct forfeitures and departed indices
@@ -2435,12 +2438,12 @@ function loadScenario(idx) {
     if (typeof updateDepartureSummary === 'function') updateDepartureSummary();
   } else {
     // No census data — standard scenario load
-    // In maximize mode, run the optimizer ONCE to set the initial rate
+    // In maximize mode, run the optimizer ONCE to set the initial opt rate
     if (designMode === 'maximize') {
       recalcForfeitures(); // Ensure forfeitures are calculated first
       const optInput = getInputFromForm();
       const bestRate = findOptimalNhceRate(optInput);
-      document.getElementById('stdRate').value = bestRate;
+      document.getElementById('optNhceRate1').value = bestRate;
     }
     recalcForfeitures();
     recalc();
@@ -2617,8 +2620,8 @@ function setPlanDesign(mode, suppressRecalc) {
 
 function getPlanDesignParams() {
   const mode = currentPlanDesign;
-  // Standard and optimized NHCE rates are always the same — standard "chases" the optimized rate
-  if (mode === 'maximize') { const r = num('stdRate') || 5; return { mode:'maximize', stdRate: r, optNhceRate: r, secureYear: num('secureYear'), optOwnerAlloc: null }; }
+  // Standard rate is an independent benchmark; optimized NHCE rate is set by optimizer or user
+  if (mode === 'maximize') { return { mode:'maximize', stdRate: num('stdRate') || 3, optNhceRate: num('optNhceRate1') || 5, secureYear: num('secureYear'), optOwnerAlloc: null }; }
   if (mode === 'gateway') return { mode:'gateway', stdRate: 3, nhceFlatAmt: num('nhceFlatAmt')||1000, secureYear: num('secureYear2'), optOwnerAlloc: null };
   return { mode:'custom', stdRate: num('stdRate3'), optNhceRate: num('optNhceRate3')||5, secureYear: num('secureYear3'), optOwnerAlloc: num('optOwnerAlloc3')||null, nhceFlatAmt: num('nhceFlatAmt3')||null };
 }
@@ -3216,8 +3219,8 @@ function generateIllustrationPDF() {
   const typ5 = computeTypicalBaseline(c, c.optNhceRate);
 
   // PlanForge fee: 20% of (standard net cost − optimized net cost)
-  // Standard plan "chases" the optimized rate — both use the same NHCE rate
-  // The fee captures the pure cross-testing advantage (employee exclusions + higher owner allocation)
+  // Standard plan uses its own benchmark rate; optimized uses the cross-tested rate
+  // The fee captures the advantage of optimized plan design over a standard flat-rate plan
   const ficaLabel = c.entityType === 'LLC' ? 'FICA Savings (SE Tax)' : 'S-Corp FICA Savings';
   const netCostSavings = Math.max(0, c.stdNetCost - c.optNetCost);
   const optFee = Math.round(0.20 * netCostSavings);
