@@ -96,6 +96,8 @@ function computePlanData(input) {
   const nhceAvgPay = input.nhceAvgPay || 50000;
   const nhceTotalComp = nhceCount * nhceAvgPay;
   const eligible = nhceCount + 1 + additionalOwners.length; // NHCEs + primary owner + additional
+  // SECURE 2.0 employer size: ALL W-2 employees >$5K prior year (including excluded)
+  const totalEmployeesForSize = (input.totalNhceCount || nhceCount) + 1 + additionalOwners.length;
 
   // Owner total comp includes additional owners
   const ownersTotalComp = ownerComp + additionalOwners.reduce((s, ao) => s + ao.comp, 0);
@@ -113,9 +115,9 @@ function computePlanData(input) {
   // over 50, reaches zero at 100 employees
   const nhcesOver100k = input.nhceOver100k || 0;
   const nhceCreditEligible = Math.max(0, nhceCount - nhcesOver100k);
-  const employerSizeFactor = eligible <= 50 ? 1.0
-    : eligible >= 100 ? 0
-    : 1.0 - 0.02 * (eligible - 50);
+  const employerSizeFactor = totalEmployeesForSize <= 50 ? 1.0
+    : totalEmployeesForSize >= 100 ? 0
+    : 1.0 - 0.02 * (totalEmployeesForSize - 50);
   const secureCredits = input.secureCredits ||
     Math.round(nhceCreditEligible * 1000 * CREDIT_PHASE[secureYear - 1] * employerSizeFactor);
 
@@ -131,8 +133,11 @@ function computePlanData(input) {
   const stdOwnersRetained = stdOwnerAlloc + stdAdditionalAllocs.reduce((s, a) => s + a, 0);
   const stdEmpPS = stdTotalPS - stdOwnersRetained;
 
+  // §404(a)(3): employer PS deduction capped at 25% of total covered compensation
   // IRC §280C: Must reduce deduction by credit amount
-  const stdTaxSavings = Math.round((stdTotalPS - secureCredits) * taxRate);
+  const deductionLimit404 = Math.round(totalComp * 0.25);
+  const stdDeductiblePS = Math.min(stdTotalPS, deductionLimit404);
+  const stdTaxSavings = Math.round((stdDeductiblePS - secureCredits) * taxRate);
   const stdNetCost = stdTotalPS - stdOwnersRetained - stdTaxSavings - secureCredits - forfeituresStd;
   const stdTotalTaxSavings = stdTaxSavings + secureCredits;
 
@@ -167,8 +172,9 @@ function computePlanData(input) {
     : Math.round(nhceTotalComp * optNhceRate / 100);
   const optTotalPS = optOwnersRetained + optEmpPS;
 
-  // IRC §280C
-  const optTaxSavings = Math.round((optTotalPS - secureCredits) * taxRate);
+  // §404(a)(3) + IRC §280C
+  const optDeductiblePS = Math.min(optTotalPS, deductionLimit404);
+  const optTaxSavings = Math.round((optDeductiblePS - secureCredits) * taxRate);
   const optNetCost = optTotalPS - optOwnersRetained - optTaxSavings - secureCredits - forfeitures;
   const optTotalTaxSavings = optTaxSavings + secureCredits;
 
@@ -215,7 +221,8 @@ function computePlanData(input) {
     const addlAllocs = additionalOwners.map(ao => Math.round(ao.comp * nhceRate / 100));
     const ownersRet = ownerAllocation + addlAllocs.reduce((s, a) => s + a, 0);
     const total = ownersRet + nhcePS;
-    const taxSav = Math.round((total - secureCredits) * taxRate);
+    const deductible = Math.min(total, deductionLimit404);
+    const taxSav = Math.round((deductible - secureCredits) * taxRate);
     const net = total - ownersRet - taxSav - secureCredits - forfeitures;
     const xtDelta = ownerAllocation - flatOwnerAlloc;
     return { nhceRate, ownerAllocation, flatOwnerAlloc, xtDelta, ownersRet, nhcePS, total, taxSav, net, ownerRate };

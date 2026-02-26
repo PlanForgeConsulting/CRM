@@ -623,6 +623,7 @@ body{background:#F5F3EE;min-height:100vh;font-family:'Libre Franklin',-apple-sys
       <div class="pf-step-title">Review Your Answers</div>
       <div class="pf-step-desc">Make sure everything looks right before submitting.</div>
       <div id="reviewContent"></div>
+      <div id="submitError" style="display:none;color:#B22234;background:#FEE;padding:10px 14px;border-radius:6px;margin-bottom:10px;font-size:13px;"></div>
       <div class="pf-btn-row">
         <button class="pf-btn pf-btn-back" onclick="prevStep()">← Edit</button>
         <button class="pf-btn pf-btn-submit" onclick="submitForm()">Submit Questionnaire</button>
@@ -1124,12 +1125,15 @@ function submitForm() {
   })
   .catch(err => {
     console.error('Submission webhook failed:', err);
-    // Still show success — data is also logged to console as backup
-    // The advisor can retrieve it from the browser console if webhook is down
     console.log('PlanForge Questionnaire Data (backup):', JSON.stringify(data, null, 2));
-    clearSavedDraft();
-    currentStep = 7;
-    showStep(7);
+    // Show error — keep draft so user doesn't lose data
+    const errorDiv = document.getElementById('submitError');
+    if (errorDiv) {
+      errorDiv.style.display = '';
+      errorDiv.textContent = 'Submission failed — your data has been saved locally. Please try again or contact your advisor.';
+    } else {
+      alert('Submission failed. Your answers have been saved. Please try again or contact your advisor.');
+    }
   })
   .finally(() => {
     if (submitBtn) {
@@ -1260,7 +1264,7 @@ function _doAutoSave() {
     const empRows = [];
     document.querySelectorAll('#employeeDetailRows > div').forEach(row => {
       const age = row.querySelector('.emp-age')?.value || '';
-      const salary = row.querySelector('.emp-salary')?.value || '';
+      const salary = row.querySelector('.emp-pay')?.value || '';
       const type = row.querySelector('.emp-type')?.value || '';
       if (age || salary) empRows.push({ age, salary, type });
     });

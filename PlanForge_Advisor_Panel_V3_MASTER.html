@@ -316,8 +316,8 @@
           </div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label>Owner W-2 Salary ($)</label><input type="number" id="ownerSalary" value="274345" step="1000" oninput="debouncedRecalc()"></div>
-          <div class="form-group" id="k1Group"><label>Owner K-1 ($)</label><input type="number" id="ownerK1" value="0" step="1000" oninput="debouncedRecalc()"></div>
+          <div class="form-group"><label>Owner W-2 Salary ($)</label><input type="number" id="ownerSalary" value="274345" min="0" step="1000" oninput="debouncedRecalc()"></div>
+          <div class="form-group" id="k1Group"><label>Owner K-1 ($)</label><input type="number" id="ownerK1" value="0" min="0" step="1000" oninput="debouncedRecalc()"></div>
         </div>
         <div class="form-group"><label>Tax Rate (%)</label><input type="number" id="taxRate" value="30" min="10" max="50" step="1" oninput="debouncedRecalc()"></div>
       </div>
@@ -342,7 +342,7 @@
       <div class="panel-body">
         <div class="form-row-3">
           <div class="form-group"><label>NHCE Count</label><input type="number" id="nhceCount" value="20" min="0" max="500" oninput="debouncedRecalc()"></div>
-          <div class="form-group"><label>Avg NHCE Pay ($)</label><input type="number" id="nhceAvgPay" value="46654" step="500" oninput="debouncedRecalc()"></div>
+          <div class="form-group"><label>Avg NHCE Pay ($)</label><input type="number" id="nhceAvgPay" value="46654" min="0" step="500" oninput="debouncedRecalc()"></div>
           <div class="form-group"><label>Avg NHCE Age</label><input type="number" id="nhceAvgAge" value="38" min="18" max="75" oninput="debouncedRecalc()"></div>
         </div>
         <div class="form-row">
@@ -353,7 +353,7 @@
           <div class="form-group"><label>Non-Owner HCE Count</label><input type="number" id="hceNonOwnerCount" value="0" min="0" max="100" oninput="debouncedRecalc()"></div>
           <div class="form-group">
             <label>Avg HCE Pay ($)</label>
-            <input type="number" id="hceAvgPay" value="0" step="500" oninput="onHceAvgPayChange()">
+            <input type="number" id="hceAvgPay" value="0" min="0" step="500" oninput="onHceAvgPayChange()">
             <div style="font-size:10px;color:var(--gray);margin-top:2px;" id="hcePayFloorNote"></div>
           </div>
           <div class="form-group"><label>Avg HCE Age</label><input type="number" id="hceAvgAge" value="45" min="18" max="75" oninput="debouncedRecalc()"></div>
@@ -772,7 +772,7 @@ function buildFullCensus(input) {
     input.nhcePayLow, input.nhcePayHigh, input.hceNonOwnerCount, input.hceAvgPay,
     input.hceAvgAge, excludableNhces,
     (input.additionalOwners||[]).map(a => [a.name,a.age,a.salary,a.k1]),
-    parsedCensusEmployees ? parsedCensusEmployees.length : 0
+    parsedCensusEmployees ? JSON.stringify(parsedCensusEmployees) : 0
   ]);
   if (_lastCensusKey === cacheKey && _cachedCensus) return _cachedCensus;
 
@@ -853,10 +853,12 @@ function runRatioPercentageTest(rateGroup, census) {
   const hcePct = (hcesInGroup / totalHCEs) * 100;
   const nhcePct = totalNHCEs > 0 ? (nhcesInGroup / totalNHCEs) * 100 : 0;
 
-  const ratio = hcePct > 0 ? nhcePct / hcePct : (nhcePct > 0 ? Infinity : 1.0);
+  // If no HCEs in this rate group, ratio is undefined — treat as passing (no HCEs benefiting = n/a)
+  // If HCEs benefit but no NHCEs, ratio = 0 → fail (unless hcePct is 0, meaning no HCE coverage)
+  const ratio = hcePct > 0 ? nhcePct / hcePct : 1.0;
 
   return {
-    passes: ratio >= 0.70,
+    passes: ratio >= 0.70 || hcePct === 0,
     ratio,
     hcePct,
     nhcePct,
@@ -1099,6 +1101,9 @@ function independentCompute(input) {
   const ownersTotalComp = ownerComp + addlOwners.reduce((s, ao) => s + ao.comp, 0);
   const totalComp = nhceTotalComp + hceTotalComp + ownersTotalComp;
   const eligible = nhceCountEligible + hceNonOwnerCount + 1 + addlOwners.length;
+  // SECURE 2.0 employer size: count ALL W-2 employees making >$5K in prior year
+  // This includes excluded employees — they're still employees for headcount purposes
+  const totalEmployeesForSize = nhceCountTotal + hceNonOwnerCount + 1 + addlOwners.length;
   const hceCount = hceNonOwnerCount + 1 + addlOwners.length;
 
   // Dual forfeiture model: both real AND estimated can coexist independently
@@ -1135,13 +1140,17 @@ function independentCompute(input) {
   const nhceCreditEligible = Math.max(0, nhceCountEligible - nhceOver100k);
   // SECURE 2.0 employer size adjustment: full credit ≤50 employees,
   // reduces 2% per employee over 50, reaches zero at 100 employees
-  const employerSizeFactor = eligible <= 50 ? 1.0
-    : eligible >= 100 ? 0
-    : 1.0 - 0.02 * (eligible - 50);
+  // Uses totalEmployeesForSize (ALL W-2 >$5K prior year, including excluded)
+  const employerSizeFactor = totalEmployeesForSize <= 50 ? 1.0
+    : totalEmployeesForSize >= 100 ? 0
+    : 1.0 - 0.02 * (totalEmployeesForSize - 50);
   const stdPerEmployeeContrib = nhceAvgPay > 0 ? Math.round(nhceAvgPay * stdRate / 100) : 0;
   const stdCreditPerEmployee = Math.min(CREDIT_PHASE[secureYear - 1] * stdPerEmployeeContrib, 1000);
   const stdSecureCredits = Math.round(nhceCreditEligible * stdCreditPerEmployee * employerSizeFactor);
-  const stdTaxSavings = Math.round((stdTotalPS - stdSecureCredits) * taxRate);
+  // §404(a)(3): employer PS deduction capped at 25% of total covered compensation
+  // IRC §280C: deduction must be reduced by SECURE credit amount
+  const stdDeductiblePS = Math.min(stdTotalPS, deductionLimit404);
+  const stdTaxSavings = Math.round((stdDeductiblePS - stdSecureCredits) * taxRate);
   let stdNetCost = stdTotalPS - stdOwnersRetained - stdTaxSavings - stdSecureCredits - realForfeituresStd;
 
   // ── Optimized plan with REAL cross-testing ──
@@ -1383,7 +1392,9 @@ function independentCompute(input) {
   const optEstimatedForfeitures = Math.round(turnoverPctDecimal * optForfeitablePS);
   const estimatedForfeitures = optEstimatedForfeitures; // backward compat — opt is primary display
   const forfeitures = realForfeitures + estimatedForfeitures;
-  const optTaxSavings = Math.round((optTotalPS - secureCredits) * taxRate);
+  // §404(a)(3): employer PS deduction capped at 25% of total covered compensation
+  const optDeductiblePS = Math.min(optTotalPS, deductionLimit404);
+  const optTaxSavings = Math.round((optDeductiblePS - secureCredits) * taxRate);
   let optNetCost = optTotalPS - optOwnersRetained - optTaxSavings - secureCredits - realForfeitures;
   const ownerAllocPctOfComp = ownerComp > 0 ? (optOwnerAlloc / ownerComp * 100) : 0;
 
@@ -1391,10 +1402,11 @@ function independentCompute(input) {
   lastCrossTestResult = crossTestResult;
 
   // ── FICA Savings on 401(k) Profit Sharing ──
-  // The profit sharing contribution avoids FICA/SE tax.
-  // S-Corp: full 15.3% savings (7.65% employer + 7.65% employee) below SS wage base, 2.9% above
+  // Profit sharing contributions are not subject to FICA.
+  // S-Corp: employer-side 7.65% savings (6.2% SS + 1.45% Medicare) below SS wage base, 1.45% above
   // LLC/Sole Prop: net savings after SE tax deduction offset — effectively employee half only
   //   = 7.65% below SS wage base, 1.45% above (employer half covered by SE tax deduction)
+  // C-Corp: no FICA savings (owner is W-2 employee, PS doesn't reduce FICA obligation)
   const entityType = input.entityType || 'S-Corp';
   const ssWageBase = limits.ssWageBase || 176100;
   const ownerW2 = ownerSalary;  // W-2 salary (for S-Corp) or equivalent SE income base
@@ -1433,7 +1445,7 @@ function independentCompute(input) {
     nhceAvgPay, hceAvgPay, nhceOver100k, nhceCreditEligible,
     nhceAvgAge: input.nhceAvgAge || 38, hceAvgAge: input.hceAvgAge || 45,
     nhcePayLow: input.nhcePayLow || 0, nhcePayHigh: input.nhcePayHigh || 0,
-    hceAllocRate, forfeitures, realForfeitures, realForfeituresStd, estimatedForfeitures, stdEstimatedForfeitures, optEstimatedForfeitures, secureYear, secureCredits, stdSecureCredits, employerSizeFactor,
+    hceAllocRate, forfeitures, realForfeitures, realForfeituresStd, estimatedForfeitures, stdEstimatedForfeitures, optEstimatedForfeitures, secureYear, secureCredits, stdSecureCredits, employerSizeFactor, totalEmployeesForSize,
     optPerEmployeeContrib, optCreditPerEmployee,
     stdRate, stdTotalPS, stdOwnerAlloc, stdOwnersRetained, stdHcePS, stdEmpPS,
     stdTaxSavings, stdNetCost,
@@ -1488,10 +1500,16 @@ function verifyIndependent(input) {
   const vStdAddl = addl.map((c, i) => addlPS[i] ? Math.round(c * sRate / 100) : 0);
   const vStdRet = vStdOwn + vStdAddl.reduce((s,a)=>s+a,0);
   const vStdEmp = vStdPS - vStdRet;
+  // SECURE 2.0 employer size: ALL W-2 employees >$5K prior year (including excluded)
+  const totalForSize = (input.nhceCount||0) + hCnt + 1 + addlRaw.length;
+  const sizeFactor = totalForSize <= 50 ? 1.0 : totalForSize >= 100 ? 0 : 1.0 - 0.02 * (totalForSize - 50);
   const vStdPEC = nPay > 0 ? Math.round(nPay * sRate / 100) : 0;
   const vStdCPE = Math.min(CREDIT_PHASE[sYear-1] * vStdPEC, 1000);
-  const vStdSC = Math.round(nCred * vStdCPE);
-  const vStdTax = Math.round((vStdPS - vStdSC) * tr);
+  const vStdSC = Math.round(nCred * vStdCPE * sizeFactor);
+  // §404(a)(3): deduction capped at 25% of total covered compensation
+  const vDeductionLimit = Math.round(stdAllComp * 0.25);
+  const vStdDeductible = Math.min(vStdPS, vDeductionLimit);
+  const vStdTax = Math.round((vStdDeductible - vStdSC) * tr);
 
   // FICA savings for standard plan (S-Corp/LLC: 7.65% below SS wage base, 1.45% above; C-Corp: 0)
   let vStdFica = 0;
@@ -2696,7 +2714,12 @@ function setupCensusPaste() {
 
 function parseCensusData(raw) {
   const detected = document.getElementById('censusDetected');
-  departedEmployeeIndices = new Set(); // Clear departures when census changes
+  // Warn if departures will be lost
+  if (departedEmployeeIndices.size > 0) {
+    const proceed = confirm(`${departedEmployeeIndices.size} employee departure(s) are marked. Changing census data will clear these. Continue?`);
+    if (!proceed) return;
+  }
+  departedEmployeeIndices = new Set();
   lastRenderedCensus = null;
   _lastCensusKey = null; _cachedCensus = null; // Invalidate census cache on new data
   if (!raw || raw.trim().length < 3) { detected.style.display = 'none'; parsedCensusEmployees = null; return; }
