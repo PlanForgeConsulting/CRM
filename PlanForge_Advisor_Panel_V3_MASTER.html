@@ -1197,13 +1197,12 @@ function independentCompute(input) {
   let hceRateInfo = null; // HCE rate cap analysis
 
   if (planMode === 'maximize') {
-    optNhceRate = 5.0;
+    optNhceRate = input.optNhceRate || 5.0;
     // Default HCE non-owners to 0% in maximize mode (was NHCE rate before)
     const effectiveHceRate = (hceAllocRate !== null && hceAllocRate !== undefined) ? hceAllocRate : 0;
 
-    // Use binary search to find max owner allocation that passes cross-testing
-    // Additional owners get NHCE rate — test with actual rate they'll receive
-    if (nhceCountEligible > 0) {
+    if (nhceCountEligible > 0 && optNhceRate >= 5.0) {
+      // At ≥5% NHCE rate: full cross-testing — binary search for max owner allocation
       const maxResult = findMaxPassingAllocation(optNhceRate, effectiveHceRate, census, limits, optNhceRate);
       crossTestResult = maxResult.result;
 
@@ -1239,6 +1238,28 @@ function independentCompute(input) {
           maxHceDollar: Math.round(hceAvgPay * maxHceRate / 100),
         };
       }
+    } else if (nhceCountEligible > 0 && optNhceRate < 5.0) {
+      // Below 5% NHCE rate: gateway 3× rule — max owner allocation = 3× NHCE rate
+      const maxOwnerRate = optNhceRate * 3;
+      const ownerAllocByGateway = Math.round(ownerComp * maxOwnerRate / 100);
+      optOwnerAlloc = Math.min(ownerAllocByGateway, maxOwnerAllocPS);
+
+      // Verify with cross-testing if real census data exists
+      if (census.eligibleNhces.length > 0) {
+        const gatewayOwnerRate = ownerComp > 0 ? (optOwnerAlloc / ownerComp * 100) : 0;
+        const gatewayCrossTest = runCrossTest(gatewayOwnerRate, optNhceRate, effectiveHceRate, census, limits, maxOwnerRate);
+        crossTestResult = gatewayCrossTest;
+        if (!gatewayCrossTest.allPass) {
+          const maxResult = findMaxPassingAllocation(optNhceRate, effectiveHceRate, census, limits, maxOwnerRate);
+          crossTestResult = maxResult.result;
+          const constrainedAlloc = Math.min(Math.round(ownerComp * maxResult.maxRate / 100), maxOwnerAllocPS);
+          if (constrainedAlloc < optOwnerAlloc) {
+            optOwnerAlloc = constrainedAlloc;
+          }
+        }
+      }
+
+      gatewayInfo = { nhceFlatAmt: null, lowestNhceRate: optNhceRate, maxOwnerRate, ownerAllocByGateway, effectiveCap: maxOwnerAllocPS, crossTestVerified: crossTestResult !== null };
     } else {
       // No NHCEs — solo owner: §415(c) individual cap AND §404(a)(3) plan-level 25% of total comp
       // For solo owner, total comp = owner comp only, so plan-level deduction limit = 25% of owner comp
@@ -1730,12 +1751,70 @@ function computeTypicalBaseline(c, rate) {
   return { totalPS, ownerAlloc, ownersRetained, addlAllocs, taxDeductions, netCost, secureCredits: 0, forfeitures: 0, realForfeitures: 0, estimatedForfeitures: 0, stdEstimatedForfeitures: 0, optEstimatedForfeitures: 0, ficaSavings };
 }
 
+/**
+ * Auto-search for the optimal NHCE rate in maximize mode.
+ * Sweeps rates from 1% to 10% and picks the one that maximizes owner profit share
+ * at the lowest possible employee cost (tiebreaks by lowest rate).
+ * Uses custom mode internally since it properly handles both gateway (<5%) and cross-testing (≥5%).
+ */
+function findOptimalNhceRate(baseInput) {
+  let bestRate = 5.0;
+  let bestOwnerAlloc = 0;
+
+  for (let rate = 1.0; rate <= 10.0; rate += 1.0) {
+    const testInput = Object.assign({}, baseInput, {
+      stdRate: rate,
+      optNhceRate: rate,
+      planDesignMode: 'custom',
+      optOwnerAlloc: null,
+      nhceFlatAmt: null,
+      realForfeitures: 0,
+      realForfeituresStd: 0,
+      estimatedForfeitures: 0,
+      turnoverPct: 0,
+    });
+    const result = independentCompute(testInput);
+    // Primary: maximize owner allocation. Secondary: lowest rate (cheapest employees).
+    if (result.optOwnerAlloc > bestOwnerAlloc ||
+        (result.optOwnerAlloc === bestOwnerAlloc && rate < bestRate)) {
+      bestOwnerAlloc = result.optOwnerAlloc;
+      bestRate = rate;
+    }
+  }
+
+  // Fine-tune: check 0.5% steps around the best rate
+  const lo = Math.max(1.0, bestRate - 1.0);
+  const hi = Math.min(10.0, bestRate + 1.0);
+  for (let rate = lo; rate <= hi; rate += 0.5) {
+    if (rate % 1.0 === 0) continue; // Already tested whole numbers
+    const testInput = Object.assign({}, baseInput, {
+      stdRate: rate,
+      optNhceRate: rate,
+      planDesignMode: 'custom',
+      optOwnerAlloc: null,
+      nhceFlatAmt: null,
+      realForfeitures: 0,
+      realForfeituresStd: 0,
+      estimatedForfeitures: 0,
+      turnoverPct: 0,
+    });
+    const result = independentCompute(testInput);
+    if (result.optOwnerAlloc > bestOwnerAlloc ||
+        (result.optOwnerAlloc === bestOwnerAlloc && rate < bestRate)) {
+      bestOwnerAlloc = result.optOwnerAlloc;
+      bestRate = rate;
+    }
+  }
+
+  return bestRate;
+}
+
+
 function computeWhatIfScenarios(baseInput) {
   const scenarios = [];
   const rates = [1, 2, 3, 4, 5];
   rates.forEach(nhceRate => {
-    // Use 'custom' mode so that input.optNhceRate is actually respected.
-    // 'maximize' mode hard-codes optNhceRate=5 and ignores the override.
+    // Use 'custom' mode so that input.optNhceRate is respected at the exact rate.
     // Custom mode handles: gateway 3× cap below 5%, cross-testing at 5%+
     const scenarioInput = Object.assign({}, baseInput, {
       optNhceRate: nhceRate,
@@ -1840,6 +1919,18 @@ function getInputFromForm() {
 
 function recalc() {
   const input = getInputFromForm();
+
+  // In maximize mode, auto-find the optimal NHCE rate that maximizes owner profit share
+  // at the lowest employee cost. Then set both stdRate and optNhceRate to that rate.
+  if (input.planDesignMode === 'maximize') {
+    const bestRate = findOptimalNhceRate(input);
+    input.stdRate = bestRate;
+    input.optNhceRate = bestRate;
+    // Update the form field to reflect the auto-found rate
+    const stdRateField = document.getElementById('stdRate');
+    if (stdRateField) stdRateField.value = bestRate;
+  }
+
   const c = independentCompute(input);
   currentComputed = c;
 
@@ -2470,7 +2561,8 @@ function setPlanDesign(mode) {
 
 function getPlanDesignParams() {
   const mode = currentPlanDesign;
-  if (mode === 'maximize') return { mode:'maximize', stdRate: num('stdRate'), optNhceRate: 5, secureYear: num('secureYear'), optOwnerAlloc: null };
+  // Standard and optimized NHCE rates are always the same — standard "chases" the optimized rate
+  if (mode === 'maximize') { const r = num('stdRate') || 5; return { mode:'maximize', stdRate: r, optNhceRate: r, secureYear: num('secureYear'), optOwnerAlloc: null }; }
   if (mode === 'gateway') return { mode:'gateway', stdRate: 3, nhceFlatAmt: num('nhceFlatAmt')||1000, secureYear: num('secureYear2'), optOwnerAlloc: null };
   return { mode:'custom', stdRate: num('stdRate3'), optNhceRate: num('optNhceRate3')||5, secureYear: num('secureYear3'), optOwnerAlloc: num('optOwnerAlloc3')||null, nhceFlatAmt: num('nhceFlatAmt3')||null };
 }
@@ -2966,11 +3058,11 @@ function generateIllustrationPDF() {
   const typ3 = computeTypicalBaseline(c, c.stdRate);
   const typ5 = computeTypicalBaseline(c, c.optNhceRate);
 
-  // PlanForge fee: 20% of net cost savings at SAME NHCE rate (typical baseline − optimized)
-  // This isolates the pure cross-testing advantage by comparing at the same employee rate
+  // PlanForge fee: 20% of (standard net cost − optimized net cost)
+  // Standard plan "chases" the optimized rate — both use the same NHCE rate
+  // The fee captures the pure cross-testing advantage (employee exclusions + higher owner allocation)
   const ficaLabel = c.entityType === 'LLC' ? 'FICA Savings (SE Tax)' : 'S-Corp FICA Savings';
-  // Net cost includes FICA savings (subtracted in independentCompute)
-  const netCostSavings = Math.max(0, typ5.netCost - c.optNetCost);
+  const netCostSavings = Math.max(0, c.stdNetCost - c.optNetCost);
   const optFee = Math.round(0.20 * netCostSavings);
   const stdFee = 0; // No fee on standard plan
 
@@ -3027,11 +3119,9 @@ function generateIllustrationPDF() {
   // ── What-If boxes ──
   const wiBox = (s, i) => {
     const active = i === curIdx;
-    // Typical baseline at THIS scenario's NHCE rate (same-rate comparison)
-    const scenTypical = computeTypicalBaseline(c, s.nhceRate);
+    // Fee = 20% of (standard net cost − optimized net cost) at this NHCE rate
     const scenOptNetCost = s.netCost;
-    const sv = Math.max(0, scenTypical.netCost - scenOptNetCost);
-    // Fee = 20% of savings (typical at same rate − optimized net cost)
+    const sv = Math.max(0, s.stdNetCost - scenOptNetCost);
     const scenFee = Math.round(0.20 * sv);
     // Displayed net cost = optimized net cost + fee
     const displayedNC = scenOptNetCost + scenFee;
