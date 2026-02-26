@@ -640,6 +640,8 @@ let departedEmployeeIndices = new Set();  // Indices of employees marked as depa
 let lastRenderedCensus = null;  // Cache for departure table rendering
 let currentPlanDesign = 'maximize';
 let lastCrossTestResult = null;
+let currentNhcesUnder1000hrs = 0;   // Employees with <1K hours (excluded from both plans)
+let currentStdNhceTotalComp = null; // Exact standard plan NHCE total comp (from scenario data)
 
 // ── Performance: Debounce & Census Cache ──
 let _recalcTimer = null;
@@ -1107,10 +1109,17 @@ function independentCompute(input) {
   const excludableNhces = Math.min(input.excludableNhces || 0, nhceCountTotal);
   const nhceCountEligible = nhceCountTotal - excludableNhces;
 
+  // Standard plan includes all employees EXCEPT those with <1,000 hours
+  // (Optimized plan excludes more via PS eligibility requirements)
+  const nhcesUnder1000hrs = input.nhcesUnder1000hrs || 0;
+  const stdNhceCount = nhceCountTotal - nhcesUnder1000hrs;
+
   const nhceTotalComp = nhceCountEligible * nhceAvgPay;
   const hceTotalComp = hceNonOwnerCount * hceAvgPay;
   const ownersTotalComp = ownerComp + addlOwners.reduce((s, ao) => s + ao.comp, 0);
   const totalComp = nhceTotalComp + hceTotalComp + ownersTotalComp;
+  // Standard plan total NHCE comp: use exact override if provided, else approximate
+  const stdNhceTotalComp = input.stdNhceTotalComp || (stdNhceCount * nhceAvgPay);
   const eligible = nhceCountEligible + hceNonOwnerCount + 1 + addlOwners.length;
   // SECURE 2.0 employer size: count ALL W-2 employees making >$5K in prior year
   // This includes excluded employees — they're still employees for headcount purposes
@@ -1133,16 +1142,16 @@ function independentCompute(input) {
   const hceAllocRate = input.hceAllocRate;
 
   // ── Standard plan ──
-  // HCE non-owners participate only in the optimized cross-tested plan,
-  // NOT in the standard safe harbor plan. Exclude hceTotalComp from std calc.
-  const stdTotalCompAll = (nhceCountTotal * nhceAvgPay) + ownersTotalComp;
+  // Standard = flat rate for everyone. Includes all employees with ≥1,000 hours.
+  // stdNhceTotalComp uses all standard-eligible NHCEs (more than optimized-eligible).
+  const stdTotalCompAll = stdNhceTotalComp + ownersTotalComp;
   const stdTotalPS = Math.round(stdTotalCompAll * stdRate / 100);
   const stdOwnerAlloc = Math.round(ownerComp * stdRate / 100);
   const stdAdditionalAllocs = addlOwners.map(ao => ao.receivesPS ? Math.round(ao.comp * stdRate / 100) : 0);
   const stdOwnersRetained = stdOwnerAlloc + stdAdditionalAllocs.reduce((s, a) => s + a, 0);
   const stdHcePS = Math.round(hceTotalComp * stdRate / 100);
   const stdEmpPS = stdTotalPS - stdOwnersRetained;
-  const stdNhcePS = Math.round(nhceCountEligible * nhceAvgPay * stdRate / 100);
+  const stdNhcePS = Math.round(stdNhceTotalComp * stdRate / 100);
   // Standard plan is NOT safe harbor — entire NHCE PS is subject to vesting schedule
   // Only the Typical baseline plan uses safe harbor (3% immediately vested)
   const stdForfeitablePS = stdNhcePS;
@@ -1456,7 +1465,8 @@ function independentCompute(input) {
   return {
     year, limits, taxRate, planMode,
     ownerComp, ownersTotalComp, nhceTotalComp, hceTotalComp, totalComp, eligible, hceCount,
-    hceNonOwnerCount, nhceCount: nhceCountTotal, nhceCountEligible, excludableNhces,
+    hceNonOwnerCount, nhceCount: nhceCountTotal, nhceCountEligible, excludableNhces, nhcesUnder1000hrs,
+    stdNhceCount, stdNhceTotalComp,
     nhceAvgPay, hceAvgPay, nhceOver100k, nhceCreditEligible,
     nhceAvgAge: input.nhceAvgAge || 38, hceAvgAge: input.hceAvgAge || 45,
     nhcePayLow: input.nhcePayLow || 0, nhcePayHigh: input.nhcePayHigh || 0,
@@ -1687,11 +1697,10 @@ function runComplianceChecks(input, computed) {
 // ══════════════════════════════════════════════════════════════
 
 function computeTypicalBaseline(c, rate) {
-  // "Typical Strategy" = safe harbor at given rate, immediate vesting,
-  // NO forfeitures, NO SECURE credits
-  // HCE non-owners participate only in the optimized cross-tested plan,
-  // NOT in the standard/typical safe harbor plan. Exclude hceTotalComp.
-  const typicalComp = c.totalComp - (c.hceTotalComp || 0);
+  // "Typical Strategy" = flat rate for everyone (same rate, no cross-testing).
+  // Includes all employees with ≥1,000 hours (stdNhceTotalComp), not just optimized-eligible.
+  // Uses stdNhceTotalComp + owners (excludes HCE non-owners who only participate in optimized).
+  const typicalComp = (c.stdNhceTotalComp || c.nhceTotalComp) + c.ownersTotalComp;
   const totalPS = Math.round(typicalComp * rate / 100);
   const ownerAlloc = Math.round(c.ownerComp * rate / 100);
   const addlAllocs = (c.additionalOwners || []).map(ao => {
@@ -1769,7 +1778,7 @@ function computeWhatIfScenarios(baseInput) {
 // ══════════════════════════════════════════════════════════════
 
 const TEST_SCENARIOS = [
-  { name: 'AlphaGraphics (Perry)', chip: 'AlphaGraphics', input: { bizName:'AlphaGraphics', firstName:'Sherry', lastName:'Perry', ownerAge:68, ownerSalary:274345, ownerK1:0, nhceCount:27, nhceAvgPay:69381, nhceAvgAge:45, nhcePayLow:2252, nhcePayHigh:116636, hceNonOwnerCount:0, hceAvgPay:0, hceAvgAge:0, hceAllocRate:0, nhceOver100k:0, secureYear:2, forfeitures:0, year:'2025', taxRate:0.30, entityType:'S-Corp', stdRate:2, deferralEligMonths:12, psEligMonths:3, excludableNhces:11, additionalOwners:[{name:'Spencer Perry',age:29,salary:182020,k1:0,receivesPS:true,allocRate:1.0}] },
+  { name: 'AlphaGraphics (Perry)', chip: 'AlphaGraphics', input: { bizName:'AlphaGraphics', firstName:'Sherry', lastName:'Perry', ownerAge:68, ownerSalary:274345, ownerK1:0, nhceCount:27, nhceAvgPay:69381, nhceAvgAge:45, nhcePayLow:2252, nhcePayHigh:116636, hceNonOwnerCount:0, hceAvgPay:0, hceAvgAge:0, hceAllocRate:0, nhceOver100k:0, secureYear:2, forfeitures:0, year:'2025', taxRate:0.30, entityType:'S-Corp', stdRate:5, deferralEligMonths:12, psEligMonths:3, excludableNhces:11, nhcesUnder1000hrs:6, stdNhceTotalComp:1358859, additionalOwners:[{name:'Spencer Perry',age:29,salary:182020,k1:0,receivesPS:true,allocRate:1.0}] },
     censusText: 'Darlene Scruggs\t09/01/1971\t83029.08\nCindy Aquila\t07/18/1968\t30950.41\nTammy Coil\t05/15/1965\t116636.23\nChristopher May\t04/16/1967\t108618.41\nJason Jones\t07/23/1978\t54053.42\nDerrick Rose\t07/26/1982\t11910.00\nMartha Rangel\t05/25/1999\t2252.25\nKevin Evans\t09/15/1986\t68581.80\nRoman De Leon\t10/02/1975\t73699.38\nEsteban Gomez\t04/30/1985\t96122.92\nElizabeth Castro\t08/16/1998\t53220.18\nScot Crispin\t07/17/1978\t58762.23\nKyle Foster\t01/13/1987\t53450.83\nTerri Ferguson\t04/02/1960\t15655.62\nRafael Garcia\t06/22/1970\t69210.35\nNicholas Crowder\t11/08/2000\t6601.01\nNancy Calderon Reyes\t09/27/1996\t55805.33\nTinisha Howard\t07/26/1980\t4268.00\nAnndrea Benavidez\t08/13/1993\t59099.03\nPete Mendoza\t03/19/1986\t67093.55\nKatrina Hilker\t08/27/1970\t61761.93\nTheresa Beatty\t07/16/1967\t63990.56\nAmber Batchelder\t07/17/1988\t54575.00\nJustin Sullivan\t12/30/1993\t50176.49\nZackery Daughtrey\t07/05/1992\t48894.53\nAldo Morales\t12/03/1978\t31127.80\nShaun Pamplin\t12/16/1966\t33346.07',
     departedIndices: [], overrideForfeitures: 0 },
   { name: 'Team North Texas (Council)', chip: 'Team North TX', input: { bizName:'Team North Texas', firstName:'Nathan', lastName:'Council', ownerAge:40, ownerSalary:54999.88, ownerK1:0, nhceCount:44, nhceAvgPay:48193, nhceAvgAge:39, nhcePayLow:7329, nhcePayHigh:120438, hceNonOwnerCount:0, hceAvgPay:0, nhceOver100k:1, secureYear:2, forfeitures:9000, year:'2025', taxRate:0.30, entityType:'S-Corp', stdRate:2, planDesignMode:'gateway', deferralEligMonths:12, psEligMonths:3, excludableNhces:0, turnoverPct:0, nhceFlatAmt:1000, additionalOwners:[{name:'Joseph Armstrong',age:39,salary:54999.88,k1:0}] },
@@ -1823,6 +1832,8 @@ function getInputFromForm() {
     nhceFlatAmt: designParams.nhceFlatAmt || null,
     additionalOwners: addlOwners, turnoverPct: parseFloat(document.getElementById('turnoverManual').value) || 0,
     planDesignMode: currentPlanDesign || 'maximize',
+    nhcesUnder1000hrs: currentNhcesUnder1000hrs || 0,
+    stdNhceTotalComp: currentStdNhceTotalComp || null,
     // Fee is auto-calculated: 20% of cross-test owner advantage (shown in PDF only)
   };
 }
@@ -2194,6 +2205,8 @@ function loadScenario(idx) {
   const s = scenario.input;
   parsedCensusEmployees = null; // Reset census data
   departedEmployeeIndices = new Set(); // Clear departures on scenario load
+  currentNhcesUnder1000hrs = s.nhcesUnder1000hrs || 0;
+  currentStdNhceTotalComp = s.stdNhceTotalComp || null;
   lastRenderedCensus = null;
   document.getElementById('censusPaste').value = '';
   document.getElementById('censusDetected').style.display = 'none';
