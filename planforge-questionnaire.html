@@ -1070,7 +1070,7 @@ function buildReview() {
 // === SUBMIT ===
 // ── WEBHOOK CONFIGURATION ──
 // Replace these with your actual endpoints:
-const ZAPIER_WEBHOOK_URL = 'https://hooks.zapier.com/hooks/catch/YOUR_ZAP_ID/YOUR_HOOK_ID/';
+const ZAPIER_WEBHOOK_URL = 'https://hooks.zapier.com/hooks/catch/24240047/u0t4r6y/';
 const CALCOM_BOOKING_URL = 'https://cal.com/planforge401k/consultation';
 
 function submitForm() {
@@ -1247,7 +1247,7 @@ function buildCalBookingUrl() {
   let url = CALCOM_BOOKING_URL + '?';
   if (name) url += 'name=' + name + '&';
   if (email) url += 'email=' + email + '&';
-  if (bizName) url += 'notes=' + encodeURIComponent('Business: ' + decodeURIComponent(bizName)) + '&';
+  if (bizName) url += 'company=' + bizName + '&';
   return url.replace(/&$/, '');
 }
 // === SHARE WITH ADVISOR ===
