@@ -883,7 +883,8 @@ function runRatioPercentageTest(rateGroup, census) {
 
 /**
  * Run Average Benefit Test
- * The average benefit percentage for NHCEs must be >= 70% of average for HCEs
+ * The average EBAR (Equivalent Benefit Accrual Rate) for NHCEs must be >= 70% of average for HCEs.
+ * Must use age-adjusted EBARs (not raw allocation rates) — this is the whole point of cross-testing.
  */
 function runAverageBenefitTest(allParticipants) {
   const hces = allParticipants.filter(p => p.type === 'HCE' || p.isOwner);
@@ -891,16 +892,17 @@ function runAverageBenefitTest(allParticipants) {
 
   if (hces.length === 0 || nhces.length === 0) return { passes: true, ratio: 1.0 };
 
-  const avgHceRate = hces.reduce((s, p) => s + (p.allocRate || 0), 0) / hces.length;
-  const avgNhceRate = nhces.reduce((s, p) => s + (p.allocRate || 0), 0) / nhces.length;
+  // Use EBAR (age-adjusted equivalent benefit rate), not raw allocRate
+  const avgHceEbar = hces.reduce((s, p) => s + (p.ebar || 0), 0) / hces.length;
+  const avgNhceEbar = nhces.reduce((s, p) => s + (p.ebar || 0), 0) / nhces.length;
 
-  const ratio = avgHceRate > 0 ? avgNhceRate / avgHceRate : 1.0;
+  const ratio = avgHceEbar > 0 ? avgNhceEbar / avgHceEbar : 1.0;
 
   return {
     passes: ratio >= 0.70,
     ratio,
-    avgHceRate,
-    avgNhceRate
+    avgHceRate: avgHceEbar,
+    avgNhceRate: avgNhceEbar
   };
 }
 
@@ -1956,16 +1958,10 @@ function getInputFromForm() {
 function recalc() {
   const input = getInputFromForm();
 
-  // In maximize mode, auto-find the optimal NHCE rate that maximizes owner profit share
-  // at the lowest employee cost. Then set both stdRate and optNhceRate to that rate.
-  if (input.planDesignMode === 'maximize') {
-    const bestRate = findOptimalNhceRate(input);
-    input.stdRate = bestRate;
-    input.optNhceRate = bestRate;
-    // Update the form field to reflect the auto-found rate
-    const stdRateField = document.getElementById('stdRate');
-    if (stdRateField) stdRateField.value = bestRate;
-  }
+  // In maximize mode, the NHCE rate comes from the form field (user-editable).
+  // The optimizer runs ONCE during scenario load to set the initial rate, but the user
+  // can change it at any time. independentCompute with optOwnerAlloc=null will always
+  // find the max passing owner allocation at whatever rate is set.
 
   const c = independentCompute(input);
   currentComputed = c;
@@ -1992,9 +1988,19 @@ function recalc() {
     ...(c.realForfeituresStd > 0 ? [['Forfeitures (actual)', fmt(c.realForfeituresStd), true]] : []),
     ...((c.stdEstimatedForfeitures > 0 || c.optEstimatedForfeitures > 0) ? [['Est. Forfeitures* (not in net cost)', fmt(c.stdEstimatedForfeitures), true]] : []),
   ];
+  // Per-owner breakdown for standard plan
+  const stdOwnerRows = [];
+  if (c.additionalOwners && c.additionalOwners.length > 0) {
+    const ownerName = [c.firstName, c.lastName].filter(Boolean).join(' ') || 'Primary Owner';
+    stdOwnerRows.push([`  ${ownerName}`, fmt(c.stdOwnerAlloc)]);
+    c.additionalOwners.forEach((ao, i) => {
+      stdOwnerRows.push([`  ${ao.name || 'Add. Owner'}`, fmt((c.stdAdditionalAllocs || [])[i] || 0)]);
+    });
+  }
   document.getElementById('stdResults').innerHTML = buildMetrics([
     ['Total Profit Share', fmt(c.stdTotalPS)],
     ['Owner Retained', fmt(c.stdOwnersRetained)],
+    ...stdOwnerRows,
     ['Employee PS Cost', fmt(c.stdEmpPS)],
     ['Tax Savings (§280C)', fmt(c.stdTaxSavings)],
     ['FICA Savings (' + c.entityType + ')', fmt(c.stdFicaSavings)],
@@ -2017,10 +2023,21 @@ function recalc() {
     ? (c.crossTestResult.allPass ? ' <span class="xt-badge pass">✓ Cross-Test Pass</span>' : ' <span class="xt-badge fail">✗ Cross-Test Fail</span>')
     : '';
 
+  // Per-owner breakdown for optimized plan
+  const optOwnerRows = [];
+  if (c.additionalOwners && c.additionalOwners.length > 0) {
+    const ownerName = [c.firstName, c.lastName].filter(Boolean).join(' ') || 'Primary Owner';
+    optOwnerRows.push([`  ${ownerName}`, fmt(c.optOwnerAlloc) + ' (' + ownerPct + ')']);
+    c.additionalOwners.forEach((ao, i) => {
+      const addlAlloc = (c.optAdditionalAllocs || [])[i] || 0;
+      const addlPct = ao.comp > 0 ? (addlAlloc / ao.comp * 100).toFixed(1) + '%' : '';
+      optOwnerRows.push([`  ${ao.name || 'Add. Owner'}`, fmt(addlAlloc) + (addlPct ? ' (' + addlPct + ')' : '')]);
+    });
+  }
   document.getElementById('optResults').innerHTML = buildMetrics([
     ['Total Profit Share', fmt(c.optTotalPS)],
-    ['Owner Allocation' + xtTag, fmt(c.optOwnerAlloc) + ' (' + ownerPct + ')'],
-    ['Owners Retained', fmt(c.optOwnersRetained)],
+    ['Owner Allocation' + xtTag, c.additionalOwners?.length > 0 ? fmt(c.optOwnersRetained) : fmt(c.optOwnerAlloc) + ' (' + ownerPct + ')'],
+    ...optOwnerRows,
     ['Employee PS Cost' + eligibleLabel + hceLabel, fmt(c.optEmpPS)],
     ['Tax Savings (§280C)', fmt(c.optTaxSavings)],
     ['FICA Savings (' + c.entityType + ')', fmt(c.optFicaSavings)],
@@ -2427,12 +2444,26 @@ function loadScenario(idx) {
       recalcForfeitures();
     }
 
-    // Step 4: Final recalc with correct forfeitures and departed indices
+    // Step 4: In maximize mode, run the optimizer ONCE with all data loaded to set the initial rate
+    if (designMode === 'maximize') {
+      const optInput = getInputFromForm();
+      const bestRate = findOptimalNhceRate(optInput);
+      document.getElementById('stdRate').value = bestRate;
+    }
+
+    // Step 5: Final recalc with correct forfeitures and departed indices
     recalc();
     // Update departure summary bar
     if (typeof updateDepartureSummary === 'function') updateDepartureSummary();
   } else {
     // No census data — standard scenario load
+    // In maximize mode, run the optimizer ONCE to set the initial rate
+    if (designMode === 'maximize') {
+      recalcForfeitures(); // Ensure forfeitures are calculated first
+      const optInput = getInputFromForm();
+      const bestRate = findOptimalNhceRate(optInput);
+      document.getElementById('stdRate').value = bestRate;
+    }
     recalcForfeitures();
     recalc();
   }
@@ -3315,7 +3346,7 @@ function generateIllustrationPDF() {
     <!-- CLIENT INFO BAR -->
     <div style="border-left:4px solid ${GOLD};background:#f8f9fa;padding:7px 18px;margin:10px 0 8px;display:flex;justify-content:space-between;align-items:center;">
       <div>
-        <div style="font-weight:700;font-size:12px;color:#222;">Owner: ${name} (age ${c.ownerAge})</div>
+        <div style="font-weight:700;font-size:12px;color:#222;">Owner: ${name} (age ${c.ownerAge})${(c.additionalOwners||[]).map(ao => ` &nbsp;|&nbsp; ${ao.name} (age ${ao.age})`).join('')}</div>
         <div style="color:#777;font-size:10.5px;margin-top:1px;">${elig} eligible employees &nbsp;|&nbsp; ${nonOwn} non-owner employees</div>
       </div>
       <div style="text-align:right;font-size:11px;color:#777;">
