@@ -2217,14 +2217,11 @@ function loadScenario(idx) {
   updateHcePayFloorNote();
 
   // Handle plan design mode (maximize/gateway/custom)
-  if (s.mode) {
-    setPlanDesign(s.mode);
-    if (s.mode === 'gateway') {
-      document.getElementById('nhceFlatAmt').value = s.nhceFlatAmt || 1000;
-      syncSecureYear(s.secureYear || 2);
-    }
-  } else {
-    setPlanDesign('maximize');
+  const designMode = s.planDesignMode || s.mode || 'maximize';
+  setPlanDesign(designMode);
+  if (designMode === 'gateway') {
+    document.getElementById('nhceFlatAmt').value = s.nhceFlatAmt || 1000;
+    syncSecureYear(s.secureYear || 2);
   }
 
   // Handle turnover percentage
