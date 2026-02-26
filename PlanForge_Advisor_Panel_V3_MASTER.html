@@ -1363,18 +1363,45 @@ function independentCompute(input) {
         return Math.min(Math.round(ao.comp * rate / 100), maxForAddl);
       });
     } else {
-      // Below gateway
-      const maxOwnerRate = optNhceRate * 3;
+      // Below 5%: gateway 3× rule caps the owner rate, then cross-test to find actual max
+      let maxOwnerRate = optNhceRate * 3;
       const ownerAllocByGateway = Math.round(ownerComp * maxOwnerRate / 100);
       const gatewayCapForOwner = Math.min(ownerAllocByGateway, maxOwnerAllocPS);
-      optOwnerAlloc = customOwnerAlloc ? Math.min(customOwnerAlloc, gatewayCapForOwner) : gatewayCapForOwner;
+
+      if (!customOwnerAlloc) {
+        // Auto-find: start at 3× cap and verify with cross-testing
+        optOwnerAlloc = gatewayCapForOwner;
+        if (nhceCountEligible > 0 && census.eligibleNhces.length > 0) {
+          const gatewayOwnerRate = ownerComp > 0 ? (optOwnerAlloc / ownerComp * 100) : 0;
+          const gatewayCrossTest = runCrossTest(gatewayOwnerRate, optNhceRate, effectiveHceRateCustom, census, limits, maxOwnerRate);
+          crossTestResult = gatewayCrossTest;
+          if (!gatewayCrossTest.allPass) {
+            // 3× doesn't pass — binary search for max passing rate within gateway cap
+            const maxResult = findMaxPassingAllocation(optNhceRate, effectiveHceRateCustom, census, limits, maxOwnerRate);
+            crossTestResult = maxResult.result;
+            const constrainedAlloc = Math.min(Math.round(ownerComp * maxResult.maxRate / 100), maxOwnerAllocPS);
+            if (constrainedAlloc < optOwnerAlloc) {
+              optOwnerAlloc = constrainedAlloc;
+              maxOwnerRate = ownerComp > 0 ? (optOwnerAlloc / ownerComp * 100) : 0;
+            }
+          }
+        }
+      } else {
+        // User specified a custom owner allocation — cap at gateway max and verify
+        optOwnerAlloc = Math.min(customOwnerAlloc, gatewayCapForOwner);
+        if (nhceCountEligible > 0 && census.eligibleNhces.length > 0) {
+          const customOwnerRate = ownerComp > 0 ? (optOwnerAlloc / ownerComp) * 100 : 0;
+          crossTestResult = runCrossTest(customOwnerRate, optNhceRate, effectiveHceRateCustom, census, limits, maxOwnerRate);
+        }
+      }
+
       optAdditionalAllocs = addlOwners.map(ao => {
         if (!ao.receivesPS) return 0;
         const rate = ao.allocRate != null ? ao.allocRate : maxOwnerRate;
         const maxForAddl = Math.min(limits.additions415c, ao.comp);
         return Math.min(Math.round(ao.comp * rate / 100), maxForAddl);
       });
-      gatewayInfo = { lowestNhceRate: optNhceRate, maxOwnerRate, ownerAllocByGateway, effectiveCap: Math.min(ownerAllocByGateway, maxOwnerAlloc415c), autoApplied: true };
+      gatewayInfo = { lowestNhceRate: optNhceRate, maxOwnerRate, ownerAllocByGateway, effectiveCap: gatewayCapForOwner, crossTestVerified: crossTestResult !== null };
     }
   }
 
