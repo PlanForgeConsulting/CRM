@@ -119,7 +119,7 @@ function computePlanData(input) {
     Math.round(nhceCreditEligible * 1000 * CREDIT_PHASE[secureYear - 1] * employerSizeFactor);
 
   // ══════════════════════════════════════════════════════════════════
-  //  STANDARD PLAN — 3% flat (same rate as safe harbor)
+  //  STANDARD PLAN — flat rate for all participants
   // ══════════════════════════════════════════════════════════════════
   const stdRate = input.stdRate || 3.0;
   const stdTotalPS = Math.round(totalComp * stdRate / 100);
@@ -159,7 +159,11 @@ function computePlanData(input) {
   });
 
   const optOwnersRetained = optOwnerAlloc + optAdditionalAllocs.reduce((s, a) => s + a, 0);
-  const optEmpPS = Math.round(nhceTotalComp * optNhceRate / 100);
+  // Support flat-dollar per employee (e.g., $1,000/employee) or percentage rate
+  const nhceFlatAmt = input.nhceFlatAmt || 0;
+  const optEmpPS = nhceFlatAmt > 0
+    ? nhceCount * nhceFlatAmt
+    : Math.round(nhceTotalComp * optNhceRate / 100);
   const optTotalPS = optOwnersRetained + optEmpPS;
 
   // IRC §280C
@@ -199,18 +203,21 @@ function computePlanData(input) {
     const nhcePS = Math.round(nhceTotalComp * nhceRate / 100);
     let ownerRate, ownerAllocation;
     if (nhceRate >= 5.0) {
-      ownerAllocation = optOwnerAlloc;
-      ownerRate = optOwnerRate;
+      // At 5%+ cross-testing is available — use provided owner allocation or cap
+      ownerAllocation = input.optOwnerAlloc || Math.min(limits.additions415c, ownerComp);
+      ownerRate = ownerComp > 0 ? (ownerAllocation / ownerComp * 100) : 0;
     } else {
-      ownerRate = nhceRate * 3; // 3x gateway
+      ownerRate = nhceRate * 3; // 3x gateway cap below 5%
       ownerAllocation = Math.min(Math.round(ownerComp * ownerRate / 100), limits.additions415c);
     }
+    const flatOwnerAlloc = Math.round(ownerComp * nhceRate / 100);
     const addlAllocs = additionalOwners.map(ao => Math.round(ao.comp * nhceRate / 100));
     const ownersRet = ownerAllocation + addlAllocs.reduce((s, a) => s + a, 0);
     const total = ownersRet + nhcePS;
     const taxSav = Math.round((total - secureCredits) * taxRate);
     const net = total - ownersRet - taxSav - secureCredits - forfeitures;
-    return { nhceRate, ownerAllocation, ownersRet, nhcePS, total, taxSav, net, ownerRate };
+    const xtDelta = ownerAllocation - flatOwnerAlloc;
+    return { nhceRate, ownerAllocation, flatOwnerAlloc, xtDelta, ownersRet, nhcePS, total, taxSav, net, ownerRate };
   }
 
   function calcTypicalAtRate(rate) {
@@ -248,7 +255,7 @@ function computePlanData(input) {
     stdNetCost,
 
     // Optimized
-    optNhceRate, optOwnerAlloc, optOwnerRate, optOwnersRetained, optEmpPS,
+    optNhceRate, nhceFlatAmt, optOwnerAlloc, optOwnerRate, optOwnersRetained, optEmpPS,
     optTotalPS, optTaxSavings, optSecureCredits: secureCredits, optTotalTaxSavings,
     optNetCost,
 
