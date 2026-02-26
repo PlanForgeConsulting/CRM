@@ -388,6 +388,13 @@
           <div style="font-size:10px;color:var(--gray);margin-top:4px;" id="eligExplain">
             Employees who haven't met deferral eligibility can be excluded from cross-testing.
           </div>
+          <div style="margin-top:8px;">
+            <label style="font-size:10px;display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--navy);">
+              <input type="checkbox" id="topHeavyCheck" checked oninput="debouncedRecalc()">
+              <span>Enable Top-Heavy Test (IRC §416)</span>
+            </label>
+            <div style="font-size:9px;color:var(--gray);margin-top:2px;">Plans are typically top-heavy in early years when key employees hold >60% of assets. Toggle off once plan matures.</div>
+          </div>
         </div>
       </div>
     </div>
@@ -1181,9 +1188,9 @@ function independentCompute(input) {
     const effectiveHceRate = (hceAllocRate !== null && hceAllocRate !== undefined) ? hceAllocRate : 0;
 
     // Use binary search to find max owner allocation that passes cross-testing
-    // Additional owners with receivesPS=false get $0; others get NHCE rate allocation
+    // Additional owners get NHCE rate — test with actual rate they'll receive
     if (nhceCountEligible > 0) {
-      const maxResult = findMaxPassingAllocation(optNhceRate, effectiveHceRate, census, limits, 0);
+      const maxResult = findMaxPassingAllocation(optNhceRate, effectiveHceRate, census, limits, optNhceRate);
       crossTestResult = maxResult.result;
 
       const maxOwnerAllocDollar = Math.min(
@@ -1262,11 +1269,11 @@ function independentCompute(input) {
     // If real census data exists, verify the 3× actually passes cross-testing
     if (nhceCountEligible > 0 && census.eligibleNhces.length > 0) {
       const gatewayOwnerRate = ownerComp > 0 ? (optOwnerAlloc / ownerComp * 100) : 0;
-      const gatewayCrossTest = runCrossTest(gatewayOwnerRate, lowestNhceRate, effectiveHceRate, census, limits);
+      const gatewayCrossTest = runCrossTest(gatewayOwnerRate, lowestNhceRate, effectiveHceRate, census, limits, maxOwnerRate);
       crossTestResult = gatewayCrossTest;
       // If 3× doesn't pass with real demographics, binary search for max passing rate
       if (!gatewayCrossTest.allPass) {
-        const maxResult = findMaxPassingAllocation(lowestNhceRate, effectiveHceRate, census, limits);
+        const maxResult = findMaxPassingAllocation(lowestNhceRate, effectiveHceRate, census, limits, maxOwnerRate);
         crossTestResult = maxResult.result;
         const constrainedAlloc = Math.min(Math.round(ownerComp * maxResult.maxRate / 100), maxOwnerAllocPS);
         if (constrainedAlloc < optOwnerAlloc) {
@@ -1298,16 +1305,15 @@ function independentCompute(input) {
 
     if (optNhceRate >= 5.0) {
       // Cross-testing available — run real test
-      // Additional owners get 0% in cross-testing (same as maximize mode) to allow
-      // primary owner to achieve maximum allocation under §401(a)(4) testing
+      // Additional owners get NHCE rate — test with actual rate they'll receive
       if (customOwnerAlloc) {
         const customOwnerRate = ownerComp > 0 ? (customOwnerAlloc / ownerComp) * 100 : 0;
-        crossTestResult = runCrossTest(customOwnerRate, optNhceRate, effectiveHceRateCustom, census, limits, 0);
+        crossTestResult = runCrossTest(customOwnerRate, optNhceRate, effectiveHceRateCustom, census, limits, optNhceRate);
         // Apply §404(a)(3) deduction limit for solo owners (no NHCEs = total comp is just owner comp)
         const effectiveCap = nhceCountEligible === 0 ? Math.min(maxOwnerAllocPS, deductionLimit404) : maxOwnerAllocPS;
         optOwnerAlloc = Math.min(customOwnerAlloc, effectiveCap);
       } else {
-        const maxResult = findMaxPassingAllocation(optNhceRate, effectiveHceRateCustom, census, limits, 0);
+        const maxResult = findMaxPassingAllocation(optNhceRate, effectiveHceRateCustom, census, limits, optNhceRate);
         crossTestResult = maxResult.result;
         // Apply §404(a)(3) deduction limit for solo owners
         const effectiveCap = nhceCountEligible === 0 ? Math.min(maxOwnerAllocPS, deductionLimit404) : maxOwnerAllocPS;
@@ -1620,6 +1626,41 @@ function runComplianceChecks(input, computed) {
     ? { rule:'Opt Net Cost', status:'FAIL', message:`${fmt(computed.optNetCost)} ≠ expected ${fmt(expOptNet - computed.optFicaSavings)}` }
     : { rule:'Opt Net Cost', status:'PASS', message:`${fmt(computed.optTotalPS)} − ${fmt(computed.optOwnersRetained)} − ${fmt(computed.optTaxSavings)} − ${fmt(computed.secureCredits)} − ${fmt(computed.realForfeitures)} − ${fmt(computed.optFicaSavings)} = ${fmt(computed.optNetCost)}` }
   );
+
+  // §416 Top-Heavy Test — key employees hold >60% of accrued benefits
+  // In early plan years, this is almost always the case since only owners have balances
+  const topHeavyEnabled = document.getElementById('topHeavyCheck')?.checked !== false;
+  if (topHeavyEnabled) {
+    // Approximate top-heavy: key employee allocations / total allocations
+    const keyEmployeeAlloc = computed.optOwnersRetained;
+    const totalAlloc = computed.optTotalPS;
+    const keyPct = totalAlloc > 0 ? (keyEmployeeAlloc / totalAlloc * 100) : 0;
+    const isTopHeavy = keyPct > 60;
+    if (isTopHeavy) {
+      // Top-heavy plans must provide minimum 3% of comp to non-key employees
+      const minRequired = Math.round(computed.nhceCountEligible * computed.nhceAvgPay * 0.03);
+      const nhcePS = computed.optEmpPS;
+      const meetsMin = nhcePS >= minRequired;
+      checks.push({
+        rule: '§416 Top-Heavy',
+        status: meetsMin ? 'PASS' : 'WARN',
+        message: meetsMin
+          ? `Plan is top-heavy (key employees = ${keyPct.toFixed(0)}% of allocations). Minimum 3% NHCE contribution met: ${fmt(nhcePS)} ≥ ${fmt(minRequired)}.`
+          : `Plan is top-heavy (key employees = ${keyPct.toFixed(0)}%). NHCE contributions (${fmt(nhcePS)}) may not meet 3% minimum (${fmt(minRequired)}).`,
+        fix: meetsMin ? null : 'Increase NHCE contribution rate to at least 3% of compensation.'
+      });
+    } else {
+      checks.push({ rule: '§416 Top-Heavy', status: 'PASS', message: `Not top-heavy — key employees = ${keyPct.toFixed(0)}% of allocations (≤60%).` });
+    }
+  }
+
+  // §404(a)(3) Deduction Limit — 25% of total covered compensation
+  if (computed.optTotalPS > computed.deductionLimit404) {
+    const excess = computed.optTotalPS - computed.deductionLimit404;
+    checks.push({ rule: '§404(a)(3)', status: 'WARN', message: `Total PS (${fmt(computed.optTotalPS)}) exceeds 25% deduction limit (${fmt(computed.deductionLimit404)}) by ${fmt(excess)}. Excess ${fmt(excess)} is not tax-deductible.` });
+  } else {
+    checks.push({ rule: '§404(a)(3)', status: 'PASS', message: `Total PS (${fmt(computed.optTotalPS)}) within 25% deduction limit (${fmt(computed.deductionLimit404)}).` });
+  }
 
   // ACP reminder — employer matching contributions require separate testing
   checks.push({
