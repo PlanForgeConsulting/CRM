@@ -1905,7 +1905,8 @@ function recalc() {
         Credit is ${sci.creditPhasePct}% — capturing only <strong>${fmt(sci.optCreditPerEmployee)}</strong>/employee of $1,000 max
         (${sci.creditCaptureDisplay}%). To get full $1,000 credit, increase NHCE rate to <strong>${sci.rateNeededForFullCredit}%</strong>
         (${fmt(sci.contribNeededForFullCredit)}/employee). Additional PS cost: <strong>${fmt(sci.additionalPSNeededForFullCredit)}</strong>
-        across ${sci.nhceCreditEligible} employees — but recaptures <strong>${fmt(sci.creditShortfallPerEmployee * sci.nhceCreditEligible)}</strong> in credits.${sizeNote}`;
+        across ${sci.nhceCreditEligible} employees — but recaptures <strong>${fmt(sci.creditShortfallPerEmployee * sci.nhceCreditEligible)}</strong> in credits.
+        <br><span style="color:#856404;font-size:11px;">Note: increasing NHCE rate may reduce the owner's cross-tested allocation. Compare net benefit before adjusting.</span>${sizeNote}`;
     } else if (sci.isPhaseDown && sci.isCapturingFullCredit && sci.nhceCreditEligible > 0) {
       // In phase-down but already capturing full credit — show green confirmation
       secureCreditAlert.style.display = '';

@@ -21,16 +21,32 @@ const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
 
-// ── Fonts ──────────────────────────────────────────────────────────
+// ── Fonts — cross-platform detection ──────────────────────────────
+function findFontDir() {
+  const candidates = [
+    '/usr/share/fonts/truetype/lato',           // Linux (Debian/Ubuntu)
+    '/usr/share/fonts/lato',                     // Linux (Fedora/RHEL)
+    '/Library/Fonts',                            // macOS system
+    path.join(process.env.HOME || '', 'Library/Fonts'), // macOS user
+    'C:\\Windows\\Fonts',                        // Windows
+    path.join(__dirname, 'fonts'),               // Local fonts/ directory
+  ];
+  for (const dir of candidates) {
+    const testPath = path.join(dir, 'Lato-Regular.ttf');
+    try { if (fs.existsSync(testPath)) return dir; } catch (e) { /* skip */ }
+  }
+  return candidates[0]; // Fallback to Linux default
+}
+const FONT_DIR = findFontDir();
 const FONTS = {
-  regular:  '/usr/share/fonts/truetype/lato/Lato-Regular.ttf',
-  bold:     '/usr/share/fonts/truetype/lato/Lato-Bold.ttf',
-  light:    '/usr/share/fonts/truetype/lato/Lato-Light.ttf',
-  medium:   '/usr/share/fonts/truetype/lato/Lato-Medium.ttf',
-  semibold: '/usr/share/fonts/truetype/lato/Lato-Semibold.ttf',
-  black:    '/usr/share/fonts/truetype/lato/Lato-Black.ttf',
-  heavy:    '/usr/share/fonts/truetype/lato/Lato-Heavy.ttf',
-  italic:   '/usr/share/fonts/truetype/lato/Lato-Italic.ttf',
+  regular:  path.join(FONT_DIR, 'Lato-Regular.ttf'),
+  bold:     path.join(FONT_DIR, 'Lato-Bold.ttf'),
+  light:    path.join(FONT_DIR, 'Lato-Light.ttf'),
+  medium:   path.join(FONT_DIR, 'Lato-Medium.ttf'),
+  semibold: path.join(FONT_DIR, 'Lato-Semibold.ttf'),
+  black:    path.join(FONT_DIR, 'Lato-Black.ttf'),
+  heavy:    path.join(FONT_DIR, 'Lato-Heavy.ttf'),
+  italic:   path.join(FONT_DIR, 'Lato-Italic.ttf'),
 };
 
 // ── Brand Colors ──────────────────────────────────────────────────

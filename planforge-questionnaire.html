@@ -201,6 +201,7 @@ body{background:#F5F3EE;min-height:100vh;font-family:'Libre Franklin',-apple-sys
       <span onclick="goToStep(3)">Pay Ranges</span>
       <span onclick="goToStep(4)">Owners</span>
       <span onclick="goToStep(5)">Contact</span>
+      <span onclick="goToStep(6)">Review</span>
     </div>
   </div>
   <div class="pf-q-body">
@@ -675,8 +676,9 @@ function showStep(n) {
   if (!_cachedSteps) _cachedSteps = document.querySelectorAll('.pf-step');
   _cachedSteps.forEach(s => s.classList.remove('active'));
   document.getElementById('step' + n).classList.add('active');
-  // Update progress
-  const pct = n <= totalSteps ? Math.round((n / totalSteps) * 100) : 100;
+  // Update progress — steps 1-5 spread across 15%-75%, step 6 (Review) shows 90%, step 7 (Success) shows 100%
+  const stepPcts = { 1: 15, 2: 30, 3: 45, 4: 60, 5: 75, 6: 90 };
+  const pct = n <= totalSteps ? (stepPcts[n] || Math.round((n / totalSteps) * 100)) : 100;
   document.getElementById('progressFill').style.width = pct + '%';
   // Update tab title with progress
   if (n <= totalSteps) {
@@ -754,6 +756,33 @@ function validateStep(stepNum) {
     firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
     showValidationToast('Please fill in the required fields marked with *');
   }
+  return valid;
+}
+// Silent validation — returns true/false without showing any UI errors
+function validateStepSilent(stepNum) {
+  const step = document.getElementById('step' + stepNum);
+  if (!step) return true;
+  let valid = true;
+  step.querySelectorAll('.pf-field').forEach(field => {
+    const label = field.querySelector('.pf-field-label .req');
+    if (!label) return;
+    const parentSub = field.closest('.pf-sub-section');
+    if (parentSub && !parentSub.classList.contains('visible')) return;
+    const radioGroup = field.querySelector('.pf-option-group[data-radio]');
+    if (radioGroup) {
+      const name = radioGroup.dataset.radio;
+      if (!field.querySelector(`input[name="${name}"]:checked`)) valid = false;
+      return;
+    }
+    const checkGroup = field.querySelector('.pf-option-group[data-checkbox]');
+    if (checkGroup) {
+      const name = checkGroup.dataset.checkbox;
+      if (!field.querySelector(`input[name="${name}"]:checked`)) valid = false;
+      return;
+    }
+    const input = field.querySelector('input, select, textarea');
+    if (input && !input.value.trim()) valid = false;
+  });
   return valid;
 }
 function showValidationToast(msg) {
@@ -1045,6 +1074,26 @@ const ZAPIER_WEBHOOK_URL = 'https://hooks.zapier.com/hooks/catch/YOUR_ZAP_ID/YOU
 const CALCOM_BOOKING_URL = 'https://cal.com/planforge401k/consultation';
 
 function submitForm() {
+  // Validate all steps before submitting — redirect to first incomplete step if needed
+  const stepsToValidate = [1, 2, 3, 4, 5];
+  var firstIncomplete = null;
+  for (let i = 0; i < stepsToValidate.length; i++) {
+    const stepNum = stepsToValidate[i];
+    // Skip Pay Ranges (step 3) if individual employee data was entered
+    if (stepNum === 3 && shouldSkipPayRanges()) continue;
+    if (!validateStepSilent(stepNum)) {
+      firstIncomplete = stepNum;
+      break;
+    }
+  }
+  if (firstIncomplete !== null) {
+    // Navigate to the first incomplete step and re-validate to show errors
+    currentStep = firstIncomplete;
+    showStep(firstIncomplete);
+    validateStep(firstIncomplete);
+    showValidationToast('Please complete all required fields before submitting.');
+    return;
+  }
   // Collect all data
   // Collect employee detail rows if provided
   const employeeDetails = [];
@@ -1251,15 +1300,23 @@ function _doAutoSave() {
     const fields = document.querySelectorAll('.pf-q input[type="text"], .pf-q input[type="number"], .pf-q input[type="email"], .pf-q input[type="tel"], .pf-q input[type="date"], .pf-q select, .pf-q textarea');
     const data = { step: currentStep, values: {} };
     fields.forEach(f => { if (f.id && f.value) data.values[f.id] = f.value; });
-    // Save radio selections
-    document.querySelectorAll('.pf-option.selected').forEach(opt => {
-      const field = opt.closest('.pf-field');
-      if (field) {
-        const name = field.dataset.name;
-        const radio = opt.querySelector('input[type="radio"]');
-        if (name && radio) data.values['radio_' + name] = radio.value;
-      }
+    // Save radio selections (use the radio input's name attribute to capture all groups)
+    document.querySelectorAll('.pf-option-group[data-radio]').forEach(group => {
+      const name = group.dataset.radio;
+      const checked = group.querySelector('input[type="radio"]:checked');
+      if (name && checked) data.values['radio_' + name] = checked.value;
     });
+    // Save checkbox selections (multi-select groups like planGoals)
+    const checkboxGroups = {};
+    document.querySelectorAll('.pf-option-group[data-checkbox]').forEach(group => {
+      const name = group.dataset.checkbox;
+      const checked = [];
+      group.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => {
+        checked.push(cb.value);
+      });
+      if (checked.length) checkboxGroups[name] = checked;
+    });
+    if (Object.keys(checkboxGroups).length) data.checkboxGroups = checkboxGroups;
     // Save dynamic employee detail rows
     const empRows = [];
     document.querySelectorAll('#employeeDetailRows > div').forEach(row => {
@@ -1294,21 +1351,39 @@ function autoRestore() {
         el.dispatchEvent(new Event('change', { bubbles: true }));
       }
     });
-    // Restore radio selections
+    // Restore radio selections (find by radio group name, then trigger selectRadio for side-effects)
     Object.keys(data.values).forEach(key => {
       if (!key.startsWith('radio_')) return;
       const name = key.replace('radio_', '');
       const val = data.values[key];
-      const field = document.querySelector(`.pf-field[data-name="${name}"]`);
-      if (!field) return;
-      field.querySelectorAll('.pf-option').forEach(opt => {
+      const group = document.querySelector(`.pf-option-group[data-radio="${name}"]`);
+      if (!group) return;
+      group.querySelectorAll('.pf-option').forEach(opt => {
         const radio = opt.querySelector('input[type="radio"]');
         if (radio && radio.value === val) {
-          opt.classList.add('selected');
-          radio.checked = true;
+          selectRadio(opt);
         }
       });
     });
+    // Restore checkbox selections (multi-select groups like planGoals)
+    if (data.checkboxGroups) {
+      Object.keys(data.checkboxGroups).forEach(groupName => {
+        const values = data.checkboxGroups[groupName];
+        const group = document.querySelector(`.pf-option-group[data-checkbox="${groupName}"]`);
+        if (!group) return;
+        group.querySelectorAll('.pf-option').forEach(opt => {
+          const cb = opt.querySelector('input[type="checkbox"]');
+          if (cb && values.includes(cb.value)) {
+            cb.checked = true;
+            opt.classList.add('selected');
+            // Show/hide "Other" text field for plan goals
+            if (cb.name === 'planGoals' && cb.value === 'other') {
+              document.getElementById('planGoalsOther').style.display = '';
+            }
+          }
+        });
+      });
+    }
     // Restore dynamic employee detail rows
     if (data.employeeRows && data.employeeRows.length) {
       data.employeeRows.forEach(row => {
