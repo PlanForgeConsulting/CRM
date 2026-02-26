@@ -124,6 +124,9 @@ function computePlanData(input) {
   // ── Forfeitures (plan-specific) ──
   const forfeitures = input.forfeitures || 0;           // optimized plan forfeitures (actual PS alloc)
   const forfeituresStd = input.forfeituresStd || forfeitures; // standard plan forfeitures (stdRate × pay)
+  // Estimated forfeitures (informational only — not in net cost)
+  const estForfeitures = input.estForfeitures || 0;         // optimized estimated
+  const estForfeituresStd = input.estForfeituresStd || 0;   // standard estimated
 
   // ── SECURE Year ──
   const secureYear = Math.max(1, Math.min(input.secureYear || 1, 5));
@@ -267,7 +270,7 @@ function computePlanData(input) {
     eligible,
     nhceCount,
     taxRate,
-    forfeitures, forfeituresStd,
+    forfeitures, forfeituresStd, estForfeitures, estForfeituresStd,
     additionalOwners,
 
     // Comp totals
@@ -446,6 +449,7 @@ function generate(input, outputPath) {
       ['SECURE 2.0 Credits', `(${fmt(D.stdSecureCredits)})`, C.green],
       [D.forfeituresStd > 0 ? 'Forfeitures (actual)' : 'Forfeitures', D.forfeituresStd > 0 ? `(${fmt(D.forfeituresStd)})` : '$0', C.darkGray],
     ];
+    if (D.estForfeituresStd > 0) stdItems.push(['Est. Forfeitures*', fmt(D.estForfeituresStd), C.medGray]);
     for (const [label, val, valColor] of stdItems) {
       doc.font('Lato').fontSize(9).fillColor(C.darkGray);
       doc.text(label, lx, cy, { lineBreak: false });
@@ -498,6 +502,7 @@ function generate(input, outputPath) {
       ['SECURE 2.0 Credits', `(${fmt(D.optSecureCredits)})`, C.green],
       [D.forfeitures > 0 ? 'Forfeitures (actual)' : 'Forfeitures', D.forfeitures > 0 ? `(${fmt(D.forfeitures)})` : '$0', C.darkGray],
     ];
+    if (D.estForfeitures > 0) optItems.push(['Est. Forfeitures*', fmt(D.estForfeitures), C.medGray]);
     for (const [label, val, valColor] of optItems) {
       doc.font('Lato').fontSize(9).fillColor(C.darkGray);
       doc.text(label, lx2, cy, { lineBreak: false });
@@ -642,9 +647,13 @@ function generate(input, outputPath) {
       ["Less: Owner's Retained", `(${fmt(D.typOwnersRetained)})`, `(${fmt(D.stdOwnersRetained)})`, `(${fmt(D.optOwnersRetained)})`],
       ['Less: Tax Deductions (30%)', `(${fmt(D.typTaxSavings)})`, `(${fmt(D.stdTaxSavings)})`, `(${fmt(D.optTaxSavings)})`],
       ['Less: SECURE 2.0 Credits', '$0', `(${fmt(D.stdSecureCredits)})`, `(${fmt(D.optSecureCredits)})`],
-      ['Less: Forfeitures', '$0', D.forfeituresStd > 0 ? `(${fmt(D.forfeituresStd)})` : '$0', D.forfeitures > 0 ? `(${fmt(D.forfeitures)})` : '$0'],
-      ['Net Cost', fmt(D.typNetCost), fmt(D.stdNetCost), fmt(D.optNetCost)],
+      ['Less: Forfeitures (actual)', '$0', D.forfeituresStd > 0 ? `(${fmt(D.forfeituresStd)})` : '$0', D.forfeitures > 0 ? `(${fmt(D.forfeitures)})` : '$0'],
     ];
+    // Insert estimated forfeitures row before Net Cost if estimates exist
+    if (D.estForfeitures > 0 || D.estForfeituresStd > 0) {
+      vsRows.push(['Est. Forfeitures*', '$0', D.estForfeituresStd > 0 ? fmt(D.estForfeituresStd) : '$0', D.estForfeitures > 0 ? fmt(D.estForfeitures) : '$0']);
+    }
+    vsRows.push(['Net Cost', fmt(D.typNetCost), fmt(D.stdNetCost), fmt(D.optNetCost)]);
 
     vsRows.forEach(([label, tv, sv, ov], i) => {
       const isNetCost = label === 'Net Cost';
@@ -760,22 +769,36 @@ function generate(input, outputPath) {
     sectionHead('FORFEITURE BENEFIT', cy);
     cy += 20;
 
-    rr(M, cy, CW, 30, 5, { fill: '#F8F9FB', stroke: C.borderGray, lineWidth: 0.5 });
-    doc.rect(M, cy + 4, 3, 22).fill(C.gold);
+    const hasForfeitures = D.forfeitures > 0 || D.forfeituresStd > 0;
+    const hasEstForfeitures = D.estForfeitures > 0 || D.estForfeituresStd > 0;
+    const forfBoxH = (hasForfeitures && hasEstForfeitures) ? 50 : 30;
+
+    rr(M, cy, CW, forfBoxH, 5, { fill: '#F8F9FB', stroke: C.borderGray, lineWidth: 0.5 });
+    doc.rect(M, cy + 4, 3, forfBoxH - 8).fill(C.gold);
     doc.font('Lato').fontSize(8.5).fillColor(C.darkGray);
 
-    if (D.forfeitures > 0 || D.forfeituresStd > 0) {
-      doc.text('Employees who leave before fully vested forfeit their unvested balance, reducing future costs.', M + 14, cy + 4, { lineBreak: false });
-      doc.text(`Standard: ${fmt(D.forfeituresStd)}`, M + 14, cy + 17, { lineBreak: false });
+    if (hasForfeitures) {
+      doc.text('Actual forfeitures from departed employees (reduces Net Cost):', M + 14, cy + 4, { lineBreak: false });
+      doc.font('Lato').fontSize(8.5).fillColor(C.darkGray);
+      doc.text('Standard:', M + 14, cy + 17, { lineBreak: false });
       doc.font('Lato-Bold').fontSize(9.5).fillColor(C.navy);
       doc.text(fmt(D.forfeituresStd), M + 75, cy + 16, { lineBreak: false });
       doc.font('Lato').fontSize(8.5).fillColor(C.darkGray);
-      doc.text(`Optimized:`, M + 145, cy + 17, { lineBreak: false });
+      doc.text('Optimized:', M + 145, cy + 17, { lineBreak: false });
       doc.font('Lato-Bold').fontSize(9.5).fillColor(C.green);
       doc.text(fmt(D.forfeitures), M + 200, cy + 16, { lineBreak: false });
-      doc.font('Lato').fontSize(8).fillColor(C.medGray);
-      doc.text('(included in each plan\'s Net Cost)', M + 265, cy + 17, { lineBreak: false });
-    } else {
+    }
+    if (hasEstForfeitures) {
+      const estY = hasForfeitures ? cy + 30 : cy + 4;
+      doc.font('Lato').fontSize(8.5).fillColor(C.darkGray);
+      doc.text('Estimated annual forfeitures from turnover (informational only):', M + 14, estY, { lineBreak: false });
+      doc.font('Lato-Semibold').fontSize(9).fillColor(C.gold);
+      doc.text(`Standard: ${fmt(D.estForfeituresStd)}`, M + 14, estY + 13, { lineBreak: false });
+      doc.text(`Optimized: ${fmt(D.estForfeitures)}`, M + 145, estY + 13, { lineBreak: false });
+      doc.font('Lato-Italic').fontSize(7).fillColor(C.medGray);
+      doc.text('*Not included in Net Cost', M + 280, estY + 14, { lineBreak: false });
+    }
+    if (!hasForfeitures && !hasEstForfeitures) {
       doc.text('Employees who leave before fully vested forfeit their unvested balance, reducing future plan costs.', M + 14, cy + 4, { lineBreak: false });
       doc.text('Forfeiture estimates will be available after the first plan year based on actual turnover.', M + 14, cy + 17, { lineBreak: false });
     }
@@ -786,7 +809,7 @@ function generate(input, outputPath) {
     const discLines = [
       'This illustration is based on current census data and IRS limits for the plan year shown. Actual results may vary based on final compensation, employee changes, and plan amendments.',
       'This is not tax or legal advice. Consult your tax advisor and ERISA counsel. All contributions are voluntary and discretionary. SECURE 2.0 credits subject to eligibility requirements.',
-      `Forfeitures reflect ${(D.forfeitures > 0 || D.forfeituresStd > 0) ? 'actual departed employees\u2019 unvested profit sharing — amounts differ between Standard and Optimized because employee allocations differ' : 'estimated turnover'}. "Typical Strategy" assumes a ${D.stdRate}% safe harbor with immediate vesting, no forfeitures, no SECURE credits. Tax rate: ${Math.round(D.taxRate * 100)}%.`,
+      `${hasForfeitures ? 'Actual forfeitures from departed employees\u2019 unvested profit sharing are included in Net Cost — amounts differ between plans due to different allocations.' : ''} ${hasEstForfeitures ? '*Estimated forfeitures are based on selected turnover rate and are shown for informational purposes only — not included in Net Cost. Standard plan first 3% is safe harbor (immediately vested).' : ''} "Typical Strategy" assumes a ${D.stdRate}% safe harbor with immediate vesting, no forfeitures, no SECURE credits. Tax rate: ${Math.round(D.taxRate * 100)}%.`,
       "Owner's retained share is not a business expense — it goes directly into the owner's retirement account and is deducted from net cost.",
     ];
     discLines.forEach((line, i) => {

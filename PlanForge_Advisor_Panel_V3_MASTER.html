@@ -473,6 +473,7 @@
           <input type="hidden" id="realForfeituresValue" value="0">
           <input type="hidden" id="realForfeituresStdValue" value="0">
           <input type="hidden" id="estimatedForfeituresValue" value="0">
+          <input type="hidden" id="stdEstimatedForfeituresValue" value="0">
         </div>
         <div style="font-size:11px;color:var(--gray);padding-top:4px;" id="forfeitureExplain">3-year cliff vesting assumed.</div>
 
@@ -636,6 +637,7 @@ const PERMITTED_DISPARITY_ADJ = 0.65;
 let currentComputed = null;
 let additionalOwnersList = [];
 let parsedCensusEmployees = null;  // Stores parsed census data (takes priority over synthetic)
+let parsedCensusCapabilities = null; // Tracks what census actually detected (ages, dates, etc.)
 let departedEmployeeIndices = new Set();  // Indices of employees marked as departed (unvested)
 let lastRenderedCensus = null;  // Cache for departure table rendering
 let currentPlanDesign = 'maximize';
@@ -1133,9 +1135,8 @@ function independentCompute(input) {
   const realForfeitures = input.realForfeitures || 0;       // optimized plan real forfeitures
   const realForfeituresStd = input.realForfeituresStd || 0; // standard plan real forfeitures (stdRate × pay)
   const turnoverPctDecimal = (input.turnoverPct || 0) / 100;
-  // safeHarbor3% is immediately vested → only PS ABOVE 3% is forfeitable
-  // Note: safeHarbor3PctPerNhce removed — neither Standard nor Optimized is safe harbor
-  // Only the Typical baseline plan (computed separately) uses safe harbor vesting
+  // Standard plan IS safe harbor — first 3% is immediately vested, only PS above 3% is forfeitable
+  // Optimized plan is NOT safe harbor — entire NHCE PS is subject to vesting/forfeiture
   const secureYear = Math.max(1, Math.min(input.secureYear || 1, 5));
   const stdRate = input.stdRate || 3.0;
   const planMode = input.planDesignMode || 'maximize';
@@ -1152,9 +1153,12 @@ function independentCompute(input) {
   const stdHcePS = Math.round(hceTotalComp * stdRate / 100);
   const stdEmpPS = stdTotalPS - stdOwnersRetained;
   const stdNhcePS = Math.round(stdNhceTotalComp * stdRate / 100);
-  // Standard plan is NOT safe harbor — entire NHCE PS is subject to vesting schedule
-  // Only the Typical baseline plan uses safe harbor (3% immediately vested)
-  const stdForfeitablePS = stdNhcePS;
+  // Standard plan IS safe harbor — first 3% of PS is immediately vested (non-forfeitable)
+  // Only the portion above the 3% safe harbor floor is subject to vesting schedule
+  // If stdRate <= 3%, nothing is forfeitable (entire contribution is safe harbor vested)
+  const SAFE_HARBOR_FLOOR = 0.03; // 3%
+  const stdForfeitableRate = Math.max(0, stdRate / 100 - SAFE_HARBOR_FLOOR);
+  const stdForfeitablePS = Math.round(stdNhceTotalComp * stdForfeitableRate);
   const stdEstimatedForfeitures = Math.round(turnoverPctDecimal * stdForfeitablePS);
 
   const nhceCreditEligible = Math.max(0, nhceCountEligible - nhceOver100k);
@@ -1458,8 +1462,8 @@ function independentCompute(input) {
   } else {
     optNhcePSForForf = Math.round(nhceCountEligible * nhceAvgPay * optNhceRate / 100);
   }
-  // Optimized plan is NOT safe harbor — entire NHCE PS is subject to vesting schedule
-  // Only the Typical baseline plan uses safe harbor (3% immediately vested)
+  // Optimized plan is NOT safe harbor — entire NHCE PS allocation is subject to vesting
+  // and thus fully forfeitable upon employee departure
   const optForfeitablePS = optNhcePSForForf;
   const optEstimatedForfeitures = Math.round(turnoverPctDecimal * optForfeitablePS);
   const estimatedForfeitures = optEstimatedForfeitures; // backward compat — opt is primary display
@@ -1934,6 +1938,7 @@ function getInputFromForm() {
     realForfeitures: num('realForfeituresValue') || 0,
     realForfeituresStd: num('realForfeituresStdValue') || 0,
     estimatedForfeitures: num('estimatedForfeituresValue') || 0,
+    stdEstimatedForfeitures: num('stdEstimatedForfeituresValue') || 0,
     optOwnerAlloc: designParams.optOwnerAlloc || null,
     nhceFlatAmt: designParams.nhceFlatAmt || null,
     additionalOwners: addlOwners, turnoverPct: parseFloat(document.getElementById('turnoverManual').value) || 0,
@@ -2440,6 +2445,7 @@ function exportJSON() {
   const censusVal = document.getElementById('censusPaste').value.trim();
   if (censusVal) payload.censusText = censusVal;
   if (departedEmployeeIndices.size > 0) payload.departedIndices = [...departedEmployeeIndices];
+  if (parsedCensusCapabilities) payload.censusCapabilities = parsedCensusCapabilities;
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -2661,18 +2667,28 @@ function recalcForfeitures() {
   const turnoverPct = parseFloat(document.getElementById('turnoverManual').value || 0) / 100;
   const eligible = num('nhceCount') - num('excludableNhces');
   const avgPay = num('nhceAvgPay');
-  let nhceTotalPS = designParams.mode === 'gateway'
+
+  // Standard estimated: safe harbor — first 3% is non-forfeitable, only excess is forfeitable
+  const safeHarborFloor = 0.03;
+  const stdRateDecimal = stdRate / 100;
+  const stdForfeitableRate = Math.max(0, stdRateDecimal - safeHarborFloor);
+  const stdForfeitablePS = Math.round(eligible * avgPay * stdForfeitableRate);
+  const stdEstimatedForf = Math.round(turnoverPct * stdForfeitablePS);
+
+  // Optimized estimated: NOT safe harbor — full NHCE PS is forfeitable
+  let optNhceTotalPS = designParams.mode === 'gateway'
     ? (designParams.nhceFlatAmt || 1000) * eligible
     : Math.round(eligible * avgPay * (designParams.optNhceRate || 5) / 100);
-  // Neither Standard nor Optimized is safe harbor — entire NHCE PS is forfeitable
-  const forfeitablePS = nhceTotalPS;
-  estimatedForf = Math.round(turnoverPct * forfeitablePS);
-  explanParts.push(`Est: ${(turnoverPct*100).toFixed(1)}% turnover × ${fmt(forfeitablePS)} = ${fmt(estimatedForf)}`);
+  estimatedForf = Math.round(turnoverPct * optNhceTotalPS);
+
+  explanParts.push(`Est Std: ${(turnoverPct*100).toFixed(1)}% × ${fmt(stdForfeitablePS)} forfeitable = ${fmt(stdEstimatedForf)}`);
+  explanParts.push(`Est Opt: ${(turnoverPct*100).toFixed(1)}% × ${fmt(optNhceTotalPS)} = ${fmt(estimatedForf)}`);
 
   // 3) Write all values to hidden inputs
   document.getElementById('realForfeituresValue').value = realForf;
   document.getElementById('realForfeituresStdValue').value = realForfStd;
   document.getElementById('estimatedForfeituresValue').value = estimatedForf;
+  document.getElementById('stdEstimatedForfeituresValue').value = stdEstimatedForf;
   // Keep the visible forfeitures input showing estimated (for display in the panel form)
   document.getElementById('forfeitures').value = estimatedForf;
 
@@ -2773,6 +2789,19 @@ function renderDepartureTable(computed) {
 
   lastRenderedCensus = employees;
 
+  // Auto-populate departedEmployeeIndices from census termination dates
+  // Map from census array (which has termDate) to departure table indices (which use 0/1000/2000 scheme)
+  if (isCensusMode && parsedCensusEmployees._autoDepartedIndices && parsedCensusEmployees._autoDepartedIndices.size > 0) {
+    const autoDep = parsedCensusEmployees._autoDepartedIndices;
+    // Build a lookup: for each census employee with a termDate, find its match in the departure table
+    parsedCensusEmployees.forEach((cEmp, cIdx) => {
+      if (!autoDep.has(cIdx)) return;
+      // Find matching employee in the departure table by name+pay identity
+      const match = employees.find(e => !e.excluded && e.name === cEmp.name && e.pay === cEmp.pay);
+      if (match) departedEmployeeIndices.add(match.index);
+    });
+  }
+
   // Update badge
   if (departedEmployeeIndices.size > 0) {
     badge.className = 'departure-mode-badge real';
@@ -2842,11 +2871,14 @@ function calculateRealForfeitures(stdRate) {
   if (!lastRenderedCensus || departedEmployeeIndices.size === 0) return { std: 0, opt: 0 };
   let stdTotal = 0, optTotal = 0;
   const rate = stdRate || 3;
+  // Standard plan is safe harbor — first 3% is immediately vested, only excess is forfeitable
+  const safeHarborFloor = 0.03;
+  const stdForfeitableRate = Math.max(0, rate / 100 - safeHarborFloor);
   lastRenderedCensus.forEach(emp => {
     if (departedEmployeeIndices.has(emp.index) && !emp.excluded) {
-      // Standard plan: flat stdRate % of pay for every employee
-      stdTotal += Math.round(emp.pay * rate / 100);
-      // Optimized plan: actual PS allocation (flat-dollar or cross-tested rate)
+      // Standard plan: only the portion above 3% safe harbor floor is forfeitable
+      stdTotal += Math.round(emp.pay * stdForfeitableRate);
+      // Optimized plan: NOT safe harbor — full PS allocation forfeited
       optTotal += emp.psAlloc;
     }
   });
@@ -2914,15 +2946,54 @@ function parseCensusData(raw) {
   else if (lines[0].includes('|')) delimiter = '|';
 
   const rows = lines.map(l => l.split(delimiter).map(c => c.trim()));
-  const firstRowIsHeader = rows[0].some(c => /^(name|age|pay|salary|comp|employee|type)/i.test(c));
+  const firstRowIsHeader = rows[0].some(c => /^(name|age|dob|birth|pay|salary|comp|employee|type|start|hire|term|termination|end|separation|status)/i.test(c));
   const dataRows = firstRowIsHeader ? rows.slice(1) : rows;
   if (dataRows.length === 0) { detected.style.display = 'none'; return; }
+
+  // Detect start/termination date columns from headers
+  let startDateColIdx = -1;
+  let termDateColIdx = -1;
+  if (firstRowIsHeader) {
+    rows[0].forEach((header, idx) => {
+      const h = header.toLowerCase().trim();
+      if (/^(start|hire)\s*(date)?$|^(start|hire)[_\s]date$|^date\s*(of\s*)?(hire|start)$|^hired?$/i.test(h)) {
+        startDateColIdx = idx;
+      }
+      if (/^(term|termination|end|separation)\s*(date)?$|^(term|termination|end|separation)[_\s]date$|^date\s*(of\s*)?(term|termination|end|separation)$|^terminated?$/i.test(h)) {
+        termDateColIdx = idx;
+      }
+    });
+  }
+  const hasHeaderBasedDates = (startDateColIdx >= 0 || termDateColIdx >= 0);
 
   const numCols = dataRows[0].length;
   const hceThreshold = getLimits(parseInt(val('taxYear') || 2026)).hceThreshold;
   // Fall back to form's NHCE avg age when census doesn't include age data
   const fallbackAge = parseInt(val('nhceAvgAge')) || 38;
   const planYear = parseInt(val('taxYear')) || new Date().getFullYear();
+
+  // Parse a date string into a Date object (for start/termination dates)
+  function parseDate(str) {
+    if (!str || typeof str !== 'string') return null;
+    const s = str.trim();
+    if (!s || /^(n\/a|na|none|null|active|current|-|—|\s*)$/i.test(s)) return null;
+    let y, m, d;
+    // ISO: YYYY-MM-DD
+    const iso = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+    if (iso) { y = +iso[1]; m = +iso[2]; d = +iso[3]; }
+    // US: MM/DD/YYYY or MM-DD-YYYY
+    if (!y) {
+      const us = s.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+      if (us) { m = +us[1]; d = +us[2]; y = +us[3]; }
+    }
+    // 2-digit year: MM/DD/YY
+    if (!y) {
+      const short = s.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{2})$/);
+      if (short) { m = +short[1]; d = +short[2]; y = +short[3]; y += y > 50 ? 1900 : 2000; }
+    }
+    if (!y || m < 1 || m > 12 || d < 1 || d > 31) return null;
+    return new Date(y, m - 1, d);
+  }
 
   // Convert DOB string to age (supports MM/DD/YYYY, M/D/YYYY, YYYY-MM-DD, MM-DD-YYYY)
   function dobToAge(str) {
@@ -2953,7 +3024,7 @@ function parseCensusData(raw) {
 
   for (const row of dataRows) {
     if (row.length === 0 || row.every(c => !c)) continue;
-    let name = '', age = fallbackAge, pay = 0;
+    let name = '', age = fallbackAge, pay = 0, startDate = null, termDate = null;
     if (numCols === 1) {
       pay = parseFloat(row[0].replace(/[$,]/g, '')) || 0;
     } else if (numCols === 2) {
@@ -2966,10 +3037,17 @@ function parseCensusData(raw) {
       else { name = row[0]; pay = parseFloat(row[1].replace(/[$,]/g, '')) || 0; }
     } else {
       name = row[0] || '';
+      // Extract start/term dates from known columns
+      if (hasHeaderBasedDates) {
+        if (startDateColIdx >= 0 && row[startDateColIdx]) startDate = parseDate(row[startDateColIdx]);
+        if (termDateColIdx >= 0 && row[termDateColIdx]) termDate = parseDate(row[termDateColIdx]);
+      }
       // Check each non-name column for DOB before treating as number
       let foundAge = null;
       const payValues = [];
       for (let i = 1; i < row.length; i++) {
+        // Skip columns already identified as date columns
+        if (hasHeaderBasedDates && (i === startDateColIdx || i === termDateColIdx)) continue;
         const cell = row[i].trim();
         const dobAge = dobToAge(cell);
         if (dobAge && !foundAge) { foundAge = dobAge; continue; }
@@ -2984,7 +3062,7 @@ function parseCensusData(raw) {
       }
       pay = payValues.length > 0 ? Math.max(...payValues.filter(n => n >= 100)) || 0 : 0;
     }
-    if (pay > 0) employees.push({ name, age, pay, type: pay >= hceThreshold ? 'HCE' : 'NHCE' });
+    if (pay > 0) employees.push({ name, age, pay, type: pay >= hceThreshold ? 'HCE' : 'NHCE', startDate: startDate || null, termDate: termDate || null });
   }
 
   if (employees.length === 0) {
@@ -2997,6 +3075,34 @@ function parseCensusData(raw) {
 
   // Store parsed data globally (takes priority over synthetic)
   parsedCensusEmployees = employees;
+
+  // Track what the census actually detected for fallback decisions
+  const hasRealAges = employees.some(e => e.age !== fallbackAge);
+  const hasStartDates = employees.some(e => e.startDate);
+  const hasTermDates = employees.some(e => e.termDate);
+  parsedCensusCapabilities = {
+    hasNames: employees.some(e => e.name && e.name.length > 0),
+    hasRealAges,
+    hasStartDates,
+    hasTermDates,
+    hasPay: employees.some(e => e.pay > 0),
+    employeeCount: employees.length
+  };
+
+  // Auto-detect departed employees from termination dates
+  // Note: departedEmployeeIndices uses the departure table's index scheme (set after renderDepartureTable).
+  // Here we store a temporary set keyed by census array index; after renderDepartureTable maps
+  // census employees to its own indices, we reconcile via employee identity (name+pay).
+  let autoDepCount = 0;
+  const autoDepartedCensusIndices = new Set();
+  employees.forEach((emp, idx) => {
+    if (emp.termDate) {
+      autoDepartedCensusIndices.add(idx);
+      autoDepCount++;
+    }
+  });
+  // Store for reconciliation after departure table renders
+  parsedCensusEmployees._autoDepartedIndices = autoDepartedCensusIndices;
 
   const nhces = employees.filter(e => e.type === 'NHCE');
   const hces = employees.filter(e => e.type === 'HCE');
@@ -3019,9 +3125,16 @@ function parseCensusData(raw) {
   document.getElementById('nhceOver100k').value = nhcesOver100k;
   updateHcePayFloorNote();
 
+  // Build detection message with data source info
+  const sourceInfo = [];
+  sourceInfo.push(`pay: census`);
+  sourceInfo.push(`ages: ${hasRealAges ? 'census DOBs' : 'questionnaire avg'}`);
+  if (hasTermDates) sourceInfo.push(`departures: census (${autoDepCount} termed)`);
+  if (hasStartDates) sourceInfo.push('hire dates: census');
+
   detected.style.display = '';
   detected.className = 'census-detected auto';
-  detected.innerHTML = `<strong>✓ Real census loaded (${employees.length} employees):</strong> ${nhces.length} NHCEs (avg ${fmt(avgNhcePay)}, age ${avgNhceAge}), ${hces.length} HCEs. <strong>Cross-testing will use actual per-employee age/pay data.</strong>`;
+  detected.innerHTML = `<strong>✓ Real census loaded (${employees.length} employees):</strong> ${nhces.length} NHCEs (avg ${fmt(avgNhcePay)}, age ${avgNhceAge}), ${hces.length} HCEs${hasTermDates ? ` | ${autoDepCount} departed` : ''}. <strong>Cross-testing will use actual per-employee age/pay data.</strong><div style="font-size:10px;color:var(--gray);margin-top:3px;">Data sources: ${sourceInfo.join(' · ')}</div>`;
 
   recalcForfeitures(); recalc();
 }
