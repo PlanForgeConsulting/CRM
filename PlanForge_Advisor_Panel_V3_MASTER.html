@@ -3360,7 +3360,7 @@ function generateIllustrationPDF() {
         <div style="color:#777;font-size:10.5px;margin-top:1px;">${elig} eligible employees &nbsp;|&nbsp; ${nonOwn} non-owner employees</div>
       </div>
       <div style="text-align:right;font-size:11px;color:#777;">
-        <div>Compensation: <strong style="color:#222;">${$(c.ownerComp)}</strong></div>
+        <div>${first}: <strong style="color:#222;">${$(c.ownerComp)}</strong>${(c.additionalOwners||[]).map(ao => ` &nbsp;|&nbsp; ${ao.name}: <strong style="color:#222;">${$(ao.comp)}</strong>`).join('')}</div>
         <div style="font-size:9px;margin-top:2px;color:#999;">Based on: <strong style="color:${lastRenderedCensus ? GREEN : GOLD};">${dataSource}</strong></div>
       </div>
     </div>
@@ -4053,7 +4053,7 @@ function generateParticipantView() {
         <div style="color:#777;font-size:11px;margin-top:2px;">${elig} eligible employees &nbsp;|&nbsp; ${nonOwn} non-owner employees</div>
       </div>
       <div style="text-align:right;font-size:12px;color:#777;">
-        <div>Compensation: <strong id="ownerCompDisplay" style="color:#222;"></strong></div>
+        <div id="ownerCompDisplay"></div>
       </div>
     </div>
 
@@ -4171,6 +4171,7 @@ const META = {
   ownerComp: ${c.ownerComp},
   ownerAge: ${c.ownerAge},
   firstName: ${JSON.stringify(first)},
+  additionalOwners: ${JSON.stringify((c.additionalOwners||[]).map(ao => ({name: ao.name, comp: ao.comp})))},
   taxPct: ${tp},
   ficaLabel: ${JSON.stringify(ficaLabel)},
   entityType: ${JSON.stringify(c.entityType)},
@@ -4194,8 +4195,10 @@ function renderScenario(idx) {
     pill.classList.toggle('active', i === idx);
   });
 
-  // Owner comp
-  document.getElementById('ownerCompDisplay').textContent = $(META.ownerComp);
+  // Owner comp — show each owner individually
+  let compHtml = META.firstName + ': <strong style="color:#222;">' + $(META.ownerComp) + '</strong>';
+  META.additionalOwners.forEach(ao => { compHtml += ' &nbsp;|&nbsp; ' + ao.name + ': <strong style="color:#222;">' + $(ao.comp) + '</strong>'; });
+  document.getElementById('ownerCompDisplay').innerHTML = compHtml;
 
   // Standard card
   document.getElementById('stdHeroNum').textContent = $(s.stdHero);
