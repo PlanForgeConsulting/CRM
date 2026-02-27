@@ -279,6 +279,7 @@
   <div style="display:flex;gap:8px;">
     <button class="btn btn-illustration" onclick="generateIllustrationPDF()">📄 Generate Illustration</button>
     <button class="btn" style="background:linear-gradient(135deg,#2E7D32 0%,#388E3C 100%);color:#fff;font-weight:700;letter-spacing:.5px;box-shadow:0 2px 8px rgba(46,125,50,.35);" onclick="generateParticipantView()">🖥 Participant View</button>
+    <button class="btn btn-copy-embed" style="background:linear-gradient(135deg,#1565C0 0%,#1976D2 100%);color:#fff;font-weight:700;letter-spacing:.5px;box-shadow:0 2px 8px rgba(21,101,192,.35);" onclick="copyEmbedCode()">📋 Copy Embed HTML</button>
     <button class="btn btn-outline" style="color:#fff;border-color:rgba(255,255,255,.3);" onclick="exportJSON()">⬇ Export JSON</button>
     <button class="btn btn-outline" style="color:#fff;border-color:rgba(255,255,255,.3);" onclick="showImport()">⬆ Import JSON</button>
   </div>
@@ -651,6 +652,7 @@ const PERMITTED_DISPARITY_ADJ = 0.65;
 
 // ── State ──
 let currentComputed = null;
+let lastParticipantHTML = null;
 let additionalOwnersList = [];
 let parsedCensusEmployees = null;  // Stores parsed census data (takes priority over synthetic)
 let parsedCensusCapabilities = null; // Tracks what census actually detected (ages, dates, etc.)
@@ -4358,6 +4360,9 @@ document.addEventListener('DOMContentLoaded', init);
 </body>
 </html>`;
 
+  // Store for embed copy
+  lastParticipantHTML = participantHTML;
+
   // Open in new tab
   const blob = new Blob([participantHTML], { type: 'text/html' });
   const url = URL.createObjectURL(blob);
@@ -4367,6 +4372,26 @@ document.addEventListener('DOMContentLoaded', init);
   a.href = url;
   a.download = 'PlanForge_Illustration_' + (c.bizName || 'Client').replace(/\s+/g, '_') + '_' + c.year + '.html';
   a.click();
+}
+
+function copyEmbedCode() {
+  if (!lastParticipantHTML) {
+    // Generate it first if not yet created
+    generateParticipantView();
+  }
+  if (!lastParticipantHTML) { alert('Could not generate illustration HTML.'); return; }
+  navigator.clipboard.writeText(lastParticipantHTML).then(() => {
+    const btn = document.querySelector('.btn-copy-embed');
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copied!';
+    setTimeout(() => { btn.textContent = orig; }, 2000);
+  }).catch(() => {
+    // Fallback: open in a new window as text so they can copy
+    const w = window.open('', '_blank');
+    w.document.open();
+    w.document.write('<pre style="white-space:pre-wrap;word-wrap:break-word;font-size:12px;">' + lastParticipantHTML.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</pre>');
+    w.document.close();
+  });
 }
 
 
