@@ -1987,29 +1987,45 @@ function findOptimalNhceRate(baseInput) {
 function computeWhatIfScenarios(baseInput) {
   const scenarios = [];
   const rates = [1, 2, 3, 4, 5];
+  const isGateway = baseInput.planDesignMode === 'gateway';
+  const gatewayAmt = baseInput.nhceFlatAmt || 1000;
+  const avgPay = baseInput.nhceAvgPay || 0;
+  // For gateway plans, find which integer rate is closest to the flat-dollar equivalent
+  const gatewayEquivRate = avgPay > 0 ? Math.round(gatewayAmt / avgPay * 100) : 0;
+
   rates.forEach(nhceRate => {
-    // Use 'custom' mode so that input.optNhceRate is respected at the exact rate.
-    // Custom mode handles: gateway 3× cap below 5%, cross-testing at 5%+
-    const scenarioInput = Object.assign({}, baseInput, {
-      stdRate: nhceRate,          // Fee compares standard vs optimized at the SAME rate
-      optNhceRate: nhceRate,
-      planDesignMode: 'custom',
-      optOwnerAlloc: null,   // let engine find max
-      nhceFlatAmt: null,     // use percentage mode
-      realForfeitures: 0,        // what-if uses 0 — only include forfeitures with actual termination data
-      realForfeituresStd: 0,
-      estimatedForfeitures: 0,
-      turnoverPct: 0,           // what-if uses 0 — no estimated forfeitures in scenario cards
-    });
+    let scenarioInput;
+    if (isGateway && nhceRate === gatewayEquivRate) {
+      // For the rate closest to the gateway flat amount, show the actual gateway plan
+      scenarioInput = Object.assign({}, baseInput, {
+        stdRate: nhceRate,
+        realForfeitures: 0, realForfeituresStd: 0,
+        estimatedForfeitures: 0, turnoverPct: 0,
+        departedIndices: [],
+      });
+    } else {
+      // For all other rates: NHCE gets that %, owner gets max passing cross-test
+      scenarioInput = Object.assign({}, baseInput, {
+        stdRate: nhceRate,
+        optNhceRate: nhceRate,
+        planDesignMode: 'custom',
+        optOwnerAlloc: null,   // let engine find max
+        nhceFlatAmt: null,     // use percentage mode
+        realForfeitures: 0, realForfeituresStd: 0,
+        estimatedForfeitures: 0, turnoverPct: 0,
+        departedIndices: [],
+      });
+    }
     const result = independentCompute(scenarioInput);
-    // Fee = 20% of (cross-tested owner alloc - flat owner alloc at same NHCE rate)
+    // Fee = 20% of net cost savings (standard vs optimized at this rate)
     const flatOwnerAlloc = Math.round(result.ownerComp * nhceRate / 100);
     const ownerDelta = result.optOwnerAlloc - flatOwnerAlloc;
     scenarios.push({
       nhceRate,
+      isGatewayRate: isGateway && nhceRate === gatewayEquivRate,
       ownerAlloc: result.optOwnerAlloc,
-      flatOwnerAlloc,       // what owner would get in a flat (standard) plan
-      ownerDelta,           // cross-test advantage
+      flatOwnerAlloc,
+      ownerDelta,
       ownersRetained: result.optOwnersRetained,
       netCost: result.optNetCost,
       stdNetCost: result.stdNetCost,
@@ -3444,9 +3460,9 @@ function generateIllustrationPDF() {
     // Cross-test advantage: what owner gets via cross-testing vs flat
     const xtDelta = s.ownerDelta;
     const deltaColor = xtDelta > 500 ? GREEN : '#999';
-    const deltaLabel = xtDelta > 100 ? `+${$(xtDelta)} via XT` : 'No XT benefit';
+    const deltaLabel = xtDelta > 100 ? `+${$(xtDelta)} owner boost` : '';
     return `<div style="flex:1;border:2px solid ${bdr};border-radius:5px;padding:5px 3px 5px;text-align:center;background:${bg};">
-      <div style="font-weight:700;font-size:11px;color:${NAVY};letter-spacing:0.3px;">${s.nhceRate}.0% NHCE</div>
+      <div style="font-weight:700;font-size:11px;color:${NAVY};letter-spacing:0.3px;">${s.nhceRate}.0% NHCE${s.isGatewayRate ? ' (Gateway)' : ''}</div>
       <div style="font-size:10px;color:#333;margin-top:2px;font-weight:600;">Owner: ${$(s.ownerAlloc)}</div>
       <div style="font-size:8px;color:${deltaColor};margin-top:1px;">${deltaLabel}</div>
       <div style="margin-top:3px;padding-top:3px;border-top:1px solid ${active ? '#c8e6c9' : '#e8e8e8'};">
@@ -3520,7 +3536,7 @@ function generateIllustrationPDF() {
           </div>
         </div>
         <div style="text-align:center;padding:8px 16px 10px;border-top:1px solid #e8e8e8;">
-          <div style="color:#888;font-size:9.5px;">vs ${c.stdRate}% Safe Harbor (Typical Strategy)</div>
+          <div style="color:#888;font-size:9.5px;">vs ${c.stdRate}% ${c.stdRate >= 3 ? 'Safe Harbor' : 'Flat PS'} (Typical Strategy)</div>
           <div style="color:${NAVY};font-size:20px;font-weight:700;margin:3px 0 1px;font-family:Georgia,serif;">Save ${$(stdSave)}</div>
           <div style="color:#888;font-size:9.5px;margin-top:1px;">${stdPct}% less than a typical plan</div>
         </div>
@@ -3548,7 +3564,7 @@ function generateIllustrationPDF() {
           </div>
         </div>
         <div style="text-align:center;padding:8px 16px 10px;border-top:1px solid #c8e6c9;">
-          <div style="color:#888;font-size:9.5px;">vs ${Math.round(c.optNhceRate)}% Safe Harbor (Typical Strategy)</div>
+          <div style="color:#888;font-size:9.5px;">vs ${Math.round(c.optNhceRate)}% ${c.optNhceRate >= 3 ? 'Safe Harbor' : 'Flat PS'} (Typical Strategy)</div>
           <div style="color:${GREEN};font-size:20px;font-weight:700;margin:3px 0 1px;font-family:Georgia,serif;">Save ${$(optSave)}</div>
           <div style="color:#888;font-size:9.5px;margin-top:1px;">${optPct}% less than a typical plan</div>
           <div style="color:${GOLD};font-size:10.5px;font-weight:700;margin-top:3px;">+ ${$(c.optOwnersRetained)} to Owner's retirement</div>
@@ -3574,7 +3590,7 @@ function generateIllustrationPDF() {
     <!-- EXPLAINER -->
     <div style="margin:4px 0 0;font-size:9.5px;color:#666;line-height:1.4;">
       <div style="font-weight:700;font-size:10.5px;color:#333;margin-bottom:2px;">What is the "Typical Strategy"?</div>
-      <div>Most 401(k) advisors recommend a safe harbor match or flat profit share at the same rate for everyone. It's simple, but it leaves money on the table. PlanForge leverages SECURE 2.0 tax credits, 3-year cliff vesting (creating forfeiture benefits), and voluntary discretionary contributions to dramatically reduce — or even eliminate — your net cost.</div>
+      <div>Most 401(k) advisors recommend a ${c.stdRate >= 3 ? 'safe harbor match or' : ''} flat profit share at the same rate for everyone. It's simple, but it leaves money on the table. PlanForge leverages SECURE 2.0 tax credits, 3-year cliff vesting (creating forfeiture benefits), and voluntary discretionary contributions to dramatically reduce — or even eliminate — your net cost.</div>
       <div style="margin-top:2px;">The Optimized plan goes further: cross-testing lets the owner receive up to the IRS maximum while employees receive a competitive rate — all while passing every nondiscrimination test.${c.optNhceRate > 3 ? ` <strong>Note:</strong> For contributions above 3% safe harbor, the excess may be subject to a vesting schedule, creating potential forfeiture benefits as employees turn over.` : ''}</div>
     </div>
 
@@ -4250,13 +4266,31 @@ function generateParticipantView() {
   // Pre-compute full scenario data at each rate (1-5%)
   // Pass through turnover % for estimated forfeitures; real forfeitures zeroed (rate-dependent, can't recompute per-rate without census)
   const turnoverPct = parseFloat(document.getElementById('turnoverManual')?.value || 0);
+  const isGateway = baseInput.planDesignMode === 'gateway';
+  const gatewayAmt = baseInput.nhceFlatAmt || 1000;
+  const avgPay = baseInput.nhceAvgPay || 0;
+  const gatewayEquivRate = avgPay > 0 ? Math.round(gatewayAmt / avgPay * 100) : 0;
+
   const scenarios = [1, 2, 3, 4, 5].map(rate => {
-    const inp = Object.assign({}, baseInput, {
-      stdRate: rate, optNhceRate: rate,
-      planDesignMode: 'custom', optOwnerAlloc: null, nhceFlatAmt: null,
-      realForfeitures: 0, realForfeituresStd: 0,
-      turnoverPct: turnoverPct,
-    });
+    let inp;
+    if (isGateway && rate === gatewayEquivRate) {
+      // For the rate closest to the gateway flat amount, show actual gateway plan
+      inp = Object.assign({}, baseInput, {
+        stdRate: rate,
+        realForfeitures: 0, realForfeituresStd: 0,
+        turnoverPct: turnoverPct,
+        departedIndices: [],
+      });
+    } else {
+      // For all other rates: NHCE at %, owner gets max passing cross-test
+      inp = Object.assign({}, baseInput, {
+        stdRate: rate, optNhceRate: rate,
+        planDesignMode: 'custom', optOwnerAlloc: null, nhceFlatAmt: null,
+        realForfeitures: 0, realForfeituresStd: 0,
+        turnoverPct: turnoverPct,
+        departedIndices: [],
+      });
+    }
     const comp = independentCompute(inp);
     const typ = computeTypicalBaseline(comp, rate);
     const stdHero = comp.stdTaxSavings + (comp.stdSecureCredits||0) + (comp.stdFicaSavings||0);
@@ -4276,6 +4310,7 @@ function generateParticipantView() {
       rate, comp, typ, stdHero, optHero, stdSave, optSave, stdPct, optPct,
       costDiff, ownerDiff, ownerMult, fee, netCostSavings, xtDelta,
       displayedNetCost: comp.optNetCost + fee,
+      isGatewayRate: isGateway && rate === gatewayEquivRate,
     };
   });
 
@@ -4319,7 +4354,7 @@ function generateParticipantView() {
     stdPct: s.stdPct, optPct: s.optPct,
     costDiff: s.costDiff, ownerDiff: s.ownerDiff, ownerMult: s.ownerMult,
     fee: s.fee, netCostSavings: s.netCostSavings, xtDelta: s.xtDelta,
-    displayedNetCost: s.displayedNetCost,
+    displayedNetCost: s.displayedNetCost, isGatewayRate: s.isGatewayRate || false,
     // Forfeitures — estimated are rate-specific (from turnover %), real are from departure checkboxes
     stdEstimatedForfeitures: s.comp.stdEstimatedForfeitures || 0,
     optEstimatedForfeitures: s.comp.optEstimatedForfeitures || 0,
@@ -4678,7 +4713,7 @@ function renderScenario(idx) {
 
   // Snapshot boxes
   let snap = '';
-  snap += '<div class="snap-box" style="border:2px solid var(--gold);"><div style="font-weight:700;color:var(--gold);font-size:13px;">Typical</div><div style="font-size:10px;color:#999;">'+s.rate+'% Safe Harbor</div><div style="font-size:22px;font-weight:700;color:var(--navy);margin-top:4px;">'+$(s.typOwnersRetained)+'</div></div>';
+  snap += '<div class="snap-box" style="border:2px solid var(--gold);"><div style="font-weight:700;color:var(--gold);font-size:13px;">Typical</div><div style="font-size:10px;color:#999;">'+s.rate+'% '+(s.rate >= 3 ? 'Safe Harbor' : 'Flat PS')+'</div><div style="font-size:22px;font-weight:700;color:var(--navy);margin-top:4px;">'+$(s.typOwnersRetained)+'</div></div>';
   snap += '<div class="snap-box" style="border:2px solid #bbb;"><div style="font-weight:700;color:#666;font-size:13px;">Standard</div><div style="font-size:10px;color:#999;">'+s.rate+'% Flat PS</div><div style="font-size:22px;font-weight:700;color:var(--navy);margin-top:4px;">'+$(s.stdOwnersRetained)+'</div></div>';
   snap += '<div class="snap-box" style="border:2px solid var(--green);position:relative;"><div style="position:absolute;top:-10px;right:8px;background:var(--gold);color:#fff;font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;">'+s.ownerMult+'x MORE</div><div style="font-weight:700;color:var(--green);font-size:13px;">Optimized</div><div style="font-size:10px;color:#999;">Cross-Tested</div><div style="font-size:22px;font-weight:700;color:var(--green);margin-top:4px;">'+$(s.optOwnersRetained)+'</div></div>';
   document.getElementById('snapshotBoxes').innerHTML = snap;
@@ -4692,9 +4727,9 @@ function renderScenario(idx) {
     const bdr = active ? 'var(--green)' : '#ccd5de';
     const bg = active ? '#f0faf0' : '#fafbfc';
     const deltaColor = sc.xtDelta > 500 ? 'var(--green)' : '#999';
-    const deltaLabel = sc.xtDelta > 100 ? '+'+$(sc.xtDelta)+' via XT' : 'No XT benefit';
+    const deltaLabel = sc.xtDelta > 100 ? '+'+$(sc.xtDelta)+' owner boost' : '';
     wi += '<div class="wi-card" style="border:2px solid '+bdr+';background:'+bg+';" onclick="renderScenario('+i+')">';
-    wi += '<div style="font-weight:700;font-size:12px;color:var(--navy);letter-spacing:.3px;">'+sc.rate+'.0% NHCE</div>';
+    wi += '<div style="font-weight:700;font-size:12px;color:var(--navy);letter-spacing:.3px;">'+sc.rate+'.0% NHCE'+(sc.isGatewayRate ? ' (Gateway)' : '')+'</div>';
     wi += '<div style="font-size:11px;color:#333;margin-top:3px;font-weight:600;">Owner: '+$(sc.optOwnerAlloc)+'</div>';
     wi += '<div style="font-size:9px;color:'+deltaColor+';margin-top:2px;">'+deltaLabel+'</div>';
     wi += '<div style="margin-top:4px;padding-top:4px;border-top:1px solid '+(active?'#c8e6c9':'#e8e8e8')+';"><div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.5px;">Net Cost</div>';
