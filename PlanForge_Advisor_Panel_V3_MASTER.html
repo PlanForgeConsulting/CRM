@@ -3620,12 +3620,14 @@ function generateParticipantView() {
   const curRate = c.optNhceRate;
 
   // Pre-compute full scenario data at each rate (1-5%)
+  // Pass through turnover % for estimated forfeitures; real forfeitures zeroed (rate-dependent, can't recompute per-rate without census)
+  const turnoverPct = parseFloat(document.getElementById('turnoverManual')?.value || 0);
   const scenarios = [1, 2, 3, 4, 5].map(rate => {
     const inp = Object.assign({}, baseInput, {
       stdRate: rate, optNhceRate: rate,
       planDesignMode: 'custom', optOwnerAlloc: null, nhceFlatAmt: null,
       realForfeitures: 0, realForfeituresStd: 0,
-      estimatedForfeitures: 0, turnoverPct: 0,
+      turnoverPct: turnoverPct,
     });
     const comp = independentCompute(inp);
     const typ = computeTypicalBaseline(comp, rate);
@@ -3690,7 +3692,19 @@ function generateParticipantView() {
     costDiff: s.costDiff, ownerDiff: s.ownerDiff, ownerMult: s.ownerMult,
     fee: s.fee, netCostSavings: s.netCostSavings, xtDelta: s.xtDelta,
     displayedNetCost: s.displayedNetCost,
+    // Forfeitures — estimated are rate-specific (from turnover %), real are from departure checkboxes
+    stdEstimatedForfeitures: s.comp.stdEstimatedForfeitures || 0,
+    optEstimatedForfeitures: s.comp.optEstimatedForfeitures || 0,
+    typEstimatedForfeitures: s.typ.estimatedForfeitures || 0,
+    realForfeituresStd: s.comp.realForfeituresStd || 0,
+    realForfeitures: s.comp.realForfeitures || 0,
   })));
+
+  // Capture current real forfeitures from the panel (for forfeiture benefit section)
+  const currentRealForfStd = c.realForfeituresStd || 0;
+  const currentRealForfOpt = c.realForfeitures || 0;
+  const hasDepartures = departedEmployeeIndices.size > 0;
+  const departureCount = departedEmployeeIndices.size;
 
   const participantHTML = `<!DOCTYPE html>
 <html lang="en">
@@ -3886,8 +3900,15 @@ function generateParticipantView() {
     </div>
     <div class="wi-cards" id="wiCards"></div>
 
+    <!-- FORFEITURE BENEFIT -->
+    <div class="section-title" style="font-family:Georgia,serif;">FORFEITURE BENEFIT</div>
+    <div id="forfeitureSection" style="border-left:4px solid var(--gold);background:#f8f9fa;padding:8px 14px;margin-bottom:10px;">
+      <div style="font-size:11px;color:#666;margin-bottom:4px;line-height:1.4;">Employees who leave before fully vested forfeit their unvested profit sharing balance, reducing future plan costs.</div>
+      <div id="forfeitureContent"></div>
+    </div>
+
     <!-- DISCLAIMERS -->
-    <div class="fine-print">
+    <div class="fine-print" id="disclaimers">
       This illustration is based on current census data and IRS limits for the plan year shown. Actual results may vary based on final compensation, employee changes, and plan amendments. This is not tax or legal advice. Consult your tax advisor and ERISA counsel. All contributions are voluntary and discretionary. SECURE 2.0 credits subject to eligibility requirements.
       Owner's retained share is not a business expense — it goes directly into the owner's retirement account and is deducted from net cost.
     </div>
@@ -3915,6 +3936,11 @@ const META = {
   entityType: ${JSON.stringify(c.entityType)},
   limit415c: ${c.limits.additions415c},
   defaultIdx: ${defaultIdx >= 0 ? defaultIdx : 4},
+  hasDepartures: ${hasDepartures},
+  departureCount: ${departureCount},
+  currentRealForfStd: ${currentRealForfStd},
+  currentRealForfOpt: ${currentRealForfOpt},
+  turnoverPct: ${turnoverPct},
 };
 
 const $ = n => { const a=Math.abs(Math.round(n)); const s='$'+a.toLocaleString('en-US'); return n<-0.5?'-'+s:s; };
@@ -3943,6 +3969,8 @@ function renderScenario(idx) {
   stdRows += '<tr><td>Tax Deductions (' + META.taxPct + '%)</td><td>' + P(s.stdTaxSavings) + '</td></tr>';
   stdRows += '<tr><td>SECURE 2.0 Credits</td><td>' + P(s.stdSecureCredits) + '</td></tr>';
   if (s.stdFicaSavings > 0) stdRows += '<tr><td>' + META.ficaLabel + '</td><td>' + P(s.stdFicaSavings) + '</td></tr>';
+  if (s.realForfeituresStd > 0) stdRows += '<tr><td>Forfeitures (actual)</td><td style="color:var(--green);">' + P(s.realForfeituresStd) + '</td></tr>';
+  if (s.stdEstimatedForfeitures > 0) stdRows += '<tr><td style="color:#999;">Est. Forfeitures* (not in net cost)</td><td style="color:#999;">' + P(s.stdEstimatedForfeitures) + '</td></tr>';
   document.getElementById('stdMetrics').innerHTML = stdRows;
 
   // Optimized card
@@ -3958,6 +3986,8 @@ function renderScenario(idx) {
   optRows += '<tr><td>Tax Deductions (' + META.taxPct + '%)</td><td>' + P(s.optTaxSavings) + '</td></tr>';
   optRows += '<tr><td>SECURE 2.0 Credits</td><td>' + P(s.secureCredits) + '</td></tr>';
   if (s.optFicaSavings > 0) optRows += '<tr><td>' + META.ficaLabel + '</td><td>' + P(s.optFicaSavings) + '</td></tr>';
+  if (s.realForfeitures > 0) optRows += '<tr><td>Forfeitures (actual)</td><td style="color:var(--green);">' + P(s.realForfeitures) + '</td></tr>';
+  if (s.optEstimatedForfeitures > 0) optRows += '<tr><td style="color:#999;">Est. Forfeitures* (not in net cost)</td><td style="color:#999;">' + P(s.optEstimatedForfeitures) + '</td></tr>';
   document.getElementById('optMetrics').innerHTML = optRows;
 
   // Banner
@@ -3996,6 +4026,12 @@ function renderScenario(idx) {
   tbl += tr("Less: Owner's Retained", P(s.typOwnersRetained), P(s.stdOwnersRetained), P(s.optOwnersRetained), {c3:'var(--green)'});
   tbl += tr('Less: Tax Deductions ('+META.taxPct+'%)', P(s.typTaxDeductions), P(s.stdTaxSavings), P(s.optTaxSavings));
   tbl += tr('Less: SECURE 2.0 Credits', '$0', P(s.stdSecureCredits), P(s.secureCredits));
+  if (s.realForfeituresStd > 0 || s.realForfeitures > 0) {
+    tbl += tr('Less: Forfeitures (actual)', '$0', P(s.realForfeituresStd), P(s.realForfeitures));
+  }
+  if (s.stdEstimatedForfeitures > 0 || s.optEstimatedForfeitures > 0 || s.typEstimatedForfeitures > 0) {
+    tbl += tr('Est. Forfeitures* (not in net cost)', s.typEstimatedForfeitures > 0 ? P(s.typEstimatedForfeitures) : '$0', P(s.stdEstimatedForfeitures), P(s.optEstimatedForfeitures), {c1:'#aaa', c2:'#aaa', c3:'#aaa', labelColor:'#aaa'});
+  }
   if (s.stdFicaSavings > 0 || s.optFicaSavings > 0) {
     tbl += tr('Less: '+META.ficaLabel, P(s.typFicaSavings), P(s.stdFicaSavings), P(s.optFicaSavings));
   }
@@ -4037,6 +4073,31 @@ function renderScenario(idx) {
     wi += '</div>';
   });
   document.getElementById('wiCards').innerHTML = wi;
+
+  // Forfeiture benefit section
+  let forfHtml = '';
+  const hasReal = s.realForfeituresStd > 0 || s.realForfeitures > 0;
+  const hasEst = s.stdEstimatedForfeitures > 0 || s.optEstimatedForfeitures > 0;
+  if (hasReal) {
+    forfHtml += '<div style="font-size:12px;margin-bottom:3px;">Actual forfeitures from departed employees:</div>';
+    forfHtml += '<div style="display:flex;gap:20px;margin:4px 0;">';
+    forfHtml += '<div><span style="font-size:11px;color:#666;">Standard ('+s.rate+'% flat):</span> <strong style="font-size:15px;color:var(--navy);">'+$(s.realForfeituresStd)+'</strong></div>';
+    forfHtml += '<div><span style="font-size:11px;color:#666;">Optimized:</span> <strong style="font-size:15px;color:var(--green);">'+$(s.realForfeitures)+'</strong></div>';
+    if (s.realForfeitures !== s.realForfeituresStd) {
+      const diff = s.realForfeitures - s.realForfeituresStd;
+      forfHtml += '<div><span style="font-size:11px;color:#666;">Difference:</span> <strong style="font-size:15px;color:'+(diff>0?'var(--green)':'var(--navy)')+';">'+(diff>0?'+':'')+$(diff)+'</strong></div>';
+    }
+    forfHtml += '</div><div style="font-size:10px;color:#999;">(already included in each plan\\'s Net Cost)</div>';
+  }
+  if (hasEst) {
+    forfHtml += '<div style="font-size:12px;'+(hasReal?'margin-top:4px;':'')+'">Estimated forfeitures based on turnover rate: ';
+    forfHtml += '<strong style="font-size:14px;color:var(--gold);">Standard: '+$(s.stdEstimatedForfeitures)+' &nbsp;|&nbsp; Optimized: '+$(s.optEstimatedForfeitures)+'</strong>';
+    forfHtml += ' <span style="color:#999;font-size:10px;">(estimate only — not included in Net Cost)</span></div>';
+  }
+  if (!hasReal && !hasEst) {
+    forfHtml += '<div style="font-size:12px;color:#999;">No forfeitures currently calculated.</div>';
+  }
+  document.getElementById('forfeitureContent').innerHTML = forfHtml;
 }
 
 // Build rate pills
