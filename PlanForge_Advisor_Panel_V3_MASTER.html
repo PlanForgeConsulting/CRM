@@ -2034,7 +2034,7 @@ function recalc() {
     : '';
 
   document.getElementById('optResults').innerHTML = buildMetrics([
-    ['Total Profit Share', fmt(c.optTotalPS)],
+    ['Total Profit Share <span style="font-weight:400;color:var(--gray);font-size:11px;">(' + c.optNhceRate.toFixed(1) + '% Cross-Tested)</span>', fmt(c.optTotalPS)],
     ['Owners\' Profit Share' + xtTag, fmt(c.optOwnersRetained)],
     ['Employee PS Cost' + eligibleLabel + hceLabel, fmt(c.optEmpPS)],
     ['Tax Savings (§280C)', fmt(c.optTaxSavings)],
@@ -3409,7 +3409,7 @@ function generateIllustrationPDF() {
           <div style="text-align:center;color:${GREEN};font-size:32px;font-weight:700;margin:4px 0 1px;font-family:Georgia,serif;">${$(optHero)}</div>
           <div style="text-align:center;color:#888;font-size:10px;margin-bottom:8px;">in tax savings</div>
           <table style="width:100%;font-size:11px;border-collapse:collapse;">
-            <tr style="border-bottom:1px solid #eee;"><td style="padding:3px 0;">Total Profit Share</td><td style="text-align:right;padding:3px 0;">${$(c.optTotalPS)}</td></tr>
+            <tr style="border-bottom:1px solid #eee;"><td style="padding:3px 0;">Total Profit Share <span style="font-weight:400;color:#999;font-size:9px;">(${c.optNhceRate.toFixed(1)}% Cross-Tested)</span></td><td style="text-align:right;padding:3px 0;">${$(c.optTotalPS)}</td></tr>
             <tr style="border-bottom:1px solid #eee;"><td style="padding:3px 0;">Owner's Retained Share</td><td style="text-align:right;padding:3px 0;color:${GREEN};font-weight:600;">${P(c.optOwnersRetained)}</td></tr>
             <tr style="border-bottom:1px solid #eee;"><td style="padding:3px 0;">Tax Deductions (${tp}%)</td><td style="text-align:right;padding:3px 0;">${P(c.optTaxSavings)}</td></tr>
             <tr style="border-bottom:1px solid #eee;"><td style="padding:3px 0;">SECURE 2.0 Credits</td><td style="text-align:right;padding:3px 0;">${P(c.secureCredits)}</td></tr>
@@ -3510,7 +3510,7 @@ function generateIllustrationPDF() {
         </tr>
       </thead>
       <tbody>
-        ${trow('Total Profit Share', $(typ3.totalPS), $(c.stdTotalPS), $(c.optTotalPS))}
+        ${trow('Total Profit Share', $(typ3.totalPS), $(c.stdTotalPS), $(c.optTotalPS) + ' <span style="font-size:8px;color:#999;">(' + c.optNhceRate.toFixed(1) + '% XT)</span>')}
         ${trow("Less: Owner's Retained", P(typ3.ownersRetained), P(c.stdOwnersRetained), P(c.optOwnersRetained), {c3: GREEN})}
         ${trow('Less: Tax Deductions (' + tp + '%)', P(typ3.taxDeductions), P(c.stdTaxSavings), P(c.optTaxSavings))}
         ${trow('Less: SECURE 2.0 Credits', '$0', P(c.stdSecureCredits), P(c.secureCredits))}
@@ -4221,7 +4221,7 @@ function renderScenario(idx) {
   document.getElementById('optSavePct').textContent = s.optPct + '% less than a typical plan';
   document.getElementById('optOwnerRetirement').textContent = '+ ' + $(s.optOwnersRetained) + ' to Owner\\'s retirement';
 
-  let optRows = '<tr><td>Total Profit Share</td><td>' + $(s.optTotalPS) + '</td></tr>';
+  let optRows = '<tr><td>Total Profit Share <span style="font-weight:400;color:#999;font-size:10px;">(' + s.optNhceRate.toFixed(1) + '% Cross-Tested)</span></td><td>' + $(s.optTotalPS) + '</td></tr>';
   optRows += '<tr><td>Owner\\'s Retained Share</td><td style="color:var(--green);font-weight:600;">' + P(s.optOwnersRetained) + '</td></tr>';
   optRows += '<tr><td>Tax Deductions (' + META.taxPct + '%)</td><td>' + P(s.optTaxSavings) + '</td></tr>';
   optRows += '<tr><td>SECURE 2.0 Credits</td><td>' + P(s.secureCredits) + '</td></tr>';
