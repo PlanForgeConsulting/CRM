@@ -279,7 +279,6 @@
   <div style="display:flex;gap:8px;">
     <button class="btn btn-illustration" onclick="generateIllustrationPDF()">📄 Generate Illustration</button>
     <button class="btn" style="background:linear-gradient(135deg,#2E7D32 0%,#388E3C 100%);color:#fff;font-weight:700;letter-spacing:.5px;box-shadow:0 2px 8px rgba(46,125,50,.35);" onclick="generateParticipantView()">🖥 Participant View</button>
-    <button class="btn btn-copy-embed" style="background:linear-gradient(135deg,#1565C0 0%,#1976D2 100%);color:#fff;font-weight:700;letter-spacing:.5px;box-shadow:0 2px 8px rgba(21,101,192,.35);" onclick="copyEmbedCode()">📋 Copy Embed HTML</button>
     <button class="btn btn-outline" style="color:#fff;border-color:rgba(255,255,255,.3);" onclick="exportJSON()">⬇ Export JSON</button>
     <button class="btn btn-outline" style="color:#fff;border-color:rgba(255,255,255,.3);" onclick="showImport()">⬆ Import JSON</button>
   </div>
@@ -653,7 +652,6 @@ const PERMITTED_DISPARITY_ADJ = 0.65;
 
 // ── State ──
 let currentComputed = null;
-let lastParticipantHTML = null;
 let additionalOwnersList = [];
 let parsedCensusEmployees = null;  // Stores parsed census data (takes priority over synthetic)
 let parsedCensusCapabilities = null; // Tracks what census actually detected (ages, dates, etc.)
@@ -4047,6 +4045,7 @@ function generateParticipantView() {
     <div style="text-align:right;color:#fff;">
       <div style="font-size:22px;font-weight:700;">${c.bizName || 'Client'}</div>
       <div class="sans" style="font-size:12px;opacity:0.8;">${c.year} Plan Year</div>
+      <button id="copyEmbedBtn" onclick="copyEmbedCode()" class="sans" style="margin-top:6px;background:var(--gold);color:#fff;border:none;padding:5px 14px;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.5px;">Copy Embed HTML</button>
     </div>
   </div>
 
@@ -4352,6 +4351,24 @@ function renderScenario(idx) {
   document.getElementById('forfeitureContent').innerHTML = forfHtml;
 }
 
+// Copy embed code — strips out the copy button itself so pasted HTML is clean
+function copyEmbedCode() {
+  const btn = document.getElementById('copyEmbedBtn');
+  btn.style.display = 'none';
+  const html = '<!DOCTYPE html>\\n<html>' + document.documentElement.innerHTML + '</html>';
+  btn.style.display = '';
+  navigator.clipboard.writeText(html).then(() => {
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = 'Copy Embed HTML'; }, 2000);
+  }).catch(() => {
+    // Fallback: select-all in a new window
+    const w = window.open('', '_blank');
+    w.document.open();
+    w.document.write('<pre style="white-space:pre-wrap;word-wrap:break-word;font-size:11px;">' + html.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</pre>');
+    w.document.close();
+  });
+}
+
 // Build rate pills
 function init() {
   let pills = '';
@@ -4367,9 +4384,6 @@ document.addEventListener('DOMContentLoaded', init);
 </body>
 </html>`;
 
-  // Store for embed copy
-  lastParticipantHTML = participantHTML;
-
   // Open in new tab
   const blob = new Blob([participantHTML], { type: 'text/html' });
   const url = URL.createObjectURL(blob);
@@ -4381,25 +4395,6 @@ document.addEventListener('DOMContentLoaded', init);
   a.click();
 }
 
-function copyEmbedCode() {
-  if (!lastParticipantHTML) {
-    // Generate it first if not yet created
-    generateParticipantView();
-  }
-  if (!lastParticipantHTML) { alert('Could not generate illustration HTML.'); return; }
-  navigator.clipboard.writeText(lastParticipantHTML).then(() => {
-    const btn = document.querySelector('.btn-copy-embed');
-    const orig = btn.textContent;
-    btn.textContent = '✓ Copied!';
-    setTimeout(() => { btn.textContent = orig; }, 2000);
-  }).catch(() => {
-    // Fallback: open in a new window as text so they can copy
-    const w = window.open('', '_blank');
-    w.document.open();
-    w.document.write('<pre style="white-space:pre-wrap;word-wrap:break-word;font-size:12px;">' + lastParticipantHTML.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</pre>');
-    w.document.close();
-  });
-}
 
 
 // ── Init ──
