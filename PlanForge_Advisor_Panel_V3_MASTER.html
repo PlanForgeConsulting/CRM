@@ -3608,6 +3608,222 @@ function generateIllustrationPDF() {
 
 
 // ══════════════════════════════════════════════════════════════
+//  COMPREHENSIVE TEST HARNESS — 25 Scenario Validation Suite
+//  Run from console: runTestSuite()
+// ══════════════════════════════════════════════════════════════
+
+function runTestSuite() {
+  const scenarios = [
+    // 1. Solo owner, S-Corp, older, few employees
+    { name: '1. Solo S-Corp (older owner, 3 NHCEs)', input: { bizName:'Solo Test', firstName:'John', lastName:'Smith', ownerAge:55, ownerSalary:200000, ownerK1:0, nhceCount:3, nhceAvgPay:45000, nhceAvgAge:30, nhcePayLow:35000, nhcePayHigh:55000, hceNonOwnerCount:0, hceAvgPay:0, hceAvgAge:0, secureYear:1, year:'2026', taxRate:0.32, entityType:'S-Corp', stdRate:5, optNhceRate:5, planDesignMode:'custom', optOwnerAlloc:null, nhceFlatAmt:null, deferralEligMonths:12, psEligMonths:3, excludableNhces:0 }},
+    // 2. Solo LLC with K-1 income (comp cap test)
+    { name: '2. LLC + K-1 (comp cap $350k)', input: { bizName:'Dentist LLC', firstName:'Sarah', lastName:'Chen', ownerAge:48, ownerSalary:200000, ownerK1:200000, nhceCount:6, nhceAvgPay:50000, nhceAvgAge:32, nhcePayLow:32000, nhcePayHigh:68000, hceNonOwnerCount:0, hceAvgPay:0, hceAvgAge:0, secureYear:2, year:'2026', taxRate:0.35, entityType:'LLC', stdRate:5, optNhceRate:5, planDesignMode:'custom', optOwnerAlloc:null, nhceFlatAmt:null, deferralEligMonths:12, psEligMonths:3, excludableNhces:1 }},
+    // 3. Very young owner — cross-test harder (low EBAR)
+    { name: '3. Young owner (30) vs older NHCEs (45)', input: { bizName:'Young Tech', firstName:'Alex', lastName:'Young', ownerAge:30, ownerSalary:250000, ownerK1:0, nhceCount:10, nhceAvgPay:60000, nhceAvgAge:45, nhcePayLow:40000, nhcePayHigh:80000, hceNonOwnerCount:0, hceAvgPay:0, hceAvgAge:0, secureYear:1, year:'2026', taxRate:0.30, entityType:'S-Corp', stdRate:5, optNhceRate:5, planDesignMode:'custom', optOwnerAlloc:null, nhceFlatAmt:null, deferralEligMonths:12, psEligMonths:3, excludableNhces:0 }},
+    // 4. Near-retirement owner — high EBAR leverage
+    { name: '4. Near-retirement (63), 8 young NHCEs', input: { bizName:'Sunset Services', firstName:'Robert', lastName:'Brown', ownerAge:63, ownerSalary:280000, ownerK1:0, nhceCount:8, nhceAvgPay:42000, nhceAvgAge:28, nhcePayLow:28000, nhcePayHigh:58000, hceNonOwnerCount:0, hceAvgPay:0, hceAvgAge:0, secureYear:3, year:'2026', taxRate:0.28, entityType:'S-Corp', stdRate:5, optNhceRate:5, planDesignMode:'custom', optOwnerAlloc:null, nhceFlatAmt:null, deferralEligMonths:12, psEligMonths:3, excludableNhces:0 }},
+    // 5. Two owners, same age
+    { name: '5. Two equal owners (both 50)', input: { bizName:'Twin Partners', firstName:'Mike', lastName:'Davis', ownerAge:50, ownerSalary:200000, ownerK1:0, nhceCount:10, nhceAvgPay:50000, nhceAvgAge:35, nhcePayLow:35000, nhcePayHigh:65000, hceNonOwnerCount:0, hceAvgPay:0, hceAvgAge:0, secureYear:2, year:'2026', taxRate:0.30, entityType:'S-Corp', stdRate:5, optNhceRate:5, planDesignMode:'custom', optOwnerAlloc:null, nhceFlatAmt:null, deferralEligMonths:12, psEligMonths:3, excludableNhces:0, additionalOwners:[{name:'Dave Davis',age:50,salary:200000,k1:0,receivesPS:true}] }},
+    // 6. Two owners, big age gap (65 + 30)
+    { name: '6. Two owners (65 + 30 age gap)', input: { bizName:'Father Son LLC', firstName:'Frank', lastName:'Sr', ownerAge:65, ownerSalary:300000, ownerK1:0, nhceCount:12, nhceAvgPay:45000, nhceAvgAge:33, nhcePayLow:28000, nhcePayHigh:65000, hceNonOwnerCount:0, hceAvgPay:0, hceAvgAge:0, secureYear:1, year:'2026', taxRate:0.32, entityType:'LLC', stdRate:5, optNhceRate:5, planDesignMode:'custom', optOwnerAlloc:null, nhceFlatAmt:null, deferralEligMonths:12, psEligMonths:3, excludableNhces:0, additionalOwners:[{name:'Frank Jr',age:30,salary:150000,k1:0,receivesPS:true,allocRate:1.0}] }},
+    // 7. Three owners, Partnership
+    { name: '7. Three-owner Partnership', input: { bizName:'ABC Law', firstName:'Alice', lastName:'Atty', ownerAge:52, ownerSalary:220000, ownerK1:0, nhceCount:15, nhceAvgPay:55000, nhceAvgAge:36, nhcePayLow:35000, nhcePayHigh:80000, hceNonOwnerCount:0, hceAvgPay:0, hceAvgAge:0, secureYear:2, year:'2026', taxRate:0.35, entityType:'Partnership', stdRate:5, optNhceRate:5, planDesignMode:'custom', optOwnerAlloc:null, nhceFlatAmt:null, deferralEligMonths:12, psEligMonths:3, excludableNhces:2, additionalOwners:[{name:'Bob Barrister',age:48,salary:200000,k1:0,receivesPS:true},{name:'Carol Counsel',age:40,salary:180000,k1:0,receivesPS:true}] }},
+    // 8. Non-owner HCEs present (key test — HCE rate allocation)
+    { name: '8. Two non-owner HCEs at $160k', input: { bizName:'Exec Corp', firstName:'Tom', lastName:'CEO', ownerAge:55, ownerSalary:300000, ownerK1:0, nhceCount:20, nhceAvgPay:48000, nhceAvgAge:34, nhcePayLow:28000, nhcePayHigh:70000, hceNonOwnerCount:2, hceAvgPay:160000, hceAvgAge:45, hceAllocRate:5, secureYear:1, year:'2026', taxRate:0.32, entityType:'S-Corp', stdRate:5, optNhceRate:5, planDesignMode:'custom', optOwnerAlloc:null, nhceFlatAmt:null, deferralEligMonths:12, psEligMonths:3, excludableNhces:0, nhceOver100k:0 }},
+    // 9. Non-owner HCEs at 0% allocation
+    { name: '9. HCEs at 0% (maximize owner test)', input: { bizName:'Owner First Inc', firstName:'Max', lastName:'Owner', ownerAge:58, ownerSalary:275000, ownerK1:0, nhceCount:15, nhceAvgPay:50000, nhceAvgAge:30, nhcePayLow:30000, nhcePayHigh:70000, hceNonOwnerCount:3, hceAvgPay:140000, hceAvgAge:40, hceAllocRate:0, secureYear:2, year:'2026', taxRate:0.30, entityType:'S-Corp', stdRate:5, optNhceRate:5, planDesignMode:'custom', optOwnerAlloc:null, nhceFlatAmt:null, deferralEligMonths:12, psEligMonths:3, excludableNhces:0, nhceOver100k:0 }},
+    // 10. Gateway mode — $1000 flat
+    { name: '10. Gateway $1000 flat', input: { bizName:'Gateway Test', firstName:'Gwen', lastName:'Gate', ownerAge:45, ownerSalary:180000, ownerK1:0, nhceCount:20, nhceAvgPay:40000, nhceAvgAge:32, nhcePayLow:25000, nhcePayHigh:60000, hceNonOwnerCount:0, hceAvgPay:0, hceAvgAge:0, secureYear:1, year:'2026', taxRate:0.28, entityType:'S-Corp', stdRate:3, optNhceRate:2.5, planDesignMode:'gateway', optOwnerAlloc:null, nhceFlatAmt:1000, deferralEligMonths:12, psEligMonths:3, excludableNhces:0 }},
+    // 11. Large company (50+ employees — credit phase)
+    { name: '11. Large co (60 employees, credit reduction)', input: { bizName:'Big Corp', firstName:'Linda', lastName:'Large', ownerAge:50, ownerSalary:250000, ownerK1:0, nhceCount:58, nhceAvgPay:52000, nhceAvgAge:37, nhcePayLow:28000, nhcePayHigh:80000, hceNonOwnerCount:2, hceAvgPay:145000, hceAvgAge:42, secureYear:1, year:'2026', taxRate:0.30, entityType:'S-Corp', stdRate:5, optNhceRate:5, planDesignMode:'custom', optOwnerAlloc:null, nhceFlatAmt:null, deferralEligMonths:12, psEligMonths:3, excludableNhces:5, nhceOver100k:2 }},
+    // 12. 100+ employees (no credit)
+    { name: '12. 100+ employees (zero credit)', input: { bizName:'Enterprise Inc', firstName:'Ed', lastName:'Enterprise', ownerAge:55, ownerSalary:300000, ownerK1:0, nhceCount:105, nhceAvgPay:48000, nhceAvgAge:35, nhcePayLow:28000, nhcePayHigh:85000, hceNonOwnerCount:5, hceAvgPay:155000, hceAvgAge:48, secureYear:2, year:'2026', taxRate:0.28, entityType:'S-Corp', stdRate:5, optNhceRate:5, planDesignMode:'custom', optOwnerAlloc:null, nhceFlatAmt:null, deferralEligMonths:12, psEligMonths:3, excludableNhces:10, nhceOver100k:3 }},
+    // 13. C-Corp (no FICA savings)
+    { name: '13. C-Corp (no FICA savings)', input: { bizName:'CeeCorpCo', firstName:'Charles', lastName:'Corp', ownerAge:52, ownerSalary:250000, ownerK1:0, nhceCount:12, nhceAvgPay:55000, nhceAvgAge:33, nhcePayLow:35000, nhcePayHigh:75000, hceNonOwnerCount:0, hceAvgPay:0, hceAvgAge:0, secureYear:1, year:'2026', taxRate:0.21, entityType:'C-Corp', stdRate:5, optNhceRate:5, planDesignMode:'custom', optOwnerAlloc:null, nhceFlatAmt:null, deferralEligMonths:12, psEligMonths:3, excludableNhces:0 }},
+    // 14. Low owner salary, high K-1 (LLC)
+    { name: '14. Low salary $80k + K-1 $350k', input: { bizName:'Passive Income LLC', firstName:'Pete', lastName:'Passive', ownerAge:50, ownerSalary:80000, ownerK1:350000, nhceCount:4, nhceAvgPay:45000, nhceAvgAge:30, nhcePayLow:35000, nhcePayHigh:55000, hceNonOwnerCount:0, hceAvgPay:0, hceAvgAge:0, secureYear:1, year:'2026', taxRate:0.35, entityType:'LLC', stdRate:5, optNhceRate:5, planDesignMode:'custom', optOwnerAlloc:null, nhceFlatAmt:null, deferralEligMonths:12, psEligMonths:3, excludableNhces:0 }},
+    // 15. Very small — owner + 1 NHCE
+    { name: '15. Owner + 1 NHCE', input: { bizName:'Duo Inc', firstName:'Dina', lastName:'Duo', ownerAge:45, ownerSalary:200000, ownerK1:0, nhceCount:1, nhceAvgPay:55000, nhceAvgAge:28, nhcePayLow:55000, nhcePayHigh:55000, hceNonOwnerCount:0, hceAvgPay:0, hceAvgAge:0, secureYear:1, year:'2026', taxRate:0.30, entityType:'S-Corp', stdRate:5, optNhceRate:5, planDesignMode:'custom', optOwnerAlloc:null, nhceFlatAmt:null, deferralEligMonths:12, psEligMonths:3, excludableNhces:0 }},
+    // 16. Solo owner, NO employees
+    { name: '16. Solo — no employees', input: { bizName:'Solo Pro', firstName:'Sam', lastName:'Solo', ownerAge:50, ownerSalary:200000, ownerK1:0, nhceCount:0, nhceAvgPay:0, nhceAvgAge:0, nhcePayLow:0, nhcePayHigh:0, hceNonOwnerCount:0, hceAvgPay:0, hceAvgAge:0, secureYear:1, year:'2026', taxRate:0.32, entityType:'S-Corp', stdRate:5, optNhceRate:5, planDesignMode:'custom', optOwnerAlloc:null, nhceFlatAmt:null, deferralEligMonths:12, psEligMonths:3, excludableNhces:0 }},
+    // 17. Many excludable NHCEs (eligibility test)
+    { name: '17. High exclusion (8 of 20 excluded)', input: { bizName:'Seasonal Biz', firstName:'Sasha', lastName:'Seasonal', ownerAge:48, ownerSalary:220000, ownerK1:0, nhceCount:20, nhceAvgPay:38000, nhceAvgAge:30, nhcePayLow:18000, nhcePayHigh:65000, hceNonOwnerCount:0, hceAvgPay:0, hceAvgAge:0, secureYear:2, year:'2026', taxRate:0.28, entityType:'S-Corp', stdRate:5, optNhceRate:5, planDesignMode:'custom', optOwnerAlloc:null, nhceFlatAmt:null, deferralEligMonths:12, psEligMonths:6, excludableNhces:8 }},
+    // 18. NHCE over $100k (nhceOver100k test)
+    { name: '18. NHCEs over $100k threshold', input: { bizName:'Tech Startup', firstName:'Tina', lastName:'Tech', ownerAge:42, ownerSalary:300000, ownerK1:0, nhceCount:15, nhceAvgPay:85000, nhceAvgAge:32, nhcePayLow:55000, nhcePayHigh:130000, hceNonOwnerCount:0, hceAvgPay:0, hceAvgAge:0, secureYear:1, year:'2026', taxRate:0.30, entityType:'S-Corp', stdRate:5, optNhceRate:5, planDesignMode:'custom', optOwnerAlloc:null, nhceFlatAmt:null, deferralEligMonths:12, psEligMonths:3, excludableNhces:0, nhceOver100k:3 }},
+    // 19. Year 5 SECURE credits (25% phase-down)
+    { name: '19. Year 5 SECURE (25% credit)', input: { bizName:'Mature Plan', firstName:'Mara', lastName:'Mature', ownerAge:60, ownerSalary:260000, ownerK1:0, nhceCount:18, nhceAvgPay:48000, nhceAvgAge:34, nhcePayLow:28000, nhcePayHigh:72000, hceNonOwnerCount:0, hceAvgPay:0, hceAvgAge:0, secureYear:5, year:'2026', taxRate:0.30, entityType:'S-Corp', stdRate:5, optNhceRate:5, planDesignMode:'custom', optOwnerAlloc:null, nhceFlatAmt:null, deferralEligMonths:12, psEligMonths:3, excludableNhces:2 }},
+    // 20. Low NHCE rate (3%) — gateway territory
+    { name: '20. Low 3% NHCE rate (gateway 3x)', input: { bizName:'Low Rate LLC', firstName:'Larry', lastName:'Low', ownerAge:50, ownerSalary:200000, ownerK1:0, nhceCount:10, nhceAvgPay:50000, nhceAvgAge:35, nhcePayLow:35000, nhcePayHigh:65000, hceNonOwnerCount:0, hceAvgPay:0, hceAvgAge:0, secureYear:1, year:'2026', taxRate:0.30, entityType:'LLC', stdRate:3, optNhceRate:3, planDesignMode:'custom', optOwnerAlloc:null, nhceFlatAmt:null, deferralEligMonths:12, psEligMonths:3, excludableNhces:0 }},
+    // 21. High NHCE rate (7%) — max cross-test leverage
+    { name: '21. High 7% NHCE rate', input: { bizName:'Generous Corp', firstName:'Grace', lastName:'Generous', ownerAge:55, ownerSalary:280000, ownerK1:0, nhceCount:8, nhceAvgPay:60000, nhceAvgAge:30, nhcePayLow:40000, nhcePayHigh:80000, hceNonOwnerCount:0, hceAvgPay:0, hceAvgAge:0, secureYear:1, year:'2026', taxRate:0.32, entityType:'S-Corp', stdRate:7, optNhceRate:7, planDesignMode:'custom', optOwnerAlloc:null, nhceFlatAmt:null, deferralEligMonths:12, psEligMonths:3, excludableNhces:0 }},
+    // 22. Multi-owner + non-owner HCEs (complex structure)
+    { name: '22. 2 owners + 3 HCEs + 25 NHCEs', input: { bizName:'Complex Corp', firstName:'Carl', lastName:'Complex', ownerAge:54, ownerSalary:275000, ownerK1:0, nhceCount:25, nhceAvgPay:52000, nhceAvgAge:36, nhcePayLow:30000, nhcePayHigh:80000, hceNonOwnerCount:3, hceAvgPay:145000, hceAvgAge:44, hceAllocRate:5, secureYear:2, year:'2026', taxRate:0.30, entityType:'S-Corp', stdRate:5, optNhceRate:5, planDesignMode:'custom', optOwnerAlloc:null, nhceFlatAmt:null, deferralEligMonths:12, psEligMonths:3, excludableNhces:3, nhceOver100k:1, additionalOwners:[{name:'Connie Complex',age:48,salary:250000,k1:0,receivesPS:true}] }},
+    // 23. Maximize mode test
+    { name: '23. Maximize mode (find optimal rate)', input: { bizName:'Max Test', firstName:'Max', lastName:'Test', ownerAge:52, ownerSalary:240000, ownerK1:0, nhceCount:10, nhceAvgPay:50000, nhceAvgAge:32, nhcePayLow:30000, nhcePayHigh:70000, hceNonOwnerCount:0, hceAvgPay:0, hceAvgAge:0, secureYear:1, year:'2026', taxRate:0.30, entityType:'S-Corp', stdRate:3, optNhceRate:5, planDesignMode:'maximize', optOwnerAlloc:null, nhceFlatAmt:null, deferralEligMonths:12, psEligMonths:3, excludableNhces:0 }},
+    // 24. 2025 plan year (different IRS limits)
+    { name: '24. 2025 plan year ($70k 415c limit)', input: { bizName:'Last Year Inc', firstName:'Luke', lastName:'Last', ownerAge:50, ownerSalary:250000, ownerK1:0, nhceCount:8, nhceAvgPay:48000, nhceAvgAge:33, nhcePayLow:32000, nhcePayHigh:65000, hceNonOwnerCount:0, hceAvgPay:0, hceAvgAge:0, secureYear:1, year:'2025', taxRate:0.30, entityType:'S-Corp', stdRate:5, optNhceRate:5, planDesignMode:'custom', optOwnerAlloc:null, nhceFlatAmt:null, deferralEligMonths:12, psEligMonths:3, excludableNhces:0 }},
+    // 25. Stress test: owner at comp cap, many HCEs, mixed ages
+    { name: '25. Stress: comp cap + 5 HCEs + 40 NHCEs', input: { bizName:'Mega Corp', firstName:'Mark', lastName:'Mega', ownerAge:58, ownerSalary:500000, ownerK1:0, nhceCount:40, nhceAvgPay:55000, nhceAvgAge:38, nhcePayLow:28000, nhcePayHigh:95000, hceNonOwnerCount:5, hceAvgPay:165000, hceAvgAge:46, hceAllocRate:3, secureYear:3, year:'2026', taxRate:0.28, entityType:'S-Corp', stdRate:5, optNhceRate:5, planDesignMode:'custom', optOwnerAlloc:null, nhceFlatAmt:null, deferralEligMonths:12, psEligMonths:6, excludableNhces:5, nhceOver100k:2, additionalOwners:[{name:'Mary Mega',age:52,salary:350000,k1:0,receivesPS:true}] }},
+  ];
+
+  const limits2025 = getLimits(2025);
+  const limits2026 = getLimits(2026);
+
+  console.log('═══════════════════════════════════════════════');
+  console.log('  PLANFORGE TEST SUITE — 25 Scenario Validation');
+  console.log('═══════════════════════════════════════════════');
+
+  let passed = 0, failed = 0, warnings = 0;
+  const failures = [];
+
+  for (const sc of scenarios) {
+    const inp = sc.input;
+    const limits = getLimits(parseInt(inp.year || 2026));
+
+    try {
+      const c = independentCompute(inp);
+
+      // ── Core Validations ──
+      const issues = [];
+
+      // 1. Owner allocation should not exceed §415(c) individual limit
+      if (c.optOwnerAlloc > limits.additions415c + 1) {
+        issues.push(`FAIL: Owner alloc ${c.optOwnerAlloc} exceeds §415(c) ${limits.additions415c}`);
+      }
+
+      // 2. Owner allocation should not exceed compensation
+      if (c.optOwnerAlloc > c.ownerComp + 1) {
+        issues.push(`FAIL: Owner alloc ${c.optOwnerAlloc} exceeds comp ${c.ownerComp}`);
+      }
+
+      // 3. Comp cap check
+      if (c.ownerComp > limits.compCap401a17 + 1) {
+        issues.push(`FAIL: Owner comp ${c.ownerComp} exceeds §401(a)(17) ${limits.compCap401a17}`);
+      }
+
+      // 4. Standard plan: net cost should be Total PS - Owner Retained - Tax - Credits - Forfeitures - FICA
+      const expectedStdNet = c.stdTotalPS - c.stdOwnersRetained - c.stdTaxSavings - c.stdSecureCredits - (c.realForfeituresStd || 0) - (c.stdFicaSavings || 0);
+      if (Math.abs(c.stdNetCost - expectedStdNet) > 2) {
+        issues.push(`FAIL: Std net cost ${c.stdNetCost} != expected ${expectedStdNet} (diff ${c.stdNetCost - expectedStdNet})`);
+      }
+
+      // 5. Optimized plan: net cost check
+      const expectedOptNet = c.optTotalPS - c.optOwnersRetained - c.optTaxSavings - (c.secureCredits || 0) - (c.realForfeitures || 0) - (c.optFicaSavings || 0);
+      if (Math.abs(c.optNetCost - expectedOptNet) > 2) {
+        issues.push(`FAIL: Opt net cost ${c.optNetCost} != expected ${expectedOptNet} (diff ${c.optNetCost - expectedOptNet})`);
+      }
+
+      // 6. Cross-test should pass (for 5%+ NHCE rate with employees)
+      if (inp.nhceCount > 0 && (inp.optNhceRate || 5) >= 5 && inp.planDesignMode !== 'gateway') {
+        if (c.crossTestResult && !c.crossTestResult.allPass) {
+          issues.push(`FAIL: Cross-test failed at ${c.optNhceRate}% NHCE, owner alloc $${c.optOwnerAlloc}`);
+          // Show rate group details
+          if (c.crossTestResult.rateGroupResults) {
+            c.crossTestResult.rateGroupResults.forEach(rg => {
+              if (!rg.passes) {
+                issues.push(`  → ${rg.hce.name}: RPT ${rg.rpTest.ratio.toFixed(3)} (${rg.rpTest.passes?'PASS':'FAIL'}), ABT ${rg.abTest.ratio.toFixed(3)} (${rg.abTest.passes?'PASS':'FAIL'})`);
+              }
+            });
+          }
+        }
+      }
+
+      // 7. Total PS = Owner Retained + Employee PS
+      if (Math.abs(c.optTotalPS - c.optOwnersRetained - c.optEmpPS) > 2) {
+        issues.push(`FAIL: Opt TotalPS ${c.optTotalPS} != Owners ${c.optOwnersRetained} + Emp ${c.optEmpPS}`);
+      }
+
+      // 8. §404(a)(3) plan-level deduction limit: 25% of total comp
+      if (c.deductionLimit404 && c.optTotalPS > c.deductionLimit404 + 1) {
+        issues.push(`WARN: Opt TotalPS ${c.optTotalPS} exceeds §404 limit ${c.deductionLimit404} — reduced deduction`);
+        warnings++;
+      }
+
+      // 9. SECURE credits should be 0 for 100+ employees
+      if ((c.totalEmployeesForSize || 0) >= 100 && (c.secureCredits || 0) > 0) {
+        issues.push(`FAIL: SECURE credits ${c.secureCredits} > 0 for ${c.totalEmployeesForSize} employees`);
+      }
+
+      // 10. FICA savings should be 0 for C-Corp
+      if (inp.entityType === 'C-Corp' && (c.optFicaSavings || 0) > 0) {
+        issues.push(`FAIL: C-Corp has FICA savings ${c.optFicaSavings}`);
+      }
+
+      // 11. Gateway: owner rate should be <= 3x NHCE rate (below 5%)
+      if (inp.planDesignMode === 'gateway' && c.ownerComp > 0) {
+        const nhceFlatAmt = inp.nhceFlatAmt || 1000;
+        const nhceRate = (inp.nhceAvgPay > 0) ? nhceFlatAmt / inp.nhceAvgPay * 100 : 0;
+        const maxOwnerRate = nhceRate * 3;
+        const actualOwnerRate = (c.optOwnerAlloc / c.ownerComp) * 100;
+        if (actualOwnerRate > maxOwnerRate + 0.5) {
+          issues.push(`FAIL: Gateway owner rate ${actualOwnerRate.toFixed(1)}% exceeds 3x NHCE (${maxOwnerRate.toFixed(1)}%)`);
+        }
+      }
+
+      // 12. Below 5% non-gateway: owner capped at 3x
+      if (inp.planDesignMode !== 'gateway' && (inp.optNhceRate || 5) < 5 && inp.nhceCount > 0 && c.ownerComp > 0) {
+        const maxOwnerRate = (inp.optNhceRate || 5) * 3;
+        const actualOwnerRate = (c.optOwnerAlloc / c.ownerComp) * 100;
+        if (actualOwnerRate > maxOwnerRate + 0.5) {
+          issues.push(`FAIL: Below-5% owner rate ${actualOwnerRate.toFixed(1)}% exceeds 3x (${maxOwnerRate.toFixed(1)}%)`);
+        }
+      }
+
+      // 13. Additional owner allocations should not exceed their §415(c) cap
+      if (c.additionalOwners && c.optAdditionalAllocs) {
+        c.additionalOwners.forEach((ao, i) => {
+          const alloc = c.optAdditionalAllocs[i] || 0;
+          const aoCap = Math.min(limits.additions415c, ao.comp || 0);
+          if (alloc > aoCap + 1) {
+            issues.push(`FAIL: Add'l owner ${ao.name} alloc ${alloc} exceeds cap ${aoCap}`);
+          }
+        });
+      }
+
+      // 14. Verify independent check
+      const verify = verifyIndependent(inp);
+      if (verify && verify.stdDiscrepancy > 50) {
+        issues.push(`WARN: Verify std discrepancy $${verify.stdDiscrepancy}`);
+        warnings++;
+      }
+
+      // Report results
+      const ownerPct = c.ownerComp > 0 ? (c.optOwnerAlloc / c.ownerComp * 100).toFixed(1) : '0';
+      const xtStatus = c.crossTestResult ? (c.crossTestResult.allPass ? 'PASS' : 'FAIL') : 'N/A';
+
+      if (issues.filter(i => i.startsWith('FAIL')).length === 0) {
+        passed++;
+        console.log(`✓ ${sc.name}`);
+        console.log(`  Owner: $${c.optOwnerAlloc.toLocaleString()} (${ownerPct}%) | NHCE: ${c.optNhceRate}% | XTest: ${xtStatus} | Net: $${c.optNetCost.toLocaleString()}`);
+        if (issues.length > 0) issues.forEach(w => console.log(`  ⚠ ${w}`));
+      } else {
+        failed++;
+        failures.push(sc.name);
+        console.log(`✗ ${sc.name}`);
+        issues.forEach(i => console.log(`  ${i}`));
+        console.log(`  Owner: $${c.optOwnerAlloc.toLocaleString()} (${ownerPct}%) | NHCE: ${c.optNhceRate}% | XTest: ${xtStatus} | Net: $${c.optNetCost.toLocaleString()}`);
+      }
+    } catch (e) {
+      failed++;
+      failures.push(sc.name);
+      console.log(`✗ ${sc.name}`);
+      console.log(`  ERROR: ${e.message}`);
+    }
+    console.log('');
+  }
+
+  console.log('═══════════════════════════════════════════════');
+  console.log(`  RESULTS: ${passed} PASSED | ${failed} FAILED | ${warnings} WARNINGS`);
+  if (failures.length > 0) {
+    console.log(`  FAILURES: ${failures.join(', ')}`);
+  }
+  console.log('═══════════════════════════════════════════════');
+
+  return { passed, failed, warnings, total: scenarios.length };
+}
+
+
+// ══════════════════════════════════════════════════════════════
 //  INTERACTIVE PARTICIPANT VIEW GENERATOR
 // ══════════════════════════════════════════════════════════════
 
