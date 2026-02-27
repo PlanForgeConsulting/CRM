@@ -19,7 +19,7 @@
  * Additional Owners | HCE Count | HCE Avg Pay | HCE Low | HCE High |
  * NHCE Count | NHCE Avg Pay | NHCE Low | NHCE High | Avg Employee Age |
  * Employee Details | Turnover | Plan Goals | Current Provider | Current Fees |
- * Target Start | Notes | Uploaded Files
+ * Target Start | Notes | Uploaded Files | Advisor Panel JSON
  */
 
 function doPost(e) {
@@ -62,7 +62,8 @@ function doPost(e) {
     data.currentFees || '',
     data.targetStart || '',
     data.notes || '',
-    data.uploadedFiles || ''
+    data.uploadedFiles || '',
+    data.advisorPanelJSON || ''
   ]);
 
   return ContentService

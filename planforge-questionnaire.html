@@ -1163,6 +1163,34 @@ function submitForm() {
     referralName: getVal('referralName'),
     submittedAt: new Date().toISOString()
   };
+
+  // Build advisor-panel-compatible JSON (matches the panel's doImport field names)
+  const advisorPanelJSON = {
+    bizName: data.bizName,
+    entityType: data.bizStructure,
+    firstName: data.firstName,
+    lastName: data.lastName,
+    ownerAge: data.ownerAge,
+    ownerSalary: data.ownerSalary,
+    ownerK1: data.ownerK1 || 0,
+    nhceCount: data.nhceCount,
+    nhceAvgPay: data.nhceAvgPay,
+    nhceAvgAge: data.avgEmployeeAge || 38,
+    nhcePayLow: data.nhceLow || 0,
+    nhcePayHigh: data.nhceHigh || 0,
+    hceNonOwnerCount: data.hceCount || 0,
+    hceAvgPay: data.hceAvgPay || 0,
+    turnoverPct: data.turnover || 0,
+    additionalOwners: (data.additionalOwners || []).map(ao => ({
+      name: ao.name || '', age: ao.age, salary: ao.salary, k1: ao.k1 || 0,
+      receivesPS: true, allocRate: null
+    })),
+    _importedFrom: 'questionnaire',
+    _submittedAt: data.submittedAt
+  };
+  // Remove undefined values
+  Object.keys(advisorPanelJSON).forEach(k => { if (advisorPanelJSON[k] === undefined) delete advisorPanelJSON[k]; });
+
   // Disable submit button to prevent double-submission
   const submitBtn = document.querySelector('.pf-btn-submit');
   if (submitBtn) {
@@ -1224,7 +1252,8 @@ function submitForm() {
           currentFees: data.currentFees,
           targetStart: data.targetStart,
           notes: data.notes,
-          uploadedFiles: data.uploadedFiles ? data.uploadedFiles.join(', ') : ''
+          uploadedFiles: data.uploadedFiles ? data.uploadedFiles.join(', ') : '',
+          advisorPanelJSON: JSON.stringify(advisorPanelJSON)
         })
       }).then(() => console.log('PlanForge submission sent to Google Sheets'))
         .catch(err => console.error('Google Sheets write failed:', err))
