@@ -1083,6 +1083,9 @@ function buildReview() {
 // Replace these with your actual endpoints:
 const ZAPIER_WEBHOOK_URL = 'https://hooks.zapier.com/hooks/catch/24240047/uciil6w/';
 const CALCOM_BOOKING_URL = 'https://cal.com/nick-planforge401k/consult';
+// Google Sheets Apps Script web app URL — receives full questionnaire data as a new row
+// To set up: Open your Google Sheet → Extensions → Apps Script → paste the doPost script → Deploy as web app
+const GOOGLE_SHEETS_URL = ''; // ← Paste your Apps Script deployment URL here
 
 function submitForm() {
   // Validate all steps before submitting — redirect to first incomplete step if needed
@@ -1167,24 +1170,74 @@ function submitForm() {
     submitBtn.textContent = 'Submitting...';
   }
 
-  // POST to Zapier webhook → triggers Airtable CRM record + confirmation email
-  fetch(ZAPIER_WEBHOOK_URL, {
+  // Fire both Zapier (CRM prospect) and Google Sheets (full questionnaire data) in parallel
+  const zapierPromise = fetch(ZAPIER_WEBHOOK_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
-  })
-  .then(response => {
+  }).then(response => {
     if (!response.ok) throw new Error('Webhook returned ' + response.status);
     return response.json().catch(() => ({}));
-  })
-  .then(result => {
+  }).then(result => {
     console.log('PlanForge submission sent to Zapier:', result);
+  });
+
+  // POST full questionnaire results to Google Sheets via Apps Script
+  const sheetsPromise = GOOGLE_SHEETS_URL
+    ? fetch(GOOGLE_SHEETS_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          submittedAt: data.submittedAt,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          email: data.email,
+          phone: data.phone,
+          bizName: data.bizName,
+          bizStructure: data.bizStructure,
+          referralName: data.referralName,
+          has401k: data.has401k,
+          planAge: data.planAge,
+          controlledGroup: data.controlledGroup,
+          familyOwnership: data.familyOwnership,
+          familyEmployees: data.familyEmployees,
+          controlledGroupCount: data.controlledGroupCount,
+          ownerCount: data.ownerCount,
+          ownerAge: data.ownerAge,
+          ownerSalary: data.ownerSalary,
+          ownerK1: data.ownerK1,
+          additionalOwners: data.additionalOwners ? JSON.stringify(data.additionalOwners) : '',
+          hceCount: data.hceCount,
+          hceAvgPay: data.hceAvgPay,
+          hceLow: data.hceLow,
+          hceHigh: data.hceHigh,
+          nhceCount: data.nhceCount,
+          nhceAvgPay: data.nhceAvgPay,
+          nhceLow: data.nhceLow,
+          nhceHigh: data.nhceHigh,
+          avgEmployeeAge: data.avgEmployeeAge,
+          employeeDetails: data.employeeDetails ? JSON.stringify(data.employeeDetails) : '',
+          turnover: data.turnover,
+          planGoals: Array.isArray(data.planGoals) ? data.planGoals.join(', ') : (data.planGoals || ''),
+          currentProvider: data.currentProvider,
+          currentFees: data.currentFees,
+          targetStart: data.targetStart,
+          notes: data.notes,
+          uploadedFiles: data.uploadedFiles ? data.uploadedFiles.join(', ') : ''
+        })
+      }).then(() => console.log('PlanForge submission sent to Google Sheets'))
+        .catch(err => console.error('Google Sheets write failed:', err))
+    : Promise.resolve();
+
+  Promise.all([zapierPromise, sheetsPromise])
+  .then(() => {
     clearSavedDraft();
     currentStep = 7;
     showStep(7);
   })
   .catch(err => {
-    console.error('Submission webhook failed:', err);
+    console.error('Submission failed:', err);
     console.log('PlanForge Questionnaire Data (backup):', JSON.stringify(data, null, 2));
     // Show error — keep draft so user doesn't lose data
     const errorDiv = document.getElementById('submitError');
