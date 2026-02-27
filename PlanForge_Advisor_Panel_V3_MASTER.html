@@ -1894,7 +1894,9 @@ function runComplianceChecks(input, computed) {
 // ══════════════════════════════════════════════════════════════
 
 function computeTypicalBaseline(c, rate) {
-  // "Typical Strategy" = flat rate for everyone (same rate, no cross-testing).
+  // "Typical Strategy" = safe harbor plan at a flat rate for everyone (no cross-testing).
+  // Safe harbor requires minimum 3% non-elective contribution.
+  rate = Math.max(3, rate);
   // Includes all employees with ≥1,000 hours (stdNhceTotalComp), not just optimized-eligible.
   // Uses stdNhceTotalComp + owners (excludes HCE non-owners who only participate in optimized).
   const typicalComp = (c.stdNhceTotalComp || c.nhceTotalComp) + c.ownersTotalComp;
@@ -3382,8 +3384,11 @@ function generateIllustrationPDF() {
   const P = (n) => '(' + $(Math.abs(n)) + ')';
 
   // ── Compute baselines ──
-  const typ3 = computeTypicalBaseline(c, c.stdRate);
-  const typ5 = computeTypicalBaseline(c, c.optNhceRate);
+  // Typical plan = safe harbor, which requires minimum 3% non-elective contribution
+  const typStdRate = Math.max(3, c.stdRate);
+  const typOptRate = Math.max(3, c.optNhceRate);
+  const typ3 = computeTypicalBaseline(c, typStdRate);
+  const typ5 = computeTypicalBaseline(c, typOptRate);
 
   // PlanForge fee: 20% of (standard net cost − optimized net cost) at the SAME NHCE rate
   // Always compares standard flat plan vs optimized cross-tested plan at the opt NHCE rate
@@ -3536,7 +3541,7 @@ function generateIllustrationPDF() {
           </div>
         </div>
         <div style="text-align:center;padding:8px 16px 10px;border-top:1px solid #e8e8e8;">
-          <div style="color:#888;font-size:9.5px;">vs ${c.stdRate}% ${c.stdRate >= 3 ? 'Safe Harbor' : 'Flat PS'} (Typical Strategy)</div>
+          <div style="color:#888;font-size:9.5px;">vs ${typStdRate}% Safe Harbor (Typical Strategy)</div>
           <div style="color:${NAVY};font-size:20px;font-weight:700;margin:3px 0 1px;font-family:Georgia,serif;">Save ${$(stdSave)}</div>
           <div style="color:#888;font-size:9.5px;margin-top:1px;">${stdPct}% less than a typical plan</div>
         </div>
@@ -3564,7 +3569,7 @@ function generateIllustrationPDF() {
           </div>
         </div>
         <div style="text-align:center;padding:8px 16px 10px;border-top:1px solid #c8e6c9;">
-          <div style="color:#888;font-size:9.5px;">vs ${Math.round(c.optNhceRate)}% ${c.optNhceRate >= 3 ? 'Safe Harbor' : 'Flat PS'} (Typical Strategy)</div>
+          <div style="color:#888;font-size:9.5px;">vs ${Math.round(typOptRate)}% Safe Harbor (Typical Strategy)</div>
           <div style="color:${GREEN};font-size:20px;font-weight:700;margin:3px 0 1px;font-family:Georgia,serif;">Save ${$(optSave)}</div>
           <div style="color:#888;font-size:9.5px;margin-top:1px;">${optPct}% less than a typical plan</div>
           <div style="color:${GOLD};font-size:10.5px;font-weight:700;margin-top:3px;">+ ${$(c.optOwnersRetained)} to Owner's retirement</div>
@@ -3590,7 +3595,7 @@ function generateIllustrationPDF() {
     <!-- EXPLAINER -->
     <div style="margin:4px 0 0;font-size:9.5px;color:#666;line-height:1.4;">
       <div style="font-weight:700;font-size:10.5px;color:#333;margin-bottom:2px;">What is the "Typical Strategy"?</div>
-      <div>Most 401(k) advisors recommend a ${c.stdRate >= 3 ? 'safe harbor match or' : ''} flat profit share at the same rate for everyone. It's simple, but it leaves money on the table. PlanForge leverages SECURE 2.0 tax credits, 3-year cliff vesting (creating forfeiture benefits), and voluntary discretionary contributions to dramatically reduce — or even eliminate — your net cost.</div>
+      <div>Most 401(k) advisors recommend a safe harbor match or flat profit share at the same rate for everyone. It's simple, but it leaves money on the table. PlanForge leverages SECURE 2.0 tax credits, 3-year cliff vesting (creating forfeiture benefits), and voluntary discretionary contributions to dramatically reduce — or even eliminate — your net cost.</div>
       <div style="margin-top:2px;">The Optimized plan goes further: cross-testing lets the owner receive up to the IRS maximum while employees receive a competitive rate — all while passing every nondiscrimination test.${c.optNhceRate > 3 ? ` <strong>Note:</strong> For contributions above 3% safe harbor, the excess may be subject to a vesting schedule, creating potential forfeiture benefits as employees turn over.` : ''}</div>
     </div>
 
@@ -4098,6 +4103,27 @@ function runTestSuite() {
         if (c.realForfeituresStd >= c.realForfeitures) {
           issues.push(`FAIL: Std forf ${c.realForfeituresStd} >= opt forf ${c.realForfeitures} — should be less at 2%`);
         }
+        // Young owner cross-test constraint: owners are 40 and 39
+        // Gateway 3× rule would give 6.22% = $3,424/owner, but cross-test
+        // constrains young owners to less than 3× (low EBAR)
+        const gatewayMax3x = c.gatewayInfo ? c.gatewayInfo.ownerAllocByGateway : 0;
+        if (c.optOwnerAlloc >= gatewayMax3x && gatewayMax3x > 0) {
+          issues.push(`FAIL: Owner alloc $${c.optOwnerAlloc} >= 3× gateway $${gatewayMax3x} — young owners should be constrained by cross-test`);
+        }
+        // Owner alloc must be less than 3× (cross-test constrained)
+        const ownerPctOfComp = c.optOwnerAlloc / c.ownerComp * 100;
+        const nhceEquivRate = c.optNhceRate || 2.07;
+        if (ownerPctOfComp >= nhceEquivRate * 3 - 0.1) {
+          issues.push(`FAIL: Owner rate ${ownerPctOfComp.toFixed(2)}% >= 3× NHCE ${(nhceEquivRate * 3).toFixed(2)}% — should be constrained for young owner`);
+        }
+        // Cross-test must still pass
+        if (c.crossTestResult && !c.crossTestResult.allPass) {
+          issues.push(`FAIL: Cross-test failed for gateway with young owners`);
+        }
+        // Both owners should get the same allocation (same age, same comp)
+        if (c.optAdditionalAllocs && c.optAdditionalAllocs[0] !== c.optOwnerAlloc) {
+          issues.push(`FAIL: Owner1 alloc $${c.optOwnerAlloc} != Owner2 alloc $${c.optAdditionalAllocs[0]} (same age/comp should match)`);
+        }
       }
     },
     {
@@ -4292,7 +4318,8 @@ function generateParticipantView() {
       });
     }
     const comp = independentCompute(inp);
-    const typ = computeTypicalBaseline(comp, rate);
+    const typRate = Math.max(3, rate); // Typical plan = safe harbor, minimum 3%
+    const typ = computeTypicalBaseline(comp, typRate);
     const stdHero = comp.stdTaxSavings + (comp.stdSecureCredits||0) + (comp.stdFicaSavings||0);
     const optHero = comp.optTaxSavings + (comp.secureCredits||0) + (comp.optFicaSavings||0);
     const stdSave = typ.netCost - comp.stdNetCost;
@@ -4713,7 +4740,7 @@ function renderScenario(idx) {
 
   // Snapshot boxes
   let snap = '';
-  snap += '<div class="snap-box" style="border:2px solid var(--gold);"><div style="font-weight:700;color:var(--gold);font-size:13px;">Typical</div><div style="font-size:10px;color:#999;">'+s.rate+'% '+(s.rate >= 3 ? 'Safe Harbor' : 'Flat PS')+'</div><div style="font-size:22px;font-weight:700;color:var(--navy);margin-top:4px;">'+$(s.typOwnersRetained)+'</div></div>';
+  snap += '<div class="snap-box" style="border:2px solid var(--gold);"><div style="font-weight:700;color:var(--gold);font-size:13px;">Typical</div><div style="font-size:10px;color:#999;">'+Math.max(3, s.rate)+'% Safe Harbor</div><div style="font-size:22px;font-weight:700;color:var(--navy);margin-top:4px;">'+$(s.typOwnersRetained)+'</div></div>';
   snap += '<div class="snap-box" style="border:2px solid #bbb;"><div style="font-weight:700;color:#666;font-size:13px;">Standard</div><div style="font-size:10px;color:#999;">'+s.rate+'% Flat PS</div><div style="font-size:22px;font-weight:700;color:var(--navy);margin-top:4px;">'+$(s.stdOwnersRetained)+'</div></div>';
   snap += '<div class="snap-box" style="border:2px solid var(--green);position:relative;"><div style="position:absolute;top:-10px;right:8px;background:var(--gold);color:#fff;font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;">'+s.ownerMult+'x MORE</div><div style="font-weight:700;color:var(--green);font-size:13px;">Optimized</div><div style="font-size:10px;color:#999;">Cross-Tested</div><div style="font-size:22px;font-weight:700;color:var(--green);margin-top:4px;">'+$(s.optOwnersRetained)+'</div></div>';
   document.getElementById('snapshotBoxes').innerHTML = snap;
