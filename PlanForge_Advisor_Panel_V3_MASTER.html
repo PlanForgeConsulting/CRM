@@ -1165,7 +1165,9 @@ function independentCompute(input) {
   const stdForfeitablePS = stdNhcePS;
   const stdEstimatedForfeitures = Math.round(turnoverPctDecimal * stdForfeitablePS);
 
+  // Credit-eligible counts: optimized excludes cross-tested employees, standard includes them
   const nhceCreditEligible = Math.max(0, nhceCountEligible - nhceOver100k);
+  const stdNhceCreditEligible = Math.max(0, stdNhceCount - nhceOver100k);
   // SECURE 2.0 employer size adjustment: full credit ≤50 employees,
   // reduces 2% per employee over 50, reaches zero at 100 employees
   // Uses totalEmployeesForSize (ALL W-2 >$5K prior year, including excluded)
@@ -1174,7 +1176,7 @@ function independentCompute(input) {
     : 1.0 - 0.02 * (totalEmployeesForSize - 50);
   const stdPerEmployeeContrib = nhceAvgPay > 0 ? Math.round(nhceAvgPay * stdRate / 100) : 0;
   const stdCreditPerEmployee = Math.min(CREDIT_PHASE[secureYear - 1] * stdPerEmployeeContrib, 1000);
-  const stdSecureCredits = Math.round(nhceCreditEligible * stdCreditPerEmployee * employerSizeFactor);
+  const stdSecureCredits = Math.round(stdNhceCreditEligible * stdCreditPerEmployee * employerSizeFactor);
 
   // §404(a)(3) deduction limit: employer PS deduction capped at 25% of total covered compensation
   // For solo owner, total covered comp = owner comp only
