@@ -430,7 +430,7 @@
               <strong>Maximize Owner:</strong> Uses real EBAR cross-testing to find the maximum owner allocation that passes §401(a)(4). NHCEs get 5% (gateway). Age-weighted actuarial factors determine feasibility.
             </div>
             <div class="form-row-3">
-              <div class="form-group"><label>Std Rate (%) — Benchmark</label><input type="number" id="stdRate" value="3" min="1" max="25" step="0.5" oninput="debouncedRecalc()"></div>
+              <div class="form-group"><label>Std Rate (%) — Benchmark</label><input type="number" id="stdRate" value="3" min="1" max="25" step="0.5" oninput="syncStdRate(this.value);debouncedRecalc()"></div>
               <div class="form-group"><label>Opt NHCE Rate (%)</label><input type="number" id="optNhceRate1" value="5" min="1" max="25" step="0.5" oninput="debouncedRecalc()"></div>
               <div class="form-group"><label>SECURE Year (1-5)</label><input type="number" id="secureYear" value="2" min="1" max="5" oninput="onSecureYearChange('secureYear')"></div>
             </div>
@@ -440,7 +440,8 @@
             <div style="font-size:12px;color:var(--gray);margin-bottom:10px;line-height:1.5;">
               <strong>$1,000 Flat + 3x Gateway:</strong> Each NHCE gets $1,000 profit share. Owner's max rate = 3× the lowest NHCE rate (below-gateway approach).
             </div>
-            <div class="form-row">
+            <div class="form-row-3">
+              <div class="form-group"><label>Std Rate (%) — Benchmark</label><input type="number" id="stdRate2" value="3" min="1" max="25" step="0.5" oninput="syncStdRate(this.value);debouncedRecalc()"></div>
               <div class="form-group"><label>NHCE Flat Amount ($)</label><input type="number" id="nhceFlatAmt" value="1000" step="100" oninput="debouncedRecalc()"></div>
               <div class="form-group"><label>SECURE Year (1-5)</label><input type="number" id="secureYear2" value="2" min="1" max="5" oninput="onSecureYearChange('secureYear2')"></div>
             </div>
@@ -451,7 +452,7 @@
               <strong>Custom:</strong> Manually set NHCE rate and owner allocation. Real cross-testing runs automatically.
             </div>
             <div class="form-row-3">
-              <div class="form-group"><label>Std Rate (%)</label><input type="number" id="stdRate3" value="3" min="1" max="25" step="0.5" oninput="debouncedRecalc()"></div>
+              <div class="form-group"><label>Std Rate (%)</label><input type="number" id="stdRate3" value="3" min="1" max="25" step="0.5" oninput="syncStdRate(this.value);debouncedRecalc()"></div>
               <div class="form-group"><label>NHCE Rate (%)</label><input type="number" id="optNhceRate3" value="5" min="0" max="25" step="0.5" oninput="debouncedRecalc()"></div>
               <div class="form-group"><label>SECURE Year (1-5)</label><input type="number" id="secureYear3" value="2" min="1" max="5" oninput="onSecureYearChange('secureYear3')"></div>
             </div>
@@ -2387,6 +2388,7 @@ function loadScenario(idx) {
   // Pre-populate mode-specific fields BEFORE setPlanDesign (which triggers recalc)
   const designMode = s.planDesignMode || s.mode || 'maximize';
   if (designMode === 'gateway') {
+    document.getElementById('stdRate2').value = s.stdRate || 3;
     document.getElementById('nhceFlatAmt').value = s.nhceFlatAmt || 1000;
     syncSecureYear(s.secureYear || 2);
   } else if (designMode === 'custom') {
@@ -2628,6 +2630,11 @@ function toAdvisorPanelJSON(d) {
 
 // ── Plan Design ──
 
+function syncStdRate(v) {
+  ['stdRate','stdRate2','stdRate3'].forEach(id => {
+    const el = document.getElementById(id); if (el && v != null) el.value = v;
+  });
+}
 function syncSecureYear(v) {
   ['secureYear','secureYear2','secureYear3'].forEach(id => {
     const el = document.getElementById(id); if (el && v != null) el.value = v;
@@ -2650,7 +2657,7 @@ function getPlanDesignParams() {
   const mode = currentPlanDesign;
   // Standard rate is an independent benchmark; optimized NHCE rate is set by optimizer or user
   if (mode === 'maximize') { return { mode:'maximize', stdRate: num('stdRate') || 3, optNhceRate: num('optNhceRate1') || 5, secureYear: num('secureYear'), optOwnerAlloc: null }; }
-  if (mode === 'gateway') return { mode:'gateway', stdRate: 3, nhceFlatAmt: num('nhceFlatAmt')||1000, secureYear: num('secureYear2'), optOwnerAlloc: null };
+  if (mode === 'gateway') return { mode:'gateway', stdRate: num('stdRate2') || 3, nhceFlatAmt: num('nhceFlatAmt')||1000, secureYear: num('secureYear2'), optOwnerAlloc: null };
   return { mode:'custom', stdRate: num('stdRate3'), optNhceRate: num('optNhceRate3')||5, secureYear: num('secureYear3'), optOwnerAlloc: num('optOwnerAlloc3')||null, nhceFlatAmt: num('nhceFlatAmt3')||null };
 }
 
