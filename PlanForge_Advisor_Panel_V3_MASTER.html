@@ -1130,17 +1130,34 @@ function independentCompute(input) {
   const excludableNhces = Math.min(input.excludableNhces || 0, nhceCountTotal);
   const nhceCountEligible = nhceCountTotal - excludableNhces;
 
+  // Build census early so ALL calculations can use individual employee data when available
+  const census = buildFullCensus(input);
+
   // Standard plan includes all employees EXCEPT those with <1,000 hours
   // (Optimized plan excludes more via PS eligibility requirements)
   const nhcesUnder1000hrs = input.nhcesUnder1000hrs || 0;
   const stdNhceCount = nhceCountTotal - nhcesUnder1000hrs;
 
-  const nhceTotalComp = nhceCountEligible * nhceAvgPay;
-  const hceTotalComp = hceNonOwnerCount * hceAvgPay;
+  // When census data is available, use actual individual pay — no averaging
   const ownersTotalComp = ownerComp + addlOwners.reduce((s, ao) => s + ao.comp, 0);
+  let nhceTotalComp, hceTotalComp, stdNhceTotalComp;
+  if (census.eligibleNhces.length > 0 || census.excludedNhces.length > 0) {
+    // Real census: sum actual pays
+    nhceTotalComp = census.eligibleNhces.reduce((s, e) => s + e.pay, 0);
+    hceTotalComp = census.nonOwnerHces.reduce((s, e) => s + e.pay, 0);
+    // Standard plan includes all NHCEs (eligible + excluded from optimized) minus under-1000-hours
+    const allNhces = [...census.eligibleNhces, ...census.excludedNhces];
+    // Sort descending so we skip lowest-paid (under-1000-hours, if any)
+    const sorted = allNhces.slice().sort((a, b) => b.pay - a.pay);
+    const stdCount = Math.max(0, sorted.length - (input.nhcesUnder1000hrs || 0));
+    stdNhceTotalComp = input.stdNhceTotalComp || sorted.slice(0, stdCount).reduce((s, e) => s + e.pay, 0);
+  } else {
+    // No census: fall back to averages
+    nhceTotalComp = nhceCountEligible * nhceAvgPay;
+    hceTotalComp = hceNonOwnerCount * hceAvgPay;
+    stdNhceTotalComp = input.stdNhceTotalComp || (stdNhceCount * nhceAvgPay);
+  }
   const totalComp = nhceTotalComp + hceTotalComp + ownersTotalComp;
-  // Standard plan total NHCE comp: use exact override if provided, else approximate
-  const stdNhceTotalComp = input.stdNhceTotalComp || (stdNhceCount * nhceAvgPay);
   const eligible = nhceCountEligible + hceNonOwnerCount + 1 + addlOwners.length;
   // SECURE 2.0 employer size: count ALL W-2 employees making >$5K in prior year
   // This includes excluded employees — they're still employees for headcount purposes
@@ -1151,8 +1168,33 @@ function independentCompute(input) {
   // Real forfeitures = from departed employees (included in net cost)
   // Estimated forfeitures = from turnover % projection (informational only, NOT in net cost)
   //   Estimated is rate-specific: std vs opt have different PS amounts → different forfeitable amounts
-  const realForfeitures = input.realForfeitures || 0;       // optimized plan real forfeitures
-  const realForfeituresStd = input.realForfeituresStd || 0; // standard plan real forfeitures (stdRate × pay)
+  //
+  // When census + departedIndices exist, compute per-employee forfeitures (no averaging)
+  let realForfeitures = input.realForfeitures || 0;
+  let realForfeituresStd = input.realForfeituresStd || 0;
+  const departedIndices = input.departedIndices || [];
+  if (departedIndices.length > 0 && census.eligibleNhces.length > 0) {
+    // Compute from individual departed employee pays
+    const allNhces = [...census.eligibleNhces, ...census.excludedNhces];
+    const departedSet = new Set(departedIndices);
+    const stdR = input.stdRate || 3;
+    const pMode = input.planDesignMode || 'maximize';
+    let stdForfSum = 0, optForfSum = 0;
+    allNhces.forEach((emp, idx) => {
+      if (!departedSet.has(idx)) return;
+      // Standard: full stdRate % of individual pay
+      stdForfSum += Math.round(emp.pay * stdR / 100);
+      // Optimized: flat amount (gateway) or full optRate % of individual pay
+      if (pMode === 'gateway' || (pMode === 'custom' && input.nhceFlatAmt)) {
+        optForfSum += input.nhceFlatAmt || 1000;
+      } else {
+        const optRate = input.optNhceRate || 5;
+        optForfSum += Math.round(emp.pay * optRate / 100);
+      }
+    });
+    realForfeituresStd = stdForfSum;
+    realForfeitures = optForfSum;
+  }
   const turnoverPctDecimal = (input.turnoverPct || 0) / 100;
   // Neither Standard nor Optimized PlanForge plans are safe harbor — full NHCE PS is forfeitable
   // Only the Typical baseline plan (computed separately) uses safe harbor vesting (first 3% vested)
@@ -1160,9 +1202,6 @@ function independentCompute(input) {
   const stdRate = input.stdRate || 3.0;
   const planMode = input.planDesignMode || 'maximize';
   const hceAllocRate = input.hceAllocRate;
-
-  // Build census early so individual-level credit calculations can use it
-  const census = buildFullCensus(input);
 
   // ── Standard plan ──
   // Standard = flat rate for everyone. Includes all employees with ≥1,000 hours.
@@ -1310,7 +1349,7 @@ function independentCompute(input) {
       optOwnerAlloc = Math.min(maxOwnerAllocPS, deductionLimit404);
     }
 
-    const optNhcePS = Math.round(nhceCountEligible * nhceAvgPay * optNhceRate / 100);
+    const optNhcePS = Math.round(nhceTotalComp * optNhceRate / 100);
     const optHcePS = Math.round(hceTotalComp * effectiveHceRate / 100);
     optEmpPS = optNhcePS + optHcePS;
     // Additional owners use per-owner allocRate if set (e.g. young owners need lower rate
@@ -1475,8 +1514,12 @@ function independentCompute(input) {
     });
     secureCredits = Math.round(optIndividualSum * employerSizeFactor);
   } else {
-    // Flat-dollar mode or no census: count × per-employee credit is correct
-    secureCredits = Math.round(nhceCreditEligible * optCreditPerEmployee * employerSizeFactor);
+    // Flat-dollar mode or no census: per-employee credit is constant, just need correct count
+    // When census exists, count credit-eligible NHCEs from actual pay data (not nhceOver100k input)
+    const optCreditEligCount = census.eligibleNhces.length > 0
+      ? census.eligibleNhces.filter(e => e.pay < 100000).length
+      : nhceCreditEligible;
+    secureCredits = Math.round(optCreditEligCount * optCreditPerEmployee * employerSizeFactor);
   }
 
   // SECURE 2.0 Phase-Down Analysis:
@@ -1517,7 +1560,7 @@ function independentCompute(input) {
   if (planMode === 'gateway' || (planMode === 'custom' && input.nhceFlatAmt)) {
     optNhcePSForForf = (input.nhceFlatAmt || 1000) * nhceCountEligible;
   } else {
-    optNhcePSForForf = Math.round(nhceCountEligible * nhceAvgPay * optNhceRate / 100);
+    optNhcePSForForf = Math.round(nhceTotalComp * optNhceRate / 100);
   }
   // Optimized plan is NOT safe harbor — entire NHCE PS allocation is subject to vesting
   // and thus fully forfeitable upon employee departure
@@ -1604,6 +1647,7 @@ function independentCompute(input) {
 
 function verifyIndependent(input) {
   // Completely independent computation — bottom-up per-employee
+  // When census data is available, uses individual pays (no averaging)
   const year = parseInt(input.year || 2026);
   const lim = getLimits(year);
   const tr = input.taxRate || 0.30;
@@ -1617,44 +1661,79 @@ function verifyIndependent(input) {
   const addlPS = addlRaw.map(a => a.receivesPS !== false);
   const sYear = Math.max(1, Math.min(input.secureYear||1, 5));
   const sRate = input.stdRate || 3;
-  const forf = input.realForfeituresStd || input.realForfeitures || 0;   // Standard plan forfeitures (stdRate × pay)
-  const nOvr = Math.min(input.nhceOver100k||0, nCnt);
-  const nCred = Math.max(0, nCnt - nOvr);
-
-  // FICA savings — must match main engine's calcFicaSavings() logic
+  let forf = input.realForfeituresStd || input.realForfeitures || 0;
   const entityType = input.entityType || '';
   const isCCorp = entityType === 'C-Corp';
   const ssWageBase = lim.ssWageBase || 176100;
   const ownerW2 = input.ownerSalary || 0;
-
-  // Standard plan: excludes NHCEs with <1,000 hours (nhcesUnder1000hrs)
-  // HCE non-owners participate only in the optimized plan, NOT the standard plan
   const u1k = input.nhcesUnder1000hrs || 0;
   const stdNhceCount = (input.nhceCount||0) - u1k;
-  const stdNhceTotalComp = input.stdNhceTotalComp || (stdNhceCount * nPay);
   const ownersComp = oCmp + addl.reduce((s,c)=>s+c,0);
+
+  // Build census to get individual data
+  const cen = buildFullCensus(input);
+  const hasCensus = cen.eligibleNhces.length > 0 || cen.excludedNhces.length > 0;
+
+  // Total comp: use census when available
+  let nhceTotalComp, hceTotalComp, stdNhceTotalComp;
+  if (hasCensus) {
+    nhceTotalComp = cen.eligibleNhces.reduce((s, e) => s + e.pay, 0);
+    hceTotalComp = cen.nonOwnerHces.reduce((s, e) => s + e.pay, 0);
+    const allNhces = [...cen.eligibleNhces, ...cen.excludedNhces];
+    const sorted = allNhces.slice().sort((a, b) => b.pay - a.pay);
+    const stdCount = Math.max(0, sorted.length - u1k);
+    stdNhceTotalComp = input.stdNhceTotalComp || sorted.slice(0, stdCount).reduce((s, e) => s + e.pay, 0);
+  } else {
+    nhceTotalComp = nCnt * nPay;
+    hceTotalComp = hCnt * hPay;
+    stdNhceTotalComp = input.stdNhceTotalComp || (stdNhceCount * nPay);
+  }
+
+  // Compute forfeitures from individual departed employee pays when available
+  const departedIndices = input.departedIndices || [];
+  if (departedIndices.length > 0 && hasCensus) {
+    const allNhces = [...cen.eligibleNhces, ...cen.excludedNhces];
+    const departedSet = new Set(departedIndices);
+    let stdForfSum = 0;
+    allNhces.forEach((emp, idx) => {
+      if (departedSet.has(idx)) stdForfSum += Math.round(emp.pay * sRate / 100);
+    });
+    forf = stdForfSum;
+  }
+
   const stdAllComp = stdNhceTotalComp + ownersComp;
   const vStdPS = Math.round(stdAllComp * sRate / 100);
   const vStdOwn = Math.round(oCmp * sRate / 100);
   const vStdAddl = addl.map((c, i) => addlPS[i] ? Math.round(c * sRate / 100) : 0);
   const vStdRet = vStdOwn + vStdAddl.reduce((s,a)=>s+a,0);
-  const vStdEmp = vStdPS - vStdRet;
-  // SECURE 2.0 employer size: ALL W-2 employees >$5K prior year (including excluded)
   const totalForSize = (input.nhceCount||0) + hCnt + 1 + addlRaw.length;
   const sizeFactor = totalForSize <= 50 ? 1.0 : totalForSize >= 100 ? 0 : 1.0 - 0.02 * (totalForSize - 50);
-  const vStdPEC = nPay > 0 ? Math.round(nPay * sRate / 100) : 0;
-  const vStdCPE = Math.min(CREDIT_PHASE[sYear-1] * vStdPEC, 1000);
-  const vStdSC = Math.round(nCred * vStdCPE * sizeFactor);
-  // §404(a)(3): deduction capped at 25% of total covered compensation
-  // Must match independentCompute: totalComp = nhceCountEligible*pay + HCE comp + owners comp
-  const nhceTotalComp = nCnt * nPay;
-  const hceTotalComp = hCnt * hPay;
+
+  // SECURE credits: use individual pay when census exists
+  let vStdSC;
+  if (hasCensus) {
+    const allNhces = [...cen.eligibleNhces, ...cen.excludedNhces];
+    const nhcesByPay = allNhces.filter(e => e.pay < 100000).sort((a,b) => b.pay - a.pay);
+    const stdCreditCount = Math.max(0, nhcesByPay.length - u1k);
+    let sum = 0;
+    for (let i = 0; i < stdCreditCount; i++) {
+      const contrib = Math.round(nhcesByPay[i].pay * sRate / 100);
+      sum += Math.min(CREDIT_PHASE[sYear-1] * contrib, 1000);
+    }
+    vStdSC = Math.round(sum * sizeFactor);
+  } else {
+    const nOvr = Math.min(input.nhceOver100k||0, nCnt);
+    const nCred = Math.max(0, stdNhceCount - nOvr);
+    const vStdPEC = nPay > 0 ? Math.round(nPay * sRate / 100) : 0;
+    const vStdCPE = Math.min(CREDIT_PHASE[sYear-1] * vStdPEC, 1000);
+    vStdSC = Math.round(nCred * vStdCPE * sizeFactor);
+  }
+
   const totalComp = nhceTotalComp + hceTotalComp + ownersComp;
   const vDeductionLimit = Math.round(totalComp * 0.25);
   const vStdDeductible = Math.min(vStdPS, vDeductionLimit);
   const vStdTax = Math.round((vStdDeductible - vStdSC) * tr);
 
-  // FICA savings for standard plan (S-Corp/LLC: 7.65% below SS wage base, 1.45% above; C-Corp: 0)
   let vStdFica = 0;
   if (!isCCorp && vStdRet > 0) {
     const belowCap = Math.max(0, ssWageBase - ownerW2);
@@ -3882,14 +3961,277 @@ function runTestSuite() {
     console.log('');
   }
 
+  // ── Phase 2: Census-based tests with per-employee validation ──
+  // These tests load real census data and verify individual-level math
+  console.log('');
   console.log('═══════════════════════════════════════════════');
-  console.log(`  RESULTS: ${passed} PASSED | ${failed} FAILED | ${warnings} WARNINGS`);
+  console.log('  CENSUS-BASED PER-EMPLOYEE TESTS');
+  console.log('═══════════════════════════════════════════════');
+
+  // Helper: parse census text into parsedCensusEmployees format (no DOM needed)
+  function loadCensusForTest(censusText, planYear) {
+    planYear = planYear || 2026;
+    const hceThreshold = getLimits(planYear).hceThreshold;
+    const lines = censusText.trim().split(/\r?\n/).filter(l => l.trim());
+    const employees = [];
+    for (const line of lines) {
+      const cols = line.split('\t').map(c => c.trim());
+      if (cols.length < 2) continue;
+      const name = cols[0] || '';
+      // Parse DOB to age
+      let age = 38;
+      if (cols.length >= 3) {
+        const dobMatch = cols[1].match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+        if (dobMatch) {
+          const birthYear = parseInt(dobMatch[3]);
+          age = planYear - birthYear;
+          if (parseInt(dobMatch[1]) > 12) age--; // rough adjustment
+        }
+      }
+      const payStr = cols[cols.length - 1].replace(/[$,]/g, '');
+      const pay = parseFloat(payStr) || 0;
+      if (pay > 0) {
+        employees.push({ name, age, pay, type: pay >= hceThreshold ? 'HCE' : 'NHCE' });
+      }
+    }
+    parsedCensusEmployees = employees;
+    _lastCensusKey = null; _cachedCensus = null; // Clear census cache
+    return employees;
+  }
+
+  // Helper: compute expected credits from individual census data
+  function expectedIndividualCredits(employees, rate, creditPhase, sizeFactor) {
+    let total = 0;
+    for (const e of employees) {
+      if (e.type === 'HCE') continue; // HCEs aren't credit-eligible
+      if (e.pay >= 100000) continue;  // >$100k excluded from SECURE credit
+      const contrib = Math.round(e.pay * rate / 100);
+      total += Math.min(creditPhase * contrib, 1000);
+    }
+    return Math.round(total * sizeFactor);
+  }
+
+  // Helper: compute expected total comp from census
+  function expectedTotalNhceComp(employees) {
+    return employees.filter(e => e.type === 'NHCE').reduce((s, e) => s + e.pay, 0);
+  }
+
+  const censusTests = [
+    {
+      name: 'C1. Team North Texas — 2% std vs $1K gateway (census)',
+      censusText: 'Robert Armstrong\t10/21/1993\t120438.18\nJacob Armstrong\t04/05/1995\t87704.40\nCD Warren\t11/24/1986\t70944.69\nGerald Hearn\t01/26/1977\t67950.15\nJeb Armstrong\t07/02/1997\t60798.12\nErik Velazquez\t02/02/1996\t68803.76\nIsmael Hernandez\t09/14/1985\t92738.32\nEdwin Hernandez\t12/03/1987\t71305.75\nMichael Pelton\t07/20/1973\t15315.64\nJustin Coleman\t01/06/1982\t103084.94\nRichard Samples\t09/11/1979\t73495.28\nJustin Coleman\t01/01/2003\t21600.00\nRonald George\t07/31/1968\t65298.43\nKevin Welk\t10/23/1970\t49170.13\nJavier Dominguez\t11/30/1988\t28120.00\nCharles Taylor\t05/30/1979\t59798.77\nLuke Palmer\t08/03/1996\t38883.56\nJimmie Hass\t01/30/1966\t52580.00\nJonathan Lopez\t10/12/1992\t40147.75\nDylan Merriman\t09/09/2003\t36545.25\nJhony Mora Mora\t01/15/1993\t10269.24\nBrian Ashley\t05/20/1975\t68894.21\nBrandy Goddard\t02/14/1978\t14038.50\nDaniel Husted\t06/25/1990\t9318.75\nMakenzie Armstrong\t09/27/1992\t27624.64\nCody Gaines\t03/12/1995\t50273.11\nKevin Peterson\t10/20/1976\t57187.19\nMichael Morgan\t05/20/1971\t37743.75\nKirby Price\t03/20/1988\t63554.24\nMichael Arredondo\t11/01/1992\t20918.00\nRonnie George\t02/06/1948\t37378.75\nMary Rountree\t12/25/1964\t46849.85\nAngie Scott\t11/06/1981\t43168.87\nTrevor McLemore\t08/16/1990\t99890.00\nMichael Gutierrez\t07/10/1999\t28435.00\nMicah Anderson\t03/14/1983\t69180.11\nCaleb Dunson\t10/17/1997\t45072.84\nSamuel Selby\t09/26/2000\t43343.50\nMalik Simington\t05/24/2003\t33915.00\nFranklin Pierce\t11/09/1985\t30937.40\nGerald Dillon\t07/07/1959\t29883.63\nDarryl Updegraff\t10/28/1998\t10580.50\nCasey Moore\t01/07/1992\t9974.68\nRiley Pate\t07/18/1999\t7328.62',
+      input: { bizName:'Team North Texas', firstName:'Nathan', lastName:'Council', ownerAge:40, ownerSalary:54999.88, ownerK1:0, nhceCount:44, nhceAvgPay:48193, nhceAvgAge:39, nhcePayLow:7329, nhcePayHigh:120438, hceNonOwnerCount:0, hceAvgPay:0, nhceOver100k:1, secureYear:2, year:'2025', taxRate:0.30, entityType:'S-Corp', stdRate:2, planDesignMode:'gateway', deferralEligMonths:12, psEligMonths:3, excludableNhces:0, turnoverPct:0, nhceFlatAmt:1000, additionalOwners:[{name:'Joseph Armstrong',age:39,salary:54999.88,k1:0}], departedIndices:[12,14,20,22,23,25,29,34,36,37,38] },
+      validate: function(c, emps, issues) {
+        // Standard: 2% of individual salaries → credits should be summed per-employee
+        const nhces = emps.filter(e => e.type === 'NHCE');
+        const creditElig = nhces.filter(e => e.pay < 100000);
+        const stdCreditsExpected = expectedIndividualCredits(emps, 2, 1.0, 1.0);
+        if (Math.abs(c.stdSecureCredits - stdCreditsExpected) > 2) {
+          issues.push(`FAIL: Std credits ${c.stdSecureCredits} != expected ${stdCreditsExpected} (individual calc)`);
+        }
+        // Optimized: $1,000 flat → credit = min(1000, 1000) per eligible = 42 × $1,000
+        const optCreditsExpected = creditElig.length * 1000;
+        if (Math.abs(c.secureCredits - optCreditsExpected) > 2) {
+          issues.push(`FAIL: Opt credits ${c.secureCredits} != expected ${optCreditsExpected} (42 × $1,000)`);
+        }
+        // Credit difference must be substantial (averaging bug would show ~$1,500)
+        const creditDiff = c.secureCredits - c.stdSecureCredits;
+        if (creditDiff < 8000) {
+          issues.push(`FAIL: Credit difference ${creditDiff} too small — averaging bug? Expected ~$10,670`);
+        }
+        // Verify total NHCE comp uses actual census sum, not count × average
+        const actualNhceComp = expectedTotalNhceComp(emps);
+        const avgBasedComp = 44 * 48193; // The old average-based value
+        if (Math.abs(c.nhceTotalComp - actualNhceComp) > 50) {
+          issues.push(`FAIL: nhceTotalComp ${c.nhceTotalComp} != census sum ${Math.round(actualNhceComp)} (using averages?)`);
+        }
+        // Tax savings: std should be HIGHER than opt (more deductible above credit)
+        // because std 2% on high earners creates excess contribution above $1K credit cap
+        if (c.stdTaxSavings <= 0) {
+          issues.push(`FAIL: Std tax savings ${c.stdTaxSavings} should be positive (excess contrib above credit is deductible)`);
+        }
+        // Employees under $50k at 2% get less than $1,000 credit each
+        let underCreditCount = 0;
+        creditElig.forEach(e => {
+          const contrib = Math.round(e.pay * 2 / 100);
+          if (contrib < 1000) underCreditCount++;
+        });
+        if (underCreditCount < 5) {
+          issues.push(`FAIL: Expected many employees under $1,000 credit at 2%, only found ${underCreditCount}`);
+        }
+        // Net cost waterfall must balance
+        const expectedNet = c.stdTotalPS - c.stdOwnersRetained - c.stdTaxSavings - c.stdSecureCredits - (c.realForfeituresStd||0) - (c.stdFicaSavings||0);
+        if (Math.abs(c.stdNetCost - expectedNet) > 2) {
+          issues.push(`FAIL: Std net cost waterfall mismatch: ${c.stdNetCost} vs ${expectedNet}`);
+        }
+        // Forfeitures: computed from individual departed employee pays
+        // departedIndices: [12,14,20,22,23,25,29,34,36,37,38] — 11 employees
+        // Std forfeiture = sum of round(departeePay * 2 / 100) per departed
+        // Opt forfeiture = 11 × $1,000 (gateway flat)
+        const departedPays = [12,14,20,22,23,25,29,34,36,37,38].map(i => nhces[i].pay);
+        let expectedStdForf = 0;
+        departedPays.forEach(p => { expectedStdForf += Math.round(p * 2 / 100); });
+        const expectedOptForf = 11 * 1000;
+        if (Math.abs(c.realForfeituresStd - expectedStdForf) > 2) {
+          issues.push(`FAIL: Std forfeitures ${c.realForfeituresStd} != expected ${expectedStdForf} (individual calc)`);
+        }
+        if (Math.abs(c.realForfeitures - expectedOptForf) > 2) {
+          issues.push(`FAIL: Opt forfeitures ${c.realForfeitures} != expected ${expectedOptForf} (11 × $1,000)`);
+        }
+        // Std forfeiture must differ from opt — low-paid departed get less at 2%
+        if (c.realForfeituresStd >= c.realForfeitures) {
+          issues.push(`FAIL: Std forf ${c.realForfeituresStd} >= opt forf ${c.realForfeitures} — should be less at 2%`);
+        }
+      }
+    },
+    {
+      name: 'C2. AlphaGraphics — 5% std with exclusions + under-1000-hrs (census)',
+      censusText: 'Darlene Scruggs\t09/01/1971\t83029.08\nCindy Aquila\t07/18/1968\t30950.41\nTammy Coil\t05/15/1965\t116636.23\nChristopher May\t04/16/1967\t108618.41\nJason Jones\t07/23/1978\t54053.42\nDerrick Rose\t07/26/1982\t11910.00\nMartha Rangel\t05/25/1999\t2252.25\nKevin Evans\t09/15/1986\t68581.80\nRoman De Leon\t10/02/1975\t73699.38\nEsteban Gomez\t04/30/1985\t96122.92\nElizabeth Castro\t08/16/1998\t53220.18\nScot Crispin\t07/17/1978\t58762.23\nKyle Foster\t01/13/1987\t53450.83\nTerri Ferguson\t04/02/1960\t15655.62\nRafael Garcia\t06/22/1970\t69210.35\nNicholas Crowder\t11/08/2000\t6601.01\nNancy Calderon Reyes\t09/27/1996\t55805.33\nTinisha Howard\t07/26/1980\t4268.00\nAnndrea Benavidez\t08/13/1993\t59099.03\nPete Mendoza\t03/19/1986\t67093.55\nKatrina Hilker\t08/27/1970\t61761.93\nTheresa Beatty\t07/16/1967\t63990.56\nAmber Batchelder\t07/17/1988\t54575.00\nJustin Sullivan\t12/30/1993\t50176.49\nZackery Daughtrey\t07/05/1992\t48894.53\nAldo Morales\t12/03/1978\t31127.80\nShaun Pamplin\t12/16/1966\t33346.07',
+      input: { bizName:'AlphaGraphics', firstName:'Sherry', lastName:'Perry', ownerAge:68, ownerSalary:274345, ownerK1:0, nhceCount:27, nhceAvgPay:69381, nhceAvgAge:45, nhcePayLow:2252, nhcePayHigh:116636, hceNonOwnerCount:0, hceAvgPay:0, hceAvgAge:0, hceAllocRate:0, nhceOver100k:0, secureYear:2, forfeitures:0, year:'2025', taxRate:0.30, entityType:'S-Corp', stdRate:5, deferralEligMonths:12, psEligMonths:3, excludableNhces:11, nhcesUnder1000hrs:6, stdNhceTotalComp:1358859, additionalOwners:[{name:'Spencer Perry',age:29,salary:182020,k1:0,receivesPS:true,allocRate:1.0}] },
+      validate: function(c, emps, issues) {
+        // With census, credits must be individual-level
+        const stdCreditsIndividual = expectedIndividualCredits(emps, 5, 1.0, 1.0);
+        // Note: stdSecureCredits uses all NHCEs minus under-1000-hrs, excluding >$100k
+        // Census has 27 NHCEs, 11 excluded from opt, 6 under-1000-hrs from std
+        // Standard eligible = 27 - 6 = 21, minus >$100k
+        // The expectedIndividualCredits counts all NHCEs (both eligible + excluded)
+        // but std only uses 21. Our code sorts by pay desc and takes top 21.
+        // For this test: just verify credits are NOT using the old average method
+        const nhces = emps.filter(e => e.type === 'NHCE');
+        const avgCredit = Math.min(1.0 * Math.round(69381 * 5 / 100), 1000);
+        const avgBasedCredits = Math.round((21 - 0) * avgCredit * 1.0); // old method
+        if (Math.abs(c.stdSecureCredits - avgBasedCredits) < 10) {
+          issues.push(`FAIL: Std credits ${c.stdSecureCredits} matches average-based ${avgBasedCredits} — should use individual calc`);
+        }
+        // Net cost waterfall must balance
+        const expectedNet = c.stdTotalPS - c.stdOwnersRetained - c.stdTaxSavings - c.stdSecureCredits - (c.realForfeituresStd||0) - (c.stdFicaSavings||0);
+        if (Math.abs(c.stdNetCost - expectedNet) > 2) {
+          issues.push(`FAIL: Std net cost waterfall mismatch: ${c.stdNetCost} vs ${expectedNet}`);
+        }
+      }
+    },
+    {
+      name: 'C3. Synthetic low-pay workforce — 2% credits much less than $1K each',
+      censusText: 'Alice A\t01/01/1990\t25000\nBob B\t02/01/1988\t30000\nCarol C\t03/01/1992\t18000\nDave D\t04/01/1985\t22000\nEve E\t05/01/1991\t45000\nFrank F\t06/01/1987\t15000\nGrace G\t07/01/1993\t35000\nHank H\t08/01/1986\t28000\nIris I\t09/01/1994\t20000\nJack J\t10/01/1989\t32000',
+      input: { bizName:'Low Pay Test', firstName:'Owner', lastName:'Test', ownerAge:50, ownerSalary:150000, ownerK1:0, nhceCount:10, nhceAvgPay:27000, nhceAvgAge:34, nhcePayLow:15000, nhcePayHigh:45000, hceNonOwnerCount:0, hceAvgPay:0, hceAvgAge:0, secureYear:1, year:'2026', taxRate:0.30, entityType:'S-Corp', stdRate:2, planDesignMode:'gateway', nhceFlatAmt:1000, deferralEligMonths:12, psEligMonths:3, excludableNhces:0 },
+      validate: function(c, emps, issues) {
+        // At 2%, every employee gets $300-$900 contribution → $300-$900 credit (all under $1K)
+        // Gateway gives $1,000 each → $1,000 credit each
+        const nhces = emps.filter(e => e.type === 'NHCE');
+        const stdCreditsExpected = expectedIndividualCredits(emps, 2, 1.0, 1.0);
+        const optCreditsExpected = nhces.length * 1000;
+        if (Math.abs(c.stdSecureCredits - stdCreditsExpected) > 2) {
+          issues.push(`FAIL: Std credits ${c.stdSecureCredits} != expected ${stdCreditsExpected}`);
+        }
+        if (Math.abs(c.secureCredits - optCreditsExpected) > 2) {
+          issues.push(`FAIL: Opt credits ${c.secureCredits} != expected ${optCreditsExpected}`);
+        }
+        // Every employee is under $50k at 2% → ALL get less than $1,000 credit
+        // So the difference should be large
+        const creditDiff = c.secureCredits - c.stdSecureCredits;
+        if (creditDiff < 4000) {
+          issues.push(`FAIL: Credit difference ${creditDiff} too small for all-low-pay workforce`);
+        }
+        // Verify: average-based would give min(1.0 * round(27000*2/100), 1000) = $540 × 10 = $5,400
+        // Individual should give different (lower, since avg hides variance)
+        const avgBased = Math.round(10 * Math.min(Math.round(27000 * 2 / 100), 1000));
+        if (Math.abs(c.stdSecureCredits - avgBased) < 10 && c.stdSecureCredits !== stdCreditsExpected) {
+          issues.push(`FAIL: Std credits ${c.stdSecureCredits} matches avg-based ${avgBased}, should be individual ${stdCreditsExpected}`);
+        }
+      }
+    },
+    {
+      name: 'C4. Mixed high/low pay — verifies high earners excess is deductible',
+      censusText: 'HighPay1\t01/01/1980\t95000\nHighPay2\t02/01/1982\t88000\nHighPay3\t03/01/1979\t92000\nLowPay1\t04/01/1995\t18000\nLowPay2\t05/01/1996\t12000\nLowPay3\t06/01/1994\t22000\nMidPay1\t07/01/1988\t55000\nMidPay2\t08/01/1990\t48000',
+      input: { bizName:'Mixed Pay Test', firstName:'Owner', lastName:'Mix', ownerAge:55, ownerSalary:200000, ownerK1:0, nhceCount:8, nhceAvgPay:53750, nhceAvgAge:36, nhcePayLow:12000, nhcePayHigh:95000, hceNonOwnerCount:0, hceAvgPay:0, hceAvgAge:0, secureYear:1, year:'2026', taxRate:0.30, entityType:'S-Corp', stdRate:3, planDesignMode:'gateway', nhceFlatAmt:1000, deferralEligMonths:12, psEligMonths:3, excludableNhces:0 },
+      validate: function(c, emps, issues) {
+        // At 3%: $95k → $2,850 contrib, $1,000 credit, $1,850 excess deductible
+        //         $12k → $360 contrib, $360 credit, $0 excess
+        // §280C: deduction = totalPS - credits. The excess above $1K IS deducted.
+        const stdCreditsExpected = expectedIndividualCredits(emps, 3, 1.0, 1.0);
+        if (Math.abs(c.stdSecureCredits - stdCreditsExpected) > 2) {
+          issues.push(`FAIL: Std credits ${c.stdSecureCredits} != expected ${stdCreditsExpected}`);
+        }
+        // Tax savings must reflect the non-credited portion being deducted
+        const expectedDeductible = Math.min(c.stdTotalPS, c.deductionLimit404);
+        const expectedTax = Math.round((expectedDeductible - c.stdSecureCredits) * 0.30);
+        if (Math.abs(c.stdTaxSavings - expectedTax) > 2) {
+          issues.push(`FAIL: Std tax savings ${c.stdTaxSavings} != expected ${expectedTax} — excess above credit not deducted?`);
+        }
+        // Verify nhceTotalComp uses census sum
+        const actualSum = emps.filter(e => e.type === 'NHCE').reduce((s,e) => s + e.pay, 0);
+        if (Math.abs(c.nhceTotalComp - actualSum) > 50) {
+          issues.push(`FAIL: nhceTotalComp ${c.nhceTotalComp} != census sum ${actualSum}`);
+        }
+      }
+    },
+  ];
+
+  for (const ct of censusTests) {
+    try {
+      // Load census data for this test
+      const emps = loadCensusForTest(ct.censusText, parseInt(ct.input.year || 2026));
+      const c = independentCompute(ct.input);
+      const ctIssues = [];
+
+      // Run scenario-specific validation
+      ct.validate(c, emps, ctIssues);
+
+      // Universal census checks
+      // 1. Net cost waterfall (std)
+      const expStdNet = c.stdTotalPS - c.stdOwnersRetained - c.stdTaxSavings - c.stdSecureCredits - (c.realForfeituresStd||0) - (c.stdFicaSavings||0);
+      if (Math.abs(c.stdNetCost - expStdNet) > 2) {
+        ctIssues.push(`FAIL: Std waterfall: ${c.stdNetCost} != ${expStdNet}`);
+      }
+      // 2. Net cost waterfall (opt)
+      const expOptNet = c.optTotalPS - c.optOwnersRetained - c.optTaxSavings - (c.secureCredits||0) - (c.realForfeitures||0) - (c.optFicaSavings||0);
+      if (Math.abs(c.optNetCost - expOptNet) > 2) {
+        ctIssues.push(`FAIL: Opt waterfall: ${c.optNetCost} != ${expOptNet}`);
+      }
+      // 3. Verify independent matches main engine
+      const verify = verifyIndependent(ct.input);
+      if (verify && Math.abs(verify.stdSecureCredits - c.stdSecureCredits) > 2) {
+        ctIssues.push(`FAIL: Verify stdCredits ${verify.stdSecureCredits} != main ${c.stdSecureCredits}`);
+      }
+      if (verify && Math.abs(verify.stdTotalPS - c.stdTotalPS) > 2) {
+        ctIssues.push(`FAIL: Verify stdTotalPS ${verify.stdTotalPS} != main ${c.stdTotalPS}`);
+      }
+      if (verify && Math.abs(verify.stdNetCost - c.stdNetCost) > 50) {
+        ctIssues.push(`FAIL: Verify stdNetCost ${verify.stdNetCost} != main ${c.stdNetCost} (diff ${Math.abs(verify.stdNetCost - c.stdNetCost)})`);
+      }
+
+      const failCount = ctIssues.filter(i => i.startsWith('FAIL')).length;
+      if (failCount === 0) {
+        passed++;
+        console.log(`✓ ${ct.name}`);
+        console.log(`  Std credits: $${c.stdSecureCredits.toLocaleString()} | Opt credits: $${(c.secureCredits||0).toLocaleString()} | Diff: $${((c.secureCredits||0) - c.stdSecureCredits).toLocaleString()}`);
+      } else {
+        failed++;
+        failures.push(ct.name);
+        console.log(`✗ ${ct.name}`);
+        ctIssues.forEach(i => console.log(`  ${i}`));
+      }
+    } catch(e) {
+      failed++;
+      failures.push(ct.name);
+      console.log(`✗ ${ct.name}`);
+      console.log(`  ERROR: ${e.message}`);
+    }
+    // Reset census after each test
+    parsedCensusEmployees = null;
+    _lastCensusKey = null; _cachedCensus = null;
+    console.log('');
+  }
+
+  const total = scenarios.length + censusTests.length;
+  console.log('═══════════════════════════════════════════════');
+  console.log(`  RESULTS: ${passed} PASSED | ${failed} FAILED | ${warnings} WARNINGS (${total} total)`);
   if (failures.length > 0) {
     console.log(`  FAILURES: ${failures.join(', ')}`);
   }
   console.log('═══════════════════════════════════════════════');
 
-  return { passed, failed, warnings, total: scenarios.length };
+  return { passed, failed, warnings, total };
 }
 
 
