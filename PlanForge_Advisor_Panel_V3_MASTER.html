@@ -1999,23 +1999,19 @@ function computeWhatIfScenarios(baseInput) {
     let scenarioInput;
     if (isGateway && nhceRate === gatewayEquivRate) {
       // For the rate closest to the gateway flat amount, show the actual gateway plan
+      // Pass through departedIndices so engine recomputes per-employee forfeitures
       scenarioInput = Object.assign({}, baseInput, {
         stdRate: nhceRate,
-        realForfeitures: 0, realForfeituresStd: 0,
-        estimatedForfeitures: 0, turnoverPct: 0,
-        departedIndices: [],
       });
     } else {
       // For all other rates: NHCE gets that %, owner gets max passing cross-test
+      // Pass through departedIndices so engine recomputes per-employee forfeitures
       scenarioInput = Object.assign({}, baseInput, {
         stdRate: nhceRate,
         optNhceRate: nhceRate,
         planDesignMode: 'custom',
         optOwnerAlloc: null,   // let engine find max
         nhceFlatAmt: null,     // use percentage mode
-        realForfeitures: 0, realForfeituresStd: 0,
-        estimatedForfeitures: 0, turnoverPct: 0,
-        departedIndices: [],
       });
     }
     const result = independentCompute(scenarioInput);
@@ -3627,7 +3623,7 @@ function generateIllustrationPDF() {
     <div style="margin-bottom:5px;">
       <div style="font-weight:700;font-size:11px;color:#222;margin-bottom:2px;">PlanForge Standard</div>
       <div style="font-size:10px;color:#555;margin-left:10px;border-left:3px solid #ddd;padding:3px 10px;line-height:1.35;">
-        A voluntary ${c.stdRate}% flat profit sharing plan — the same rate as a safe harbor, but designed to maximize SECURE 2.0 tax credits and vesting-based forfeitures. The result: your plan pays for itself while lowering your tax bill. No contribution is ever required.
+        A voluntary ${c.stdRate}% flat profit sharing plan designed to maximize SECURE 2.0 tax credits and vesting-based forfeitures. The result: your plan pays for itself while lowering your tax bill. No contribution is ever required.
       </div>
     </div>
     <div style="margin-bottom:8px;">
@@ -3731,7 +3727,7 @@ function generateIllustrationPDF() {
     <!-- DISCLAIMERS -->
     <div style="font-size:8px;color:#aaa;line-height:1.35;margin-top:4px;">
       <div>This illustration is based on current census data and IRS limits for the plan year shown. Actual results may vary based on final compensation, employee changes, and plan amendments. This is not tax or legal advice. Consult your tax advisor and ERISA counsel. All contributions are voluntary and discretionary. SECURE 2.0 credits subject to eligibility requirements.</div>
-      <div style="margin-top:1px;">${(c.realForfeituresStd > 0 || c.realForfeitures > 0) ? 'Forfeitures reflect actual departed employees\u2019 unvested profit sharing and are included in each plan\u2019s Net Cost. Standard and Optimized plans may have different forfeiture amounts because employee allocations differ.' : ''}${(c.realForfeituresStd > 0 || c.realForfeitures > 0) && (c.stdEstimatedForfeitures > 0 || c.optEstimatedForfeitures > 0) ? ' ' : ''}${(c.stdEstimatedForfeitures > 0 || c.optEstimatedForfeitures > 0) ? '*Estimated forfeitures are based on the selected turnover rate and are shown for informational purposes only — they are not included in Net Cost calculations.' : ''}${(c.realForfeituresStd === 0 && c.realForfeitures === 0 && c.stdEstimatedForfeitures === 0 && c.optEstimatedForfeitures === 0) ? 'No forfeitures included.' : ''} "Typical Strategy" assumes a ${c.stdRate}% safe harbor with immediate vesting, no forfeitures, no SECURE credits. Tax rate: ${tp}%.</div>
+      <div style="margin-top:1px;">${(c.realForfeituresStd > 0 || c.realForfeitures > 0) ? 'Forfeitures reflect actual departed employees\u2019 unvested profit sharing and are included in each plan\u2019s Net Cost. Standard and Optimized plans may have different forfeiture amounts because employee allocations differ.' : ''}${(c.realForfeituresStd > 0 || c.realForfeitures > 0) && (c.stdEstimatedForfeitures > 0 || c.optEstimatedForfeitures > 0) ? ' ' : ''}${(c.stdEstimatedForfeitures > 0 || c.optEstimatedForfeitures > 0) ? '*Estimated forfeitures are based on the selected turnover rate and are shown for informational purposes only — they are not included in Net Cost calculations.' : ''}${(c.realForfeituresStd === 0 && c.realForfeitures === 0 && c.stdEstimatedForfeitures === 0 && c.optEstimatedForfeitures === 0) ? 'No forfeitures included.' : ''} "Typical Strategy" assumes a ${typStdRate}% safe harbor with immediate vesting, no forfeitures, no SECURE credits. Tax rate: ${tp}%.</div>
       <div style="margin-top:1px;">Owner's retained share is not a business expense — it goes directly into the owner's retirement account and is deducted from net cost.</div>
     </div>
 
@@ -4290,7 +4286,8 @@ function generateParticipantView() {
   const curRate = c.optNhceRate;
 
   // Pre-compute full scenario data at each rate (1-5%)
-  // Pass through turnover % for estimated forfeitures; real forfeitures zeroed (rate-dependent, can't recompute per-rate without census)
+  // Pass through turnover % for estimated forfeitures AND departedIndices for real forfeitures
+  // (engine recomputes per-employee forfeitures at each rate from census + departedIndices)
   const turnoverPct = parseFloat(document.getElementById('turnoverManual')?.value || 0);
   const isGateway = baseInput.planDesignMode === 'gateway';
   const gatewayAmt = baseInput.nhceFlatAmt || 1000;
@@ -4303,18 +4300,14 @@ function generateParticipantView() {
       // For the rate closest to the gateway flat amount, show actual gateway plan
       inp = Object.assign({}, baseInput, {
         stdRate: rate,
-        realForfeitures: 0, realForfeituresStd: 0,
         turnoverPct: turnoverPct,
-        departedIndices: [],
       });
     } else {
       // For all other rates: NHCE at %, owner gets max passing cross-test
       inp = Object.assign({}, baseInput, {
         stdRate: rate, optNhceRate: rate,
         planDesignMode: 'custom', optOwnerAlloc: null, nhceFlatAmt: null,
-        realForfeitures: 0, realForfeituresStd: 0,
         turnoverPct: turnoverPct,
-        departedIndices: [],
       });
     }
     const comp = independentCompute(inp);
@@ -4356,7 +4349,7 @@ function generateParticipantView() {
   const scenariosJSON = JSON.stringify(scenarios.map(s => ({
     rate: s.rate,
     stdRate: s.rate,
-    optNhceRate: s.rate,
+    optNhceRate: s.comp.optNhceRate || s.rate,
     stdTotalPS: s.comp.stdTotalPS,
     stdOwnersRetained: s.comp.stdOwnersRetained,
     stdTaxSavings: s.comp.stdTaxSavings,
