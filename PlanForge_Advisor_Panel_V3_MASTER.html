@@ -1161,6 +1161,9 @@ function independentCompute(input) {
   const planMode = input.planDesignMode || 'maximize';
   const hceAllocRate = input.hceAllocRate;
 
+  // Build census early so individual-level credit calculations can use it
+  const census = buildFullCensus(input);
+
   // ── Standard plan ──
   // Standard = flat rate for everyone. Includes all employees with ≥1,000 hours.
   // stdNhceTotalComp uses all standard-eligible NHCEs (more than optimized-eligible).
@@ -1186,9 +1189,31 @@ function independentCompute(input) {
   const employerSizeFactor = totalEmployeesForSize <= 50 ? 1.0
     : totalEmployeesForSize >= 100 ? 0
     : 1.0 - 0.02 * (totalEmployeesForSize - 50);
+  // SECURE credits: use individual employee pay when census is available
+  // because min(creditPhase * 2% * pay, 1000) summed individually ≠ count * min(creditPhase * 2% * avgPay, 1000)
+  // — employees earning under $50k at 2% get less than $1,000 credit each
   const stdPerEmployeeContrib = nhceAvgPay > 0 ? Math.round(nhceAvgPay * stdRate / 100) : 0;
   const stdCreditPerEmployee = Math.min(CREDIT_PHASE[secureYear - 1] * stdPerEmployeeContrib, 1000);
-  const stdSecureCredits = Math.round(stdNhceCreditEligible * stdCreditPerEmployee * employerSizeFactor);
+  let stdSecureCredits;
+  // Standard plan includes all NHCEs (eligible + excluded from optimized) minus under-1000-hours
+  const allCensusNhces = [...census.eligibleNhces, ...census.excludedNhces];
+  if (allCensusNhces.length > 0) {
+    // Sum individual credits: each employee's credit = min(phase * round(pay * rate%), $1,000)
+    // Exclude NHCEs earning > $100k (not credit-eligible)
+    // Sort by pay descending so we can skip the under-1000-hours employees (assumed lowest-paid)
+    const nhcesByPay = allCensusNhces.filter(e => e.pay < 100000).sort((a,b) => b.pay - a.pay);
+    // Standard plan excludes nhcesUnder1000hrs from participation
+    const stdCreditCount = Math.max(0, nhcesByPay.length - (input.nhcesUnder1000hrs || 0));
+    let individualSum = 0;
+    for (let i = 0; i < stdCreditCount; i++) {
+      const contrib = Math.round(nhcesByPay[i].pay * stdRate / 100);
+      individualSum += Math.min(CREDIT_PHASE[secureYear - 1] * contrib, 1000);
+    }
+    stdSecureCredits = Math.round(individualSum * employerSizeFactor);
+  } else {
+    // Fallback: no census data, use average-based estimate
+    stdSecureCredits = Math.round(stdNhceCreditEligible * stdCreditPerEmployee * employerSizeFactor);
+  }
 
   // §404(a)(3) deduction limit: employer PS deduction capped at 25% of total covered compensation
   // For solo owner, total covered comp = owner comp only
@@ -1212,9 +1237,6 @@ function independentCompute(input) {
   let exclusionInfo = null;
   let gatewayInfo = null;
   let crossTestResult = null;
-
-  // Build census for cross-testing
-  const census = buildFullCensus(input);
 
   let hceRateInfo = null; // HCE rate cap analysis
 
@@ -1428,7 +1450,11 @@ function independentCompute(input) {
   }
 
   // ── SECURE Credits with Phase-Down Awareness ──
+  // For flat-dollar modes (gateway, custom w/ flat), per-employee amount is constant.
+  // For percentage modes, use individual census data when available to correctly
+  // compute credits — min(phase * round(pay * rate%), $1,000) varies by salary.
   let optPerEmployeeContrib = 0;
+  const isOptFlatDollar = planMode === 'gateway' || (input.nhceFlatAmt && planMode === 'custom');
   if (planMode === 'gateway') {
     optPerEmployeeContrib = input.nhceFlatAmt || 1000;
   } else if (input.nhceFlatAmt && planMode === 'custom') {
@@ -1438,7 +1464,20 @@ function independentCompute(input) {
   }
   const creditPhase = CREDIT_PHASE[secureYear - 1];
   const optCreditPerEmployee = Math.min(creditPhase * optPerEmployeeContrib, 1000);
-  const secureCredits = Math.round(nhceCreditEligible * optCreditPerEmployee * employerSizeFactor);
+  let secureCredits;
+  if (!isOptFlatDollar && census.eligibleNhces.length > 0) {
+    // Percentage-based mode: sum individual credits from census
+    const creditEligOpt = census.eligibleNhces.filter(e => e.pay < 100000);
+    let optIndividualSum = 0;
+    creditEligOpt.forEach(e => {
+      const contrib = Math.round(e.pay * optNhceRate / 100);
+      optIndividualSum += Math.min(creditPhase * contrib, 1000);
+    });
+    secureCredits = Math.round(optIndividualSum * employerSizeFactor);
+  } else {
+    // Flat-dollar mode or no census: count × per-employee credit is correct
+    secureCredits = Math.round(nhceCreditEligible * optCreditPerEmployee * employerSizeFactor);
+  }
 
   // SECURE 2.0 Phase-Down Analysis:
   // In years 3-5, credit % drops (75%, 50%, 25%), so PS contribution must be
