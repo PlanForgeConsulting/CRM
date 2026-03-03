@@ -1240,7 +1240,8 @@ function independentCompute(input) {
   // ── Standard plan ──
   // Standard = flat rate for everyone. Includes all employees with ≥1,000 hours.
   // stdNhceTotalComp uses all standard-eligible NHCEs (more than optimized-eligible).
-  const stdTotalCompAll = stdNhceTotalComp + ownersTotalComp;
+  // Non-owner HCEs also participate at the same flat rate in a standard plan.
+  const stdTotalCompAll = stdNhceTotalComp + hceTotalComp + ownersTotalComp;
   const stdTotalPS = Math.round(stdTotalCompAll * stdRate / 100);
   const stdOwnerAlloc = Math.round(ownerComp * stdRate / 100);
   const stdAdditionalAllocs = addlOwners.map(ao => ao.receivesPS ? Math.round(ao.comp * stdRate / 100) : 0);
@@ -1589,7 +1590,8 @@ function independentCompute(input) {
     isCapturingFullCredit: creditShortfallPerEmployee < 1,  // True if at/above $1K
     employerSizeFactor,                     // 1.0 for ≤50, phases down 2%/ee over 50, 0 at 100+
     employerSizeReduced: employerSizeFactor < 1,  // True if credit reduced by employer size
-    eligible,                               // Total eligible employees (for size test)
+    eligible,                               // Plan-eligible employees (after exclusions)
+    totalEmployeesForSize,                   // ALL W-2 employees >$5K (for SECURE size test)
   };
 
   const optOwnersRetained = optOwnerAlloc + (optAdditionalAllocs || []).reduce((s, a) => s + a, 0);
@@ -1634,15 +1636,9 @@ function independentCompute(input) {
     const belowCap = Math.max(0, ssWageBase - w2Base);
     const contribBelowCap = Math.min(contribution, belowCap);
     const contribAboveCap = contribution - contribBelowCap;
-    if (isLLC) {
-      // LLC: employee half only (employer half offset by SE tax deduction)
-      // SS employee: 6.2%, Medicare employee: 1.45%
-      return Math.round(contribBelowCap * 0.0765 + contribAboveCap * 0.0145);
-    } else {
-      // S-Corp: employer half only (same as LLC)
-      // SS employer: 6.2%, Medicare employer: 1.45%
-      return Math.round(contribBelowCap * 0.0765 + contribAboveCap * 0.0145);
-    }
+    // LLC (employee half of SE tax) and S-Corp (employer half of FICA) both at 7.65%
+    // SS: 6.2%, Medicare: 1.45% — same rate for both employer and employee halves
+    return Math.round(contribBelowCap * 0.0765 + contribAboveCap * 0.0145);
   }
   const isLLC = entityType === 'LLC';
   const isCCorp = entityType === 'C-Corp';
@@ -1746,7 +1742,7 @@ function verifyIndependent(input) {
     forf = stdForfSum;
   }
 
-  const stdAllComp = stdNhceTotalComp + ownersComp;
+  const stdAllComp = stdNhceTotalComp + hceTotalComp + ownersComp;
   const vStdPS = Math.round(stdAllComp * sRate / 100);
   const vStdOwn = Math.round(oCmp * sRate / 100);
   const vStdAddl = addl.map((c, i) => addlPS[i] ? Math.round(c * sRate / 100) : 0);
@@ -1842,7 +1838,7 @@ function runComplianceChecks(input, computed) {
   if (computed.crossTestResult) {
     const xt = computed.crossTestResult;
     if (xt.allPass) {
-      checks.push({ rule:'§401(a)(4) Cross-Test', status:'PASS', message:`All ${xt.rateGroupResults.length} rate groups pass. Owner EBAR: ${xt.allParticipants.find(p=>p.isPrimaryOwner)?.ebar.toFixed(2)}%. Test used: ${xt.bestTestUsed === 'ratio_pct' ? 'Ratio Percentage' : 'Average Benefit'}.` });
+      checks.push({ rule:'§401(a)(4) Cross-Test', status:'PASS', message:`All ${xt.rateGroupResults.length} rate groups pass. Owner EBAR: ${xt.allParticipants.find(p=>p.isPrimaryOwner)?.ebar?.toFixed(2) || 'N/A'}%. Test used: ${xt.bestTestUsed === 'ratio_pct' ? 'Ratio Percentage' : 'Average Benefit'}.` });
     } else {
       const failing = xt.rateGroupResults.filter(r => !r.passes);
       checks.push({ rule:'§401(a)(4) Cross-Test', status:'FAIL', message:`${failing.length} rate group(s) fail. Owner allocation too high for age demographics.`, fix:'Reduce owner allocation or increase NHCE rate.' });
@@ -1868,8 +1864,9 @@ function runComplianceChecks(input, computed) {
   checks.push({ rule:'SECURE 2.0', status: computed.employerSizeFactor === 0 ? 'WARN' : 'PASS',
     message:`Year ${computed.secureYear} — credit phase ${(CREDIT_PHASE[computed.secureYear-1]*100)}%${sizeMsg}` });
 
-  // IRC §280C
-  const expOptTax = Math.round((computed.optTotalPS - computed.secureCredits) * computed.taxRate);
+  // IRC §280C: deduction is capped at §404(a)(3) limit (25% of total comp)
+  const expOptDeductible = Math.min(computed.optTotalPS, computed.deductionLimit404);
+  const expOptTax = Math.round((expOptDeductible - computed.secureCredits) * computed.taxRate);
   checks.push(computed.optTaxSavings !== expOptTax
     ? { rule:'IRC §280C', status:'FAIL', message:`Tax savings ${fmt(computed.optTaxSavings)} ≠ expected ${fmt(expOptTax)}` }
     : { rule:'IRC §280C', status:'PASS', message:`Deduction correctly reduced by SECURE credit` }
@@ -1943,8 +1940,8 @@ function computeTypicalBaseline(c, rate) {
   // Safe harbor requires minimum 3% non-elective contribution.
   rate = Math.max(3, rate);
   // Includes all employees with ≥1,000 hours (stdNhceTotalComp), not just optimized-eligible.
-  // Uses stdNhceTotalComp + owners (excludes HCE non-owners who only participate in optimized).
-  const typicalComp = (c.stdNhceTotalComp || c.nhceTotalComp) + c.ownersTotalComp;
+  // Non-owner HCEs also participate at the same flat rate in a typical safe harbor plan.
+  const typicalComp = (c.stdNhceTotalComp || c.nhceTotalComp) + (c.hceTotalComp || 0) + c.ownersTotalComp;
   const totalPS = Math.round(typicalComp * rate / 100);
   const ownerAlloc = Math.round(c.ownerComp * rate / 100);
   const addlAllocs = (c.additionalOwners || []).map(ao => {
@@ -1953,7 +1950,10 @@ function computeTypicalBaseline(c, rate) {
     return Math.round(aoComp * rate / 100);
   });
   const ownersRetained = ownerAlloc + addlAllocs.reduce((s,a)=>s+a, 0);
-  const taxDeductions = Math.round(totalPS * c.taxRate);
+  // §404(a)(3): PS deduction capped at 25% of total covered compensation
+  const typDeductionLimit = Math.round(typicalComp * 0.25);
+  const typDeductiblePS = Math.min(totalPS, typDeductionLimit);
+  const taxDeductions = Math.round(typDeductiblePS * c.taxRate);
   let netCost = totalPS - ownersRetained - taxDeductions;
   // FICA savings for typical baseline (same entity type logic)
   const ssWageBase = (c.limits && c.limits.ssWageBase) || 176100;
@@ -1965,9 +1965,8 @@ function computeTypicalBaseline(c, rate) {
     const belowCap = Math.max(0, ssWageBase - ownerW2);
     const contribBelowCap = Math.min(ownersRetained, belowCap);
     const contribAboveCap = ownersRetained - contribBelowCap;
-    ficaSavings = isLLC
-      ? Math.round(contribBelowCap * 0.0765 + contribAboveCap * 0.0145)
-      : Math.round(contribBelowCap * 0.0765 + contribAboveCap * 0.0145);
+    // LLC and S-Corp both save 7.65% (SS 6.2% + Medicare 1.45%)
+    ficaSavings = Math.round(contribBelowCap * 0.0765 + contribAboveCap * 0.0145);
   }
   // Include FICA savings in net cost
   netCost -= ficaSavings;
@@ -2228,7 +2227,7 @@ function recalc() {
   if (secureCreditAlert && c.secureCreditInfo) {
     const sci = c.secureCreditInfo;
     const sizeNote = sci.employerSizeReduced
-      ? ` <em>(${sci.eligible} employees — credit reduced by ${Math.round((1 - sci.employerSizeFactor) * 100)}% due to employer size over 50)</em>`
+      ? ` <em>(${sci.totalEmployeesForSize} employees — credit reduced by ${Math.round((1 - sci.employerSizeFactor) * 100)}% due to employer size over 50)</em>`
       : '';
     if (sci.employerSizeFactor === 0) {
       // 100+ employees — no credit available
@@ -2236,7 +2235,7 @@ function recalc() {
       secureCreditAlert.style.background = '#f8d7da';
       secureCreditAlert.style.borderLeft = '4px solid #dc3545';
       secureCreditAlert.innerHTML = `<strong>⚠ SECURE 2.0 Not Available:</strong>
-        ${sci.eligible} eligible employees exceeds the 100-employee limit for SECURE 2.0 startup credits.`;
+        ${sci.totalEmployeesForSize} total employees exceeds the 100-employee limit for SECURE 2.0 startup credits.`;
     } else if (sci.isPhaseDown && !sci.isCapturingFullCredit && sci.nhceCreditEligible > 0) {
       // In phase-down period and NOT capturing full $1K credit — alert advisor
       secureCreditAlert.style.display = '';
@@ -2615,7 +2614,7 @@ function loadScenario(idx) {
       departedEmployeeIndices = new Set(scenario.departedIndices);
       // Update departure checkboxes in the rendered table
       scenario.departedIndices.forEach(i => {
-        const cb = document.querySelector(`input.departure-cb[data-index="${i}"]`);
+        const cb = document.querySelector(`input.dep-check[data-emp-idx="${i}"]`);
         if (cb) cb.checked = true;
       });
     }
@@ -2773,7 +2772,7 @@ function doImport() {
       if (input.departedIndices && input.departedIndices.length > 0) {
         departedEmployeeIndices = new Set(input.departedIndices);
         input.departedIndices.forEach(i => {
-          const cb = document.querySelector(`input.departure-cb[data-index="${i}"]`);
+          const cb = document.querySelector(`input.dep-check[data-emp-idx="${i}"]`);
           if (cb) cb.checked = true;
         });
       }
