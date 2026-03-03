@@ -5017,18 +5017,42 @@ function renderScenario(idx) {
 function copyEmbedCode() {
   const btn = document.getElementById('copyEmbedBtn');
   btn.style.display = 'none';
-  const html = '<!DOCTYPE html>\\n<html>' + document.documentElement.innerHTML + '</html>';
+  const html = '<!DOCTYPE html>\n<html>' + document.documentElement.innerHTML + '</html>';
   btn.style.display = '';
-  navigator.clipboard.writeText(html).then(() => {
+
+  // Try modern clipboard API first, then fall back to execCommand
+  function onSuccess() {
     btn.textContent = 'Copied!';
-    setTimeout(() => { btn.textContent = 'Copy Embed HTML'; }, 2000);
-  }).catch(() => {
-    // Fallback: select-all in a new window
-    const w = window.open('', '_blank');
-    w.document.open();
-    w.document.write('<pre style="white-space:pre-wrap;word-wrap:break-word;font-size:11px;">' + html.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</pre>');
-    w.document.close();
-  });
+    btn.style.background = '#2E7D32';
+    setTimeout(() => { btn.textContent = 'Copy Embed HTML'; btn.style.background = 'var(--gold)'; }, 2000);
+  }
+  function fallbackCopy() {
+    var ta = document.createElement('textarea');
+    ta.value = html;
+    ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0;';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try {
+      var ok = document.execCommand('copy');
+      if (ok) { onSuccess(); } else { throw new Error('execCommand failed'); }
+    } catch(e) {
+      // Last resort: open in new window for manual copy
+      var w = window.open('', '_blank');
+      w.document.open();
+      w.document.write('<pre style="white-space:pre-wrap;word-wrap:break-word;font-size:11px;">' + html.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</pre>');
+      w.document.close();
+      btn.textContent = 'Opened in new tab';
+      setTimeout(function(){ btn.textContent = 'Copy Embed HTML'; }, 2000);
+    }
+    document.body.removeChild(ta);
+  }
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(html).then(onSuccess).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
 }
 
 // Build rate pills
