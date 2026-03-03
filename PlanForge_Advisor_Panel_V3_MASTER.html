@@ -435,7 +435,7 @@
               <strong>Maximize Owner:</strong> Uses real EBAR cross-testing to find the maximum owner allocation that passes §401(a)(4). NHCEs get 5% (gateway). Age-weighted actuarial factors determine feasibility.
             </div>
             <div class="form-row-3">
-              <div class="form-group"><label>Std Rate (%) — Benchmark</label><input type="number" id="stdRate" value="3" min="1" max="25" step="0.01" oninput="syncStdRate(this.value);debouncedRecalc()"></div>
+              <div class="form-group"><label>Std Rate (%) — Benchmark</label><input type="number" id="stdRate" value="3" min="0.25" max="25" step="0.25" oninput="syncStdRate(this.value);debouncedRecalc()"></div>
               <div class="form-group"><label>Opt NHCE Rate (%)</label><input type="number" id="optNhceRate1" value="5" min="1" max="25" step="0.01" oninput="debouncedRecalc()"></div>
               <div class="form-group"><label>SECURE Year (1-5)</label><input type="number" id="secureYear" value="2" min="1" max="5" oninput="onSecureYearChange('secureYear')"></div>
             </div>
@@ -446,7 +446,7 @@
               <strong>$1,000 Flat + 3x Gateway:</strong> Each NHCE gets $1,000 profit share. Owner's max rate = 3× the lowest NHCE rate (below-gateway approach).
             </div>
             <div class="form-row-3">
-              <div class="form-group"><label>Std Rate (%) — Benchmark</label><input type="number" id="stdRate2" value="3" min="1" max="25" step="0.01" oninput="syncStdRate(this.value);debouncedRecalc()"></div>
+              <div class="form-group"><label>Std Rate (%) — Benchmark</label><input type="number" id="stdRate2" value="3" min="0.25" max="25" step="0.25" oninput="syncStdRate(this.value);debouncedRecalc()"></div>
               <div class="form-group"><label>NHCE Flat Amount ($)</label><input type="number" id="nhceFlatAmt" value="1000" step="100" oninput="debouncedRecalc()"></div>
               <div class="form-group"><label>SECURE Year (1-5)</label><input type="number" id="secureYear2" value="2" min="1" max="5" oninput="onSecureYearChange('secureYear2')"></div>
             </div>
@@ -457,7 +457,7 @@
               <strong>Custom:</strong> Manually set NHCE rate and owner allocation. Real cross-testing runs automatically.
             </div>
             <div class="form-row-3">
-              <div class="form-group"><label>Std Rate (%)</label><input type="number" id="stdRate3" value="3" min="1" max="25" step="0.01" oninput="syncStdRate(this.value);debouncedRecalc()"></div>
+              <div class="form-group"><label>Std Rate (%)</label><input type="number" id="stdRate3" value="3" min="0.25" max="25" step="0.25" oninput="syncStdRate(this.value);debouncedRecalc()"></div>
               <div class="form-group"><label>NHCE Rate (%)</label><input type="number" id="optNhceRate3" value="5" min="0" max="25" step="0.01" oninput="debouncedRecalc()"></div>
               <div class="form-group"><label>SECURE Year (1-5)</label><input type="number" id="secureYear3" value="2" min="1" max="5" oninput="onSecureYearChange('secureYear3')"></div>
             </div>
@@ -2000,9 +2000,9 @@ function findOptimalNhceRate(baseInput) {
   const ownerComp = Math.min((baseInput.ownerSalary || 0) + (baseInput.ownerK1 || 0), limits.compCap401a17);
   const ownerCap = Math.min(limits.additions415c, ownerComp); // Absolute max owner can receive
 
-  // Phase 1: Sweep all rates and record owner allocation at each
+  // Phase 1: Sweep all rates at 0.25% increments and record owner allocation at each
   const results = [];
-  for (let rate = 1.0; rate <= 10.0; rate += 0.5) {
+  for (let rate = 0.25; rate <= 10.0; rate = Math.round((rate + 0.25) * 100) / 100) {
     const testInput = Object.assign({}, baseInput, {
       stdRate: rate,
       optNhceRate: rate,
@@ -2032,16 +2032,29 @@ function findOptimalNhceRate(baseInput) {
 
 function computeWhatIfScenarios(baseInput) {
   const scenarios = [];
-  const rates = [1, 2, 3, 4, 5];
+  // Build 5 rates at 0.25% increments centered on the current stdRate
+  const center = baseInput.stdRate || 3;
+  const step = 0.25;
+  const half = 2; // 2 steps each side = ±0.5%
+  const rates = [];
+  for (let i = -half; i <= half; i++) {
+    const r = Math.round((center + i * step) * 100) / 100; // avoid float drift
+    if (r >= step) rates.push(r); // floor at 0.25%
+  }
+  // If we lost any rates at the low end, extend at the high end to keep 5
+  while (rates.length < 5) {
+    const next = Math.round((rates[rates.length - 1] + step) * 100) / 100;
+    rates.push(next);
+  }
   const isGateway = baseInput.planDesignMode === 'gateway';
   const gatewayAmt = baseInput.nhceFlatAmt || 1000;
   const avgPay = baseInput.nhceAvgPay || 0;
-  // For gateway plans, find which integer rate is closest to the flat-dollar equivalent
-  const gatewayEquivRate = avgPay > 0 ? Math.round(gatewayAmt / avgPay * 100) : 0;
+  // For gateway plans, find which rate is closest to the flat-dollar equivalent
+  const gatewayEquivRate = avgPay > 0 ? Math.round((gatewayAmt / avgPay * 100) * 4) / 4 : 0; // snap to nearest 0.25
 
   rates.forEach(nhceRate => {
     let scenarioInput;
-    if (isGateway && nhceRate === gatewayEquivRate) {
+    if (isGateway && Math.abs(nhceRate - gatewayEquivRate) < 0.13) {
       // For the rate closest to the gateway flat amount, show the actual gateway plan
       // Pass through departedIndices so engine recomputes per-employee forfeitures
       scenarioInput = Object.assign({}, baseInput, {
@@ -2064,7 +2077,7 @@ function computeWhatIfScenarios(baseInput) {
     const ownerDelta = result.optOwnerAlloc - flatOwnerAlloc;
     scenarios.push({
       nhceRate,
-      isGatewayRate: isGateway && nhceRate === gatewayEquivRate,
+      isGatewayRate: isGateway && Math.abs(nhceRate - gatewayEquivRate) < 0.13,
       ownerAlloc: result.optOwnerAlloc,
       flatOwnerAlloc,
       ownerDelta,
@@ -3577,7 +3590,7 @@ function generateIllustrationPDF() {
   const input = getInputFromForm();
   const whatIf = computeWhatIfScenarios(input);
   const curNhce = c.optNhceRate;
-  const curIdx = whatIf.findIndex(s => Math.abs(s.nhceRate - curNhce) < 0.1);
+  const curIdx = whatIf.findIndex(s => Math.abs(s.nhceRate - curNhce) < 0.13);
 
   const name = [c.firstName, c.lastName].filter(Boolean).join(' ') || 'Owner';
   const first = c.firstName || 'Owner';
@@ -3626,7 +3639,7 @@ function generateIllustrationPDF() {
     const deltaColor = xtDelta > 500 ? GREEN : '#999';
     const deltaLabel = xtDelta > 100 ? `+${$(xtDelta)} owner boost` : '';
     return `<div style="flex:1;border:2px solid ${bdr};border-radius:5px;padding:5px 3px 5px;text-align:center;background:${bg};">
-      <div style="font-weight:700;font-size:11px;color:${NAVY};letter-spacing:0.3px;">${s.nhceRate}.0% NHCE${s.isGatewayRate ? ' (Gateway)' : ''}</div>
+      <div style="font-weight:700;font-size:11px;color:${NAVY};letter-spacing:0.3px;">${parseFloat(s.nhceRate.toFixed(2))}% NHCE${s.isGatewayRate ? ' (Gateway)' : ''}</div>
       <div style="font-size:10px;color:#333;margin-top:2px;font-weight:600;">Owner: ${$(s.ownerAlloc)}</div>
       <div style="font-size:8px;color:${deltaColor};margin-top:1px;">${deltaLabel}</div>
       <div style="margin-top:3px;padding-top:3px;border-top:1px solid ${active ? '#c8e6c9' : '#e8e8e8'};">

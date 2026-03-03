@@ -740,7 +740,18 @@ function generate(input, outputPath) {
     doc.text('Changing the employee rate adjusts the owner\'s allocation and net cost. Below 5%, the gateway test caps the owner at 3x the employee rate.', M, cy, { width: CW, lineGap: 1.5 });
     cy += 20;
 
-    const rates = [1.0, 2.0, 3.0, 4.0, 5.0];
+    // Build 5 rates at 0.25% increments centered on the current stdRate
+    const rateCenter = D.stdRate || 3.0;
+    const rateStep = 0.25;
+    const rates = [];
+    for (let ri = -2; ri <= 2; ri++) {
+      const r = Math.round((rateCenter + ri * rateStep) * 100) / 100;
+      if (r >= rateStep) rates.push(r);
+    }
+    while (rates.length < 5) {
+      const next = Math.round((rates[rates.length - 1] + rateStep) * 100) / 100;
+      rates.push(next);
+    }
     const boxW = (CW - 4 * 10) / 5;
 
     rates.forEach((rate, i) => {
@@ -749,7 +760,7 @@ function generate(input, outputPath) {
       const typ = D.calcTypicalAtRate(rate);
       const savings = typ.net - calc.net;
       const fee = Math.round(savings * D.FEE_PCT);
-      const isCurrent = rate === D.optNhceRate;
+      const isCurrent = Math.abs(rate - D.optNhceRate) < 0.13;
       const boxH = 88;
 
       if (isCurrent) {
