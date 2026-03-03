@@ -5017,7 +5017,7 @@ function renderScenario(idx) {
 function copyEmbedCode() {
   const btn = document.getElementById('copyEmbedBtn');
   btn.style.display = 'none';
-  const html = '<!DOCTYPE html>\n<html>' + document.documentElement.innerHTML + '</html>';
+  const html = '<!DOCTYPE html>\\n<html>' + document.documentElement.innerHTML + '</html>';
   btn.style.display = '';
 
   // Try modern clipboard API first, then fall back to execCommand
