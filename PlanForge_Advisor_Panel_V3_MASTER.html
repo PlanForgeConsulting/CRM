@@ -1737,7 +1737,7 @@ function verifyIndependent(input) {
     const departedSet = new Set(departedIndices);
     let stdForfSum = 0;
     allNhces.forEach((emp, idx) => {
-      if (departedSet.has(idx)) stdForfSum += Math.round(emp.pay * sRate / 100);
+      if (departedSet.has(idx) && !emp.stdExcluded) stdForfSum += Math.round(emp.pay * sRate / 100);
     });
     forf = stdForfSum;
   }
@@ -2470,7 +2470,15 @@ function runVerify() {
     const iVal = v[key];
     const match = Math.abs(pVal - iVal) <= 1;
     crossHtml += `<tr><td>${label}</td><td>${typeof pVal === 'number' ? fmt(pVal) : pVal}</td><td>${typeof iVal === 'number' ? fmt(iVal) : iVal}</td><td class="${match ? 'match' : 'mismatch'}">${match ? '✓ Match' : '✗ Diff: ' + fmt(Math.abs(pVal-iVal))}</td></tr>`;
-    if (match) passCount++; else failCount++;
+    if (match) passCount++; else {
+      failCount++;
+      // Show cross-verification mismatches as visible check-rows in the main list
+      html += `<div class="check-row">
+        <div class="check-icon fail">✗</div>
+        <div class="check-rule">Cross-Verify</div>
+        <div class="check-msg">[FAIL] ${label}: Panel ${typeof pVal === 'number' ? fmt(pVal) : pVal} ≠ Independent ${typeof iVal === 'number' ? fmt(iVal) : iVal} (diff: ${fmt(Math.abs(pVal-iVal))})</div>
+      </div>`;
+    }
   }
   crossHtml += '</table>';
 
