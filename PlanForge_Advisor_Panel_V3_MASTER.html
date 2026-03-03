@@ -382,7 +382,7 @@
         <div class="form-row">
           <div class="form-group">
             <label>HCE Allocation Rate (%)</label>
-            <input type="number" id="hceAllocRate" value="" step="0.5" min="0" max="100" placeholder="0% (maximize mode)" oninput="debouncedRecalc()">
+            <input type="number" id="hceAllocRate" value="" step="0.01" min="0" max="100" placeholder="0% (maximize mode)" oninput="debouncedRecalc()">
             <div style="font-size:10px;color:var(--gray);margin-top:2px;">Leave blank = 0% in Maximize mode. Override to give HCEs a specific rate.</div>
             <div id="hceRateWarning" style="display:none;margin-top:4px;padding:6px 10px;border-radius:6px;font-size:11px;"></div>
           </div>
@@ -435,8 +435,8 @@
               <strong>Maximize Owner:</strong> Uses real EBAR cross-testing to find the maximum owner allocation that passes §401(a)(4). NHCEs get 5% (gateway). Age-weighted actuarial factors determine feasibility.
             </div>
             <div class="form-row-3">
-              <div class="form-group"><label>Std Rate (%) — Benchmark</label><input type="number" id="stdRate" value="3" min="1" max="25" step="0.5" oninput="syncStdRate(this.value);debouncedRecalc()"></div>
-              <div class="form-group"><label>Opt NHCE Rate (%)</label><input type="number" id="optNhceRate1" value="5" min="1" max="25" step="0.5" oninput="debouncedRecalc()"></div>
+              <div class="form-group"><label>Std Rate (%) — Benchmark</label><input type="number" id="stdRate" value="3" min="1" max="25" step="0.01" oninput="syncStdRate(this.value);debouncedRecalc()"></div>
+              <div class="form-group"><label>Opt NHCE Rate (%)</label><input type="number" id="optNhceRate1" value="5" min="1" max="25" step="0.01" oninput="debouncedRecalc()"></div>
               <div class="form-group"><label>SECURE Year (1-5)</label><input type="number" id="secureYear" value="2" min="1" max="5" oninput="onSecureYearChange('secureYear')"></div>
             </div>
             <div id="ratioTestResult" style="margin-top:8px;padding:8px 12px;background:var(--greenBg);border-radius:6px;font-size:12px;display:none;"></div>
@@ -446,7 +446,7 @@
               <strong>$1,000 Flat + 3x Gateway:</strong> Each NHCE gets $1,000 profit share. Owner's max rate = 3× the lowest NHCE rate (below-gateway approach).
             </div>
             <div class="form-row-3">
-              <div class="form-group"><label>Std Rate (%) — Benchmark</label><input type="number" id="stdRate2" value="3" min="1" max="25" step="0.5" oninput="syncStdRate(this.value);debouncedRecalc()"></div>
+              <div class="form-group"><label>Std Rate (%) — Benchmark</label><input type="number" id="stdRate2" value="3" min="1" max="25" step="0.01" oninput="syncStdRate(this.value);debouncedRecalc()"></div>
               <div class="form-group"><label>NHCE Flat Amount ($)</label><input type="number" id="nhceFlatAmt" value="1000" step="100" oninput="debouncedRecalc()"></div>
               <div class="form-group"><label>SECURE Year (1-5)</label><input type="number" id="secureYear2" value="2" min="1" max="5" oninput="onSecureYearChange('secureYear2')"></div>
             </div>
@@ -457,8 +457,8 @@
               <strong>Custom:</strong> Manually set NHCE rate and owner allocation. Real cross-testing runs automatically.
             </div>
             <div class="form-row-3">
-              <div class="form-group"><label>Std Rate (%)</label><input type="number" id="stdRate3" value="3" min="1" max="25" step="0.5" oninput="syncStdRate(this.value);debouncedRecalc()"></div>
-              <div class="form-group"><label>NHCE Rate (%)</label><input type="number" id="optNhceRate3" value="5" min="0" max="25" step="0.5" oninput="debouncedRecalc()"></div>
+              <div class="form-group"><label>Std Rate (%)</label><input type="number" id="stdRate3" value="3" min="1" max="25" step="0.01" oninput="syncStdRate(this.value);debouncedRecalc()"></div>
+              <div class="form-group"><label>NHCE Rate (%)</label><input type="number" id="optNhceRate3" value="5" min="0" max="25" step="0.01" oninput="debouncedRecalc()"></div>
               <div class="form-group"><label>SECURE Year (1-5)</label><input type="number" id="secureYear3" value="2" min="1" max="5" oninput="onSecureYearChange('secureYear3')"></div>
             </div>
             <div class="form-row">
@@ -487,7 +487,7 @@
                 <option value="10" selected>Not sure (~10%)</option>
                 <option value="custom" id="turnoverCustomOpt" style="display:none;">Custom</option>
               </select>
-              <input type="number" id="turnoverManual" value="10" min="0" max="100" step="0.5"
+              <input type="number" id="turnoverManual" value="10" min="0" max="100" step="0.01"
                 style="width:68px;text-align:center;font-weight:600;" oninput="syncTurnoverFromManual()">
               <span style="font-size:11px;color:var(--gray);">%</span>
             </div>
@@ -2171,8 +2171,8 @@ function recalc() {
     return;
   }
 
-  document.getElementById('stdRateDisplay').textContent = c.stdRate;
-  document.getElementById('optRateDisplay').textContent = c.optNhceRate;
+  document.getElementById('stdRateDisplay').textContent = parseFloat(c.stdRate.toFixed(2));
+  document.getElementById('optRateDisplay').textContent = parseFloat(c.optNhceRate.toFixed(2));
   document.getElementById('yearDisplay').textContent = c.year;
   document.getElementById('lim415c').textContent = fmt(c.limits.additions415c);
   document.getElementById('lim401a17').textContent = fmt(c.limits.compCap401a17);

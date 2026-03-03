@@ -336,7 +336,7 @@ function generate(input, outputPath) {
     if (n < 0) return `-$${Math.abs(Math.round(n)).toLocaleString('en-US')}`;
     return `$${Math.round(n).toLocaleString('en-US')}`;
   };
-  const fmtPct = (n) => `${n.toFixed(1)}%`;
+  const fmtPct = (n) => `${parseFloat(n.toFixed(2))}%`;
 
   // Page dimensions (US Letter in points: 8.5" × 11" at 72 DPI)
   const W = 612, H = 792;
