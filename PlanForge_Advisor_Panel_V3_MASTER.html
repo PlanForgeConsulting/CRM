@@ -55,6 +55,18 @@
   .form-group input::-webkit-outer-spin-button,
   .form-group input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   .form-group input[type=number] { -moz-appearance: textfield; }
+  .stepper { display: flex; align-items: stretch; }
+  .stepper input { border-radius: 10px 0 0 10px; border-right: none; flex: 1; min-width: 0; }
+  .stepper-btns { display: flex; flex-direction: column; }
+  .stepper-btns button {
+    flex: 1; width: 28px; border: 1.5px solid #D5D9E2; background: #FAFBFC; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; padding: 0;
+    font-size: 10px; color: #64748B; transition: all .2s ease; line-height: 1;
+  }
+  .stepper-btns button:first-child { border-radius: 0 10px 0 0; border-bottom: none; }
+  .stepper-btns button:last-child { border-radius: 0 0 10px 0; }
+  .stepper-btns button:hover { background: #EDF0F5; color: var(--navy); border-color: #B0B8C9; }
+  .stepper-btns button:active { background: #DDE2E8; }
   .form-group input:hover, .form-group select:hover { border-color: #B0B8C9; background: #fff; }
   .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--gold); background: #fff; box-shadow: 0 0 0 3px rgba(196,149,42,.12), 0 1px 2px rgba(0,0,0,.06); }
   .form-group select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; cursor: pointer; }
@@ -435,7 +447,7 @@
               <strong>Maximize Owner:</strong> Uses real EBAR cross-testing to find the maximum owner allocation that passes §401(a)(4). NHCEs get 5% (gateway). Age-weighted actuarial factors determine feasibility.
             </div>
             <div class="form-row-3">
-              <div class="form-group"><label>Std Rate (%) — Benchmark</label><input type="number" id="stdRate" value="3" min="0.25" max="25" step="0.25" oninput="syncStdRate(this.value);debouncedRecalc()"></div>
+              <div class="form-group"><label>Std Rate (%) — Benchmark</label><div class="stepper"><input type="number" id="stdRate" value="3" min="0.25" max="25" step="0.25" oninput="syncStdRate(this.value);debouncedRecalc()"><div class="stepper-btns"><button type="button" onclick="stepStdRate(0.25)" tabindex="-1">&#9650;</button><button type="button" onclick="stepStdRate(-0.25)" tabindex="-1">&#9660;</button></div></div></div>
               <div class="form-group"><label>Opt NHCE Rate (%)</label><input type="number" id="optNhceRate1" value="5" min="1" max="25" step="0.01" oninput="debouncedRecalc()"></div>
               <div class="form-group"><label>SECURE Year (1-5)</label><input type="number" id="secureYear" value="2" min="1" max="5" oninput="onSecureYearChange('secureYear')"></div>
             </div>
@@ -446,7 +458,7 @@
               <strong>$1,000 Flat + 3x Gateway:</strong> Each NHCE gets $1,000 profit share. Owner's max rate = 3× the lowest NHCE rate (below-gateway approach).
             </div>
             <div class="form-row-3">
-              <div class="form-group"><label>Std Rate (%) — Benchmark</label><input type="number" id="stdRate2" value="3" min="0.25" max="25" step="0.25" oninput="syncStdRate(this.value);debouncedRecalc()"></div>
+              <div class="form-group"><label>Std Rate (%) — Benchmark</label><div class="stepper"><input type="number" id="stdRate2" value="3" min="0.25" max="25" step="0.25" oninput="syncStdRate(this.value);debouncedRecalc()"><div class="stepper-btns"><button type="button" onclick="stepStdRate(0.25)" tabindex="-1">&#9650;</button><button type="button" onclick="stepStdRate(-0.25)" tabindex="-1">&#9660;</button></div></div></div>
               <div class="form-group"><label>NHCE Flat Amount ($)</label><input type="number" id="nhceFlatAmt" value="1000" step="100" oninput="debouncedRecalc()"></div>
               <div class="form-group"><label>SECURE Year (1-5)</label><input type="number" id="secureYear2" value="2" min="1" max="5" oninput="onSecureYearChange('secureYear2')"></div>
             </div>
@@ -457,7 +469,7 @@
               <strong>Custom:</strong> Manually set NHCE rate and owner allocation. Real cross-testing runs automatically.
             </div>
             <div class="form-row-3">
-              <div class="form-group"><label>Std Rate (%)</label><input type="number" id="stdRate3" value="3" min="0.25" max="25" step="0.25" oninput="syncStdRate(this.value);debouncedRecalc()"></div>
+              <div class="form-group"><label>Std Rate (%)</label><div class="stepper"><input type="number" id="stdRate3" value="3" min="0.25" max="25" step="0.25" oninput="syncStdRate(this.value);debouncedRecalc()"><div class="stepper-btns"><button type="button" onclick="stepStdRate(0.25)" tabindex="-1">&#9650;</button><button type="button" onclick="stepStdRate(-0.25)" tabindex="-1">&#9660;</button></div></div></div>
               <div class="form-group"><label>NHCE Rate (%)</label><input type="number" id="optNhceRate3" value="5" min="0" max="25" step="0.01" oninput="debouncedRecalc()"></div>
               <div class="form-group"><label>SECURE Year (1-5)</label><input type="number" id="secureYear3" value="2" min="1" max="5" oninput="onSecureYearChange('secureYear3')"></div>
             </div>
@@ -2853,6 +2865,15 @@ function toAdvisorPanelJSON(d) {
 
 // ── Plan Design ──
 
+function stepStdRate(delta) {
+  const el = document.getElementById('stdRate') || document.getElementById('stdRate2') || document.getElementById('stdRate3');
+  if (!el) return;
+  const cur = parseFloat(el.value) || 3;
+  const next = Math.round((cur + delta) * 100) / 100; // avoid float drift
+  const clamped = Math.max(0.25, Math.min(25, next));
+  syncStdRate(clamped);
+  debouncedRecalc();
+}
 function syncStdRate(v) {
   ['stdRate','stdRate2','stdRate3'].forEach(id => {
     const el = document.getElementById(id); if (el && v != null) el.value = v;
