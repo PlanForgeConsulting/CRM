@@ -2044,14 +2044,14 @@ function findOptimalNhceRate(baseInput) {
 
 function computeWhatIfScenarios(baseInput) {
   const scenarios = [];
-  // Build 5 rates at 0.25% increments centered on the current stdRate
+  // Build 5 rates at 1% increments centered on the current stdRate
   const center = baseInput.stdRate || 3;
-  const step = 0.25;
-  const half = 2; // 2 steps each side = ±0.5%
+  const step = 1;
+  const half = 2; // 2 steps each side = ±2%
   const rates = [];
   for (let i = -half; i <= half; i++) {
     const r = Math.round((center + i * step) * 100) / 100; // avoid float drift
-    if (r >= step) rates.push(r); // floor at 0.25%
+    if (r >= 1) rates.push(r); // floor at 1%
   }
   // If we lost any rates at the low end, extend at the high end to keep 5
   while (rates.length < 5) {
@@ -2062,11 +2062,11 @@ function computeWhatIfScenarios(baseInput) {
   const gatewayAmt = baseInput.nhceFlatAmt || 1000;
   const avgPay = baseInput.nhceAvgPay || 0;
   // For gateway plans, find which rate is closest to the flat-dollar equivalent
-  const gatewayEquivRate = avgPay > 0 ? Math.round((gatewayAmt / avgPay * 100) * 4) / 4 : 0; // snap to nearest 0.25
+  const gatewayEquivRate = avgPay > 0 ? Math.round(gatewayAmt / avgPay * 100) : 0; // snap to nearest 1%
 
   rates.forEach(nhceRate => {
     let scenarioInput;
-    if (isGateway && Math.abs(nhceRate - gatewayEquivRate) < 0.13) {
+    if (isGateway && Math.abs(nhceRate - gatewayEquivRate) < 0.5) {
       // For the rate closest to the gateway flat amount, show the actual gateway plan
       // Pass through departedIndices so engine recomputes per-employee forfeitures
       scenarioInput = Object.assign({}, baseInput, {
@@ -2089,7 +2089,7 @@ function computeWhatIfScenarios(baseInput) {
     const ownerDelta = result.optOwnerAlloc - flatOwnerAlloc;
     scenarios.push({
       nhceRate,
-      isGatewayRate: isGateway && Math.abs(nhceRate - gatewayEquivRate) < 0.13,
+      isGatewayRate: isGateway && Math.abs(nhceRate - gatewayEquivRate) < 0.5,
       ownerAlloc: result.optOwnerAlloc,
       flatOwnerAlloc,
       ownerDelta,
