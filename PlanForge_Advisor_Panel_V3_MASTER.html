@@ -1977,10 +1977,10 @@ function computeTypicalBaseline(c, rate) {
   // Safe harbor never shows below 3% in the illustration (required minimum)
   const safeHarborFloor = 0.03;
   const forfeitableRate = Math.max(0, rate / 100 - safeHarborFloor);
-  const nhceTotalComp = c.stdNhceTotalComp || c.nhceTotalComp;
+  const typNhceTotalComp = c.stdNhceTotalComp || c.nhceTotalComp;
   const turnoverEl = typeof document !== 'undefined' && document.getElementById('turnoverManual');
   const turnoverPctDecimal = turnoverEl ? (parseFloat(turnoverEl.value) || 0) / 100 : 0;
-  const typEstimatedForfeitures = Math.round(turnoverPctDecimal * nhceTotalComp * forfeitableRate);
+  const typEstimatedForfeitures = Math.round(turnoverPctDecimal * typNhceTotalComp * forfeitableRate);
 
   return { totalPS, ownerAlloc, ownersRetained, addlAllocs, taxDeductions, netCost, secureCredits: 0, forfeitures: 0, realForfeitures: 0, estimatedForfeitures: typEstimatedForfeitures, stdEstimatedForfeitures: 0, optEstimatedForfeitures: 0, ficaSavings };
 }
