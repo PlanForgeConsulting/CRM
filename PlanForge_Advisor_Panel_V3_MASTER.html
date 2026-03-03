@@ -195,9 +195,12 @@
   .departure-table tr.departed-row td:first-child,
   .departure-table tr.departed-row td:last-child { text-decoration: none; }
   .departure-table .dep-check { width: 15px; height: 15px; cursor: pointer; accent-color: var(--red); }
-  .departure-table .excl-check { width: 15px; height: 15px; cursor: pointer; accent-color: #999; }
-  .departure-table tr.excluded-row { background: #F5F5F5; }
-  .departure-table tr.excluded-row td { color: #999; }
+  .departure-table .excl-check { width: 15px; height: 15px; cursor: pointer; accent-color: #F57F17; }
+  .departure-table .std-excl-check { width: 15px; height: 15px; cursor: pointer; accent-color: #999; }
+  .departure-table tr.excluded-row { background: #FFF8E1; }
+  .departure-table tr.excluded-row td { color: #B8860B; }
+  .departure-table tr.std-excluded-row { background: #F5F5F5; }
+  .departure-table tr.std-excluded-row td { color: #999; }
   .departure-table .emp-type-badge {
     font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 3px;
   }
@@ -659,7 +662,8 @@ let additionalOwnersList = [];
 let parsedCensusEmployees = null;  // Stores parsed census data (takes priority over synthetic)
 let parsedCensusCapabilities = null; // Tracks what census actually detected (ages, dates, etc.)
 let departedEmployeeIndices = new Set();  // Indices of employees marked as departed (unvested)
-let excludedEmployeeIndices = new Set();  // Indices of employees excluded from profit sharing
+let excludedEmployeeIndices = new Set();  // Indices of employees excluded from optimized plan
+let stdExcludedEmployeeIndices = new Set();  // Indices of employees excluded from standard plan
 let lastRenderedCensus = null;  // Cache for departure table rendering
 let currentPlanDesign = 'maximize';
 let lastCrossTestResult = null;
@@ -805,7 +809,8 @@ function buildFullCensus(input) {
     input.hceAvgAge, excludableNhces,
     (input.additionalOwners||[]).map(a => [a.name,a.age,a.salary,a.k1]),
     parsedCensusEmployees ? JSON.stringify(parsedCensusEmployees) : 0,
-    [...excludedEmployeeIndices].sort().join(',')
+    [...excludedEmployeeIndices].sort().join(','),
+    [...stdExcludedEmployeeIndices].sort().join(',')
   ]);
   if (_lastCensusKey === cacheKey && _cachedCensus) return _cachedCensus;
 
@@ -846,26 +851,28 @@ function buildFullCensus(input) {
     );
   }
 
-  // Apply deferral exclusion to NHCEs
+  // Apply exclusions to NHCEs
   const nhces = employees.filter(e => e.type === 'NHCE');
   const hces = employees.filter(e => e.type === 'HCE');
 
   const isCensusMode = parsedCensusEmployees && parsedCensusEmployees.length > 0;
 
-  // Mark excluded NHCEs:
-  //   Census mode: use explicit excludedEmployeeIndices set (user-controlled checkboxes)
+  // Mark excluded NHCEs for optimized and standard plans:
+  //   Census mode: use explicit Sets (user-controlled checkboxes per employee)
   //   Synthetic mode: first N by array order (fallback when no per-employee data)
-  let excludedCount = 0;
+  let optExclCount = 0;
+  const nhcesUnder1000hrs = input.nhcesUnder1000hrs || 0;
   const processedNhces = nhces.map((e, i) => {
-    let excluded;
-    if (isCensusMode && excludedEmployeeIndices.size > 0) {
-      // In census mode, match by name+pay identity to the exclusion set
-      excluded = excludedEmployeeIndices.has(i);
+    let excluded, stdExcluded;
+    if (isCensusMode && (excludedEmployeeIndices.size > 0 || stdExcludedEmployeeIndices.size > 0)) {
+      excluded = excludedEmployeeIndices.has(i);      // excluded from optimized
+      stdExcluded = stdExcludedEmployeeIndices.has(i); // excluded from standard
     } else {
-      excluded = excludedCount < excludableNhces;
+      excluded = optExclCount < excludableNhces;
+      stdExcluded = false; // synthetic mode uses nhcesUnder1000hrs count in compute
     }
-    if (excluded) excludedCount++;
-    return { ...e, excluded };
+    if (excluded) optExclCount++;
+    return { ...e, excluded, stdExcluded };
   });
 
   const result = {
@@ -874,6 +881,8 @@ function buildFullCensus(input) {
     allParticipants: [...owners, ...addlOwners, ...processedNhces.filter(e => !e.excluded), ...hces],
     excludedNhces: processedNhces.filter(e => e.excluded),
     eligibleNhces: processedNhces.filter(e => !e.excluded),
+    stdExcludedNhces: processedNhces.filter(e => e.stdExcluded),
+    stdEligibleNhces: processedNhces.filter(e => !e.stdExcluded),
     nonOwnerHces: hces
   };
   _lastCensusKey = cacheKey;
@@ -1148,10 +1157,11 @@ function independentCompute(input) {
   // Build census early so ALL calculations can use individual employee data when available
   const census = buildFullCensus(input);
 
-  // Standard plan includes all employees EXCEPT those with <1,000 hours
-  // (Optimized plan excludes more via PS eligibility requirements)
+  // Standard plan: uses stdEligibleNhces (user-controlled) when census has explicit exclusions,
+  // otherwise falls back to nhceCountTotal - nhcesUnder1000hrs
   const nhcesUnder1000hrs = input.nhcesUnder1000hrs || 0;
-  const stdNhceCount = nhceCountTotal - nhcesUnder1000hrs;
+  const hasExplicitStdExcl = census.stdExcludedNhces && census.stdExcludedNhces.length > 0;
+  const stdNhceCount = hasExplicitStdExcl ? census.stdEligibleNhces.length : (nhceCountTotal - nhcesUnder1000hrs);
 
   // When census data is available, use actual individual pay — no averaging
   const ownersTotalComp = ownerComp + addlOwners.reduce((s, ao) => s + ao.comp, 0);
@@ -1160,12 +1170,16 @@ function independentCompute(input) {
     // Real census: sum actual pays
     nhceTotalComp = census.eligibleNhces.reduce((s, e) => s + e.pay, 0);
     hceTotalComp = census.nonOwnerHces.reduce((s, e) => s + e.pay, 0);
-    // Standard plan includes all NHCEs (eligible + excluded from optimized) minus under-1000-hours
-    const allNhces = [...census.eligibleNhces, ...census.excludedNhces];
-    // Sort descending so we skip lowest-paid (under-1000-hours, if any)
-    const sorted = allNhces.slice().sort((a, b) => b.pay - a.pay);
-    const stdCount = Math.max(0, sorted.length - (input.nhcesUnder1000hrs || 0));
-    stdNhceTotalComp = input.stdNhceTotalComp || sorted.slice(0, stdCount).reduce((s, e) => s + e.pay, 0);
+    if (hasExplicitStdExcl) {
+      // User explicitly checked which employees are in/out of standard plan
+      stdNhceTotalComp = census.stdEligibleNhces.reduce((s, e) => s + e.pay, 0);
+    } else {
+      // Fallback: all NHCEs minus under-1000-hours count (sorted by pay desc)
+      const allNhces = [...census.eligibleNhces, ...census.excludedNhces];
+      const sorted = allNhces.slice().sort((a, b) => b.pay - a.pay);
+      const stdCount = Math.max(0, sorted.length - nhcesUnder1000hrs);
+      stdNhceTotalComp = input.stdNhceTotalComp || sorted.slice(0, stdCount).reduce((s, e) => s + e.pay, 0);
+    }
   } else {
     // No census: fall back to averages
     nhceTotalComp = nhceCountEligible * nhceAvgPay;
@@ -1190,6 +1204,7 @@ function independentCompute(input) {
   const departedIndices = input.departedIndices || [];
   if (departedIndices.length > 0 && census.eligibleNhces.length > 0) {
     // Compute from individual departed employee pays
+    // Only count forfeitures for employees actually in each plan
     const allNhces = [...census.eligibleNhces, ...census.excludedNhces];
     const departedSet = new Set(departedIndices);
     const stdR = input.stdRate || 3;
@@ -1197,14 +1212,18 @@ function independentCompute(input) {
     let stdForfSum = 0, optForfSum = 0;
     allNhces.forEach((emp, idx) => {
       if (!departedSet.has(idx)) return;
-      // Standard: full stdRate % of individual pay
-      stdForfSum += Math.round(emp.pay * stdR / 100);
-      // Optimized: flat amount (gateway) or full optRate % of individual pay
-      if (pMode === 'gateway' || (pMode === 'custom' && input.nhceFlatAmt)) {
-        optForfSum += input.nhceFlatAmt || 1000;
-      } else {
-        const optRate = input.optNhceRate || 5;
-        optForfSum += Math.round(emp.pay * optRate / 100);
+      // Standard forfeiture: only if employee is in standard plan
+      if (!emp.stdExcluded) {
+        stdForfSum += Math.round(emp.pay * stdR / 100);
+      }
+      // Optimized forfeiture: only if employee is in optimized plan
+      if (!emp.excluded) {
+        if (pMode === 'gateway' || (pMode === 'custom' && input.nhceFlatAmt)) {
+          optForfSum += input.nhceFlatAmt || 1000;
+        } else {
+          const optRate = input.optNhceRate || 5;
+          optForfSum += Math.round(emp.pay * optRate / 100);
+        }
       }
     });
     realForfeituresStd = stdForfSum;
@@ -1249,18 +1268,23 @@ function independentCompute(input) {
   const stdPerEmployeeContrib = nhceAvgPay > 0 ? Math.round(nhceAvgPay * stdRate / 100) : 0;
   const stdCreditPerEmployee = Math.min(CREDIT_PHASE[secureYear - 1] * stdPerEmployeeContrib, 1000);
   let stdSecureCredits;
-  // Standard plan includes all NHCEs (eligible + excluded from optimized) minus under-1000-hours
+  // Standard plan: use explicit std exclusions when available, else fallback to nhcesUnder1000hrs
   const allCensusNhces = [...census.eligibleNhces, ...census.excludedNhces];
   if (allCensusNhces.length > 0) {
-    // Sum individual credits: each employee's credit = min(phase * round(pay * rate%), $1,000)
-    // Exclude NHCEs earning > $100k (not credit-eligible)
-    // Sort by pay descending so we can skip the under-1000-hours employees (assumed lowest-paid)
-    const nhcesByPay = allCensusNhces.filter(e => e.pay < 100000).sort((a,b) => b.pay - a.pay);
-    // Standard plan excludes nhcesUnder1000hrs from participation
-    const stdCreditCount = Math.max(0, nhcesByPay.length - (input.nhcesUnder1000hrs || 0));
+    // Determine which NHCEs are in the standard plan
+    let stdCreditNhces;
+    if (hasExplicitStdExcl) {
+      // User-controlled: use stdEligibleNhces directly
+      stdCreditNhces = census.stdEligibleNhces.filter(e => e.pay < 100000);
+    } else {
+      // Fallback: all NHCEs minus under-1000-hours count (sorted by pay desc, skip lowest)
+      const nhcesByPay = allCensusNhces.filter(e => e.pay < 100000).sort((a,b) => b.pay - a.pay);
+      const stdCreditCount = Math.max(0, nhcesByPay.length - (input.nhcesUnder1000hrs || 0));
+      stdCreditNhces = nhcesByPay.slice(0, stdCreditCount);
+    }
     let individualSum = 0;
-    for (let i = 0; i < stdCreditCount; i++) {
-      const contrib = Math.round(nhcesByPay[i].pay * stdRate / 100);
+    for (const emp of stdCreditNhces) {
+      const contrib = Math.round(emp.pay * stdRate / 100);
       individualSum += Math.min(CREDIT_PHASE[secureYear - 1] * contrib, 1000);
     }
     stdSecureCredits = Math.round(individualSum * employerSizeFactor);
@@ -1682,22 +1706,28 @@ function verifyIndependent(input) {
   const ssWageBase = lim.ssWageBase || 176100;
   const ownerW2 = input.ownerSalary || 0;
   const u1k = input.nhcesUnder1000hrs || 0;
-  const stdNhceCount = (input.nhceCount||0) - u1k;
   const ownersComp = oCmp + addl.reduce((s,c)=>s+c,0);
 
   // Build census to get individual data
   const cen = buildFullCensus(input);
   const hasCensus = cen.eligibleNhces.length > 0 || cen.excludedNhces.length > 0;
+  const stdNhceCount = (cen.stdExcludedNhces && cen.stdExcludedNhces.length > 0)
+    ? cen.stdEligibleNhces.length : ((input.nhceCount||0) - u1k);
 
   // Total comp: use census when available
+  const hasExplicitStdExcl = cen.stdExcludedNhces && cen.stdExcludedNhces.length > 0;
   let nhceTotalComp, hceTotalComp, stdNhceTotalComp;
   if (hasCensus) {
     nhceTotalComp = cen.eligibleNhces.reduce((s, e) => s + e.pay, 0);
     hceTotalComp = cen.nonOwnerHces.reduce((s, e) => s + e.pay, 0);
-    const allNhces = [...cen.eligibleNhces, ...cen.excludedNhces];
-    const sorted = allNhces.slice().sort((a, b) => b.pay - a.pay);
-    const stdCount = Math.max(0, sorted.length - u1k);
-    stdNhceTotalComp = input.stdNhceTotalComp || sorted.slice(0, stdCount).reduce((s, e) => s + e.pay, 0);
+    if (hasExplicitStdExcl) {
+      stdNhceTotalComp = cen.stdEligibleNhces.reduce((s, e) => s + e.pay, 0);
+    } else {
+      const allNhces = [...cen.eligibleNhces, ...cen.excludedNhces];
+      const sorted = allNhces.slice().sort((a, b) => b.pay - a.pay);
+      const stdCount = Math.max(0, sorted.length - u1k);
+      stdNhceTotalComp = input.stdNhceTotalComp || sorted.slice(0, stdCount).reduce((s, e) => s + e.pay, 0);
+    }
   } else {
     nhceTotalComp = nCnt * nPay;
     hceTotalComp = hCnt * hPay;
@@ -2063,7 +2093,7 @@ function computeWhatIfScenarios(baseInput) {
 const TEST_SCENARIOS = [
   { name: 'AlphaGraphics (Perry)', chip: 'AlphaGraphics', client: true, input: { bizName:'AlphaGraphics', firstName:'Sherry', lastName:'Perry', ownerAge:68, ownerSalary:274345, ownerK1:0, nhceCount:27, nhceAvgPay:69381, nhceAvgAge:45, nhcePayLow:2252, nhcePayHigh:116636, hceNonOwnerCount:0, hceAvgPay:0, hceAvgAge:0, hceAllocRate:0, nhceOver100k:0, secureYear:2, forfeitures:0, year:'2025', taxRate:0.30, entityType:'S-Corp', stdRate:5, deferralEligMonths:12, psEligMonths:3, excludableNhces:11, nhcesUnder1000hrs:6, stdNhceTotalComp:1358859, additionalOwners:[{name:'Spencer Perry',age:29,salary:182020,k1:0,receivesPS:true,allocRate:1.0}] },
     censusText: 'Darlene Scruggs\t09/01/1971\t83029.08\nCindy Aquila\t07/18/1968\t30950.41\nTammy Coil\t05/15/1965\t116636.23\nChristopher May\t04/16/1967\t108618.41\nJason Jones\t07/23/1978\t54053.42\nDerrick Rose\t07/26/1982\t11910.00\nMartha Rangel\t05/25/1999\t2252.25\nKevin Evans\t09/15/1986\t68581.80\nRoman De Leon\t10/02/1975\t73699.38\nEsteban Gomez\t04/30/1985\t96122.92\nElizabeth Castro\t08/16/1998\t53220.18\nScot Crispin\t07/17/1978\t58762.23\nKyle Foster\t01/13/1987\t53450.83\nTerri Ferguson\t04/02/1960\t15655.62\nRafael Garcia\t06/22/1970\t69210.35\nNicholas Crowder\t11/08/2000\t6601.01\nNancy Calderon Reyes\t09/27/1996\t55805.33\nTinisha Howard\t07/26/1980\t4268.00\nAnndrea Benavidez\t08/13/1993\t59099.03\nPete Mendoza\t03/19/1986\t67093.55\nKatrina Hilker\t08/27/1970\t61761.93\nTheresa Beatty\t07/16/1967\t63990.56\nAmber Batchelder\t07/17/1988\t54575.00\nJustin Sullivan\t12/30/1993\t50176.49\nZackery Daughtrey\t07/05/1992\t48894.53\nAldo Morales\t12/03/1978\t31127.80\nShaun Pamplin\t12/16/1966\t33346.07',
-    excludedIndices: [5, 6, 13, 15, 17, 21, 22, 23, 24, 25, 26], departedIndices: [], overrideForfeitures: 0 },
+    excludedIndices: [5, 6, 13, 15, 17, 21, 22, 23, 24, 25, 26], stdExcludedIndices: [5, 6, 13, 15, 17, 25], departedIndices: [], overrideForfeitures: 0 },
   { name: 'Team North Texas (Council)', chip: 'Team North TX', client: true, input: { bizName:'Team North Texas', firstName:'Nathan', lastName:'Council', ownerAge:40, ownerSalary:54999.88, ownerK1:0, nhceCount:44, nhceAvgPay:48193, nhceAvgAge:39, nhcePayLow:7329, nhcePayHigh:120438, hceNonOwnerCount:0, hceAvgPay:0, nhceOver100k:1, secureYear:2, forfeitures:9000, year:'2025', taxRate:0.30, entityType:'S-Corp', stdRate:2, planDesignMode:'gateway', deferralEligMonths:12, psEligMonths:3, excludableNhces:0, turnoverPct:0, nhceFlatAmt:1000, additionalOwners:[{name:'Joseph Armstrong',age:39,salary:54999.88,k1:0}] },
     censusText: 'Robert Armstrong\t10/21/1993\t120438.18\nJacob Armstrong\t04/05/1995\t87704.40\nCD Warren\t11/24/1986\t70944.69\nGerald Hearn\t01/26/1977\t67950.15\nJeb Armstrong\t07/02/1997\t60798.12\nErik Velazquez\t02/02/1996\t68803.76\nIsmael Hernandez\t09/14/1985\t92738.32\nEdwin Hernandez\t12/03/1987\t71305.75\nMichael Pelton\t07/20/1973\t15315.64\nJustin Coleman\t01/06/1982\t103084.94\nRichard Samples\t09/11/1979\t73495.28\nJustin Coleman\t01/01/2003\t21600.00\nRonald George\t07/31/1968\t65298.43\nKevin Welk\t10/23/1970\t49170.13\nJavier Dominguez\t11/30/1988\t28120.00\nCharles Taylor\t05/30/1979\t59798.77\nLuke Palmer\t08/03/1996\t38883.56\nJimmie Hass\t01/30/1966\t52580.00\nJonathan Lopez\t10/12/1992\t40147.75\nDylan Merriman\t09/09/2003\t36545.25\nJhony Mora Mora\t01/15/1993\t10269.24\nBrian Ashley\t05/20/1975\t68894.21\nBrandy Goddard\t02/14/1978\t14038.50\nDaniel Husted\t06/25/1990\t9318.75\nMakenzie Armstrong\t09/27/1992\t27624.64\nCody Gaines\t03/12/1995\t50273.11\nKevin Peterson\t10/20/1976\t57187.19\nMichael Morgan\t05/20/1971\t37743.75\nKirby Price\t03/20/1988\t63554.24\nMichael Arredondo\t11/01/1992\t20918.00\nRonnie George\t02/06/1948\t37378.75\nMary Rountree\t12/25/1964\t46849.85\nAngie Scott\t11/06/1981\t43168.87\nTrevor McLemore\t08/16/1990\t99890.00\nMichael Gutierrez\t07/10/1999\t28435.00\nMicah Anderson\t03/14/1983\t69180.11\nCaleb Dunson\t10/17/1997\t45072.84\nSamuel Selby\t09/26/2000\t43343.50\nMalik Simington\t05/24/2003\t33915.00\nFranklin Pierce\t11/09/1985\t30937.40\nGerald Dillon\t07/07/1959\t29883.63\nDarryl Updegraff\t10/28/1998\t10580.50\nCasey Moore\t01/07/1992\t9974.68\nRiley Pate\t07/18/1999\t7328.62',
     departedIndices: [12,14,20,22,23,25,29,34,36,37,38] },
@@ -2495,6 +2525,8 @@ function loadScenario(idx) {
   const s = scenario.input;
   parsedCensusEmployees = null; // Reset census data
   departedEmployeeIndices = new Set(); // Clear departures on scenario load
+  excludedEmployeeIndices = new Set(); // Clear exclusions on scenario load
+  stdExcludedEmployeeIndices = new Set();
   currentNhcesUnder1000hrs = s.nhcesUnder1000hrs || 0;
   currentStdNhceTotalComp = s.stdNhceTotalComp || null;
   lastRenderedCensus = null;
@@ -2573,7 +2605,11 @@ function loadScenario(idx) {
     if (scenario.excludedIndices && scenario.excludedIndices.length > 0) {
       excludedEmployeeIndices = new Set(scenario.excludedIndices);
       document.getElementById('excludableNhces').value = excludedEmployeeIndices.size;
-      _lastCensusKey = null; _cachedCensus = null; // Invalidate cache so buildFullCensus picks up new exclusions
+      _lastCensusKey = null; _cachedCensus = null;
+    }
+    if (scenario.stdExcludedIndices && scenario.stdExcludedIndices.length > 0) {
+      stdExcludedEmployeeIndices = new Set(scenario.stdExcludedIndices);
+      _lastCensusKey = null; _cachedCensus = null;
     }
     if (scenario.departedIndices && scenario.departedIndices.length > 0) {
       departedEmployeeIndices = new Set(scenario.departedIndices);
@@ -2652,6 +2688,7 @@ function exportJSON() {
   if (censusVal) payload.censusText = censusVal;
   if (departedEmployeeIndices.size > 0) payload.departedIndices = [...departedEmployeeIndices];
   if (excludedEmployeeIndices.size > 0) payload.excludedIndices = [...excludedEmployeeIndices];
+  if (stdExcludedEmployeeIndices.size > 0) payload.stdExcludedIndices = [...stdExcludedEmployeeIndices];
   if (parsedCensusCapabilities) payload.censusCapabilities = parsedCensusCapabilities;
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
@@ -2669,6 +2706,8 @@ function doImport() {
     // ── Step 1: Reset census state ──
     parsedCensusEmployees = null;
     departedEmployeeIndices = new Set();
+    excludedEmployeeIndices = new Set();
+    stdExcludedEmployeeIndices = new Set();
     lastRenderedCensus = null;
     document.getElementById('censusPaste').value = '';
     document.getElementById('censusDetected').style.display = 'none';
@@ -2725,6 +2764,10 @@ function doImport() {
         document.getElementById('excludableNhces').value = excludedEmployeeIndices.size;
         _lastCensusKey = null; _cachedCensus = null;
       }
+      if (input.stdExcludedIndices && input.stdExcludedIndices.length > 0) {
+        stdExcludedEmployeeIndices = new Set(input.stdExcludedIndices);
+        _lastCensusKey = null; _cachedCensus = null;
+      }
 
       // Handle departed employee indices from JSON
       if (input.departedIndices && input.departedIndices.length > 0) {
@@ -2779,6 +2822,7 @@ function toAdvisorPanelJSON(d) {
     censusText: d.censusText || d.census?.text,
     departedIndices: d.departedIndices || d.census?.departedIndices,
     excludedIndices: d.excludedIndices || d.census?.excludedIndices,
+    stdExcludedIndices: d.stdExcludedIndices || d.census?.stdExcludedIndices,
     overrideForfeitures: d.overrideForfeitures ?? d.census?.overrideForfeitures,
   };
   // Clean undefined values
@@ -2959,18 +3003,23 @@ function renderDepartureTable(computed) {
   const employees = [];
   const allNhces = [...census.eligibleNhces, ...census.excludedNhces];
 
+  const stdRate = designParams.stdRate || 3;
   allNhces.forEach((emp, idx) => {
-    const isExcluded = emp.excluded;
-    const psAlloc = isExcluded ? 0 : (isGateway ? nhceFlatAmt : Math.round(emp.pay * nhceRate / 100));
+    const isOptExcluded = emp.excluded;       // excluded from optimized plan
+    const isStdExcluded = emp.stdExcluded;    // excluded from standard plan
+    const optAlloc = isOptExcluded ? 0 : (isGateway ? nhceFlatAmt : Math.round(emp.pay * nhceRate / 100));
+    const stdAlloc = isStdExcluded ? 0 : Math.round(emp.pay * stdRate / 100);
     employees.push({
       index: idx,
       name: emp.name || `Employee ${idx + 1}`,
       type: 'NHCE',
       age: emp.age,
       pay: emp.pay,
-      psAlloc,
+      psAlloc: optAlloc,
+      stdAlloc,
       synthetic: !!emp.synthetic,
-      excluded: isExcluded
+      excluded: isOptExcluded,
+      stdExcluded: isStdExcluded
     });
   });
 
@@ -3040,26 +3089,27 @@ function renderDepartureTable(computed) {
 
   // Build table HTML
   let html = '<div class="departure-scroll"><table class="departure-table">';
-  html += '<thead><tr><th style="width:30px;">Excl?</th><th style="width:30px;">Left?</th><th>Employee</th><th>Type</th><th style="text-align:right;">Age</th><th style="text-align:right;">Pay</th><th style="text-align:right;">PS Alloc</th></tr></thead><tbody>';
+  html += '<thead><tr><th style="width:28px;" title="Exclude from Standard plan">Std</th><th style="width:28px;" title="Exclude from Optimized plan">Opt</th><th style="width:28px;">Left?</th><th>Employee</th><th style="text-align:right;">Pay</th><th style="text-align:right;">Std PS</th><th style="text-align:right;">Opt PS</th></tr></thead><tbody>';
 
   employees.forEach(emp => {
     const isDeparted = departedEmployeeIndices.has(emp.index);
-    const isExcluded = emp.excluded;
-    const rowClass = isDeparted ? 'departed-row' : isExcluded ? 'excluded-row' : '';
-    const typeBadge = isExcluded ? 'excluded' : emp.type.toLowerCase();
-    const typeLabel = isExcluded ? 'EXCL' : emp.type;
-    const depCheckDisabled = isExcluded ? 'disabled' : '';
-    const depCheckTitle = isExcluded ? 'Excluded employees have no PS allocation' : 'Mark as departed (unvested — forfeits 100%)';
-    const exclCheckTitle = 'Exclude from profit sharing (not eligible)';
+    const isStdExcl = !!emp.stdExcluded;
+    const isOptExcl = !!emp.excluded;
+    // Row styling: std-excluded (greyed out) > opt-excluded (amber) > departed (red) > normal
+    const rowClass = isStdExcl ? 'std-excluded-row' : isOptExcl ? 'excluded-row' : isDeparted ? 'departed-row' : '';
+    const depCheckDisabled = (isStdExcl && isOptExcl) ? 'disabled' : '';
+    const depCheckTitle = (isStdExcl && isOptExcl) ? 'Excluded from both plans' : 'Mark as departed (unvested — forfeits 100%)';
 
     html += `<tr class="${rowClass}">`;
-    html += `<td><input type="checkbox" class="excl-check" data-emp-idx="${emp.index}" ${isExcluded ? 'checked' : ''} title="${exclCheckTitle}" onchange="toggleExclusion(${emp.index}, this.checked)"></td>`;
+    // Std exclusion: checked = NOT in standard plan
+    html += `<td><input type="checkbox" class="std-excl-check" data-emp-idx="${emp.index}" ${isStdExcl ? '' : 'checked'} title="Include in Standard plan" onchange="toggleStdExclusion(${emp.index}, !this.checked)"></td>`;
+    // Opt exclusion: checked = NOT in optimized plan
+    html += `<td><input type="checkbox" class="excl-check" data-emp-idx="${emp.index}" ${isOptExcl ? '' : 'checked'} title="Include in Optimized plan" onchange="toggleExclusion(${emp.index}, !this.checked)"></td>`;
     html += `<td><input type="checkbox" class="dep-check" data-emp-idx="${emp.index}" ${isDeparted ? 'checked' : ''} ${depCheckDisabled} title="${depCheckTitle}" onchange="toggleDeparture(${emp.index}, this.checked)"></td>`;
     html += `<td>${emp.name}</td>`;
-    html += `<td><span class="emp-type-badge ${typeBadge}">${typeLabel}</span></td>`;
-    html += `<td style="text-align:right;">${emp.age}</td>`;
     html += `<td style="text-align:right;">${fmt(emp.pay)}</td>`;
-    html += `<td style="text-align:right;font-weight:600;">${emp.psAlloc > 0 ? fmt(emp.psAlloc) : '—'}</td>`;
+    html += `<td style="text-align:right;${isStdExcl ? 'color:#ccc;' : 'font-weight:600;'}">${isStdExcl ? '—' : (emp.stdAlloc > 0 ? fmt(emp.stdAlloc) : '—')}</td>`;
+    html += `<td style="text-align:right;${isOptExcl ? 'color:#ccc;' : 'font-weight:600;'}">${isOptExcl ? '—' : (emp.psAlloc > 0 ? fmt(emp.psAlloc) : '—')}</td>`;
     html += '</tr>';
   });
 
@@ -3090,33 +3140,48 @@ function toggleDeparture(empIndex, isDeparted) {
 }
 
 /**
- * Toggle an employee's exclusion status (not eligible for profit sharing)
+ * Toggle an employee's exclusion from the optimized plan
  */
 function toggleExclusion(empIndex, isExcluded) {
-  _lastCensusKey = null; _cachedCensus = null; // Invalidate census cache
+  _lastCensusKey = null; _cachedCensus = null;
   if (isExcluded) {
     excludedEmployeeIndices.add(empIndex);
-    // If employee was departed, remove from departed (can't depart if excluded)
     departedEmployeeIndices.delete(empIndex);
   } else {
     excludedEmployeeIndices.delete(empIndex);
   }
-  // Update the excludableNhces count to match
   document.getElementById('excludableNhces').value = excludedEmployeeIndices.size;
-  // Recalculate
+  recalcForfeitures();
+  recalc();
+}
+
+/**
+ * Toggle an employee's exclusion from the standard plan.
+ * If excluded from standard, auto-exclude from optimized too.
+ */
+function toggleStdExclusion(empIndex, isExcluded) {
+  _lastCensusKey = null; _cachedCensus = null;
+  if (isExcluded) {
+    stdExcludedEmployeeIndices.add(empIndex);
+    // Also exclude from optimized (can't be in opt if not in std)
+    excludedEmployeeIndices.add(empIndex);
+    departedEmployeeIndices.delete(empIndex);
+  } else {
+    stdExcludedEmployeeIndices.delete(empIndex);
+    // Don't auto-remove from optimized exclusion — user controls that separately
+  }
+  document.getElementById('excludableNhces').value = excludedEmployeeIndices.size;
   recalcForfeitures();
   recalc();
 }
 
 /**
  * Handle manual change to excludableNhces number field.
- * In non-census mode, this is the primary control.
- * In census mode, the checkboxes are primary — warn user.
+ * In census mode with checkboxes, the checkboxes take precedence.
  */
 function onExcludableChange() {
   const isCensusMode = parsedCensusEmployees && parsedCensusEmployees.length > 0;
   if (isCensusMode && excludedEmployeeIndices.size > 0) {
-    // In census mode, don't let the number field override checkboxes
     document.getElementById('excludableNhces').value = excludedEmployeeIndices.size;
   }
   _lastCensusKey = null; _cachedCensus = null;
@@ -3133,10 +3198,13 @@ function calculateRealForfeitures(stdRate) {
   let stdTotal = 0, optTotal = 0;
   const rate = stdRate || 3;
   lastRenderedCensus.forEach(emp => {
-    if (departedEmployeeIndices.has(emp.index) && !emp.excluded) {
-      // Standard plan: NOT safe harbor — full stdRate % of pay is forfeitable
+    if (!departedEmployeeIndices.has(emp.index)) return;
+    // Standard forfeiture: only if employee is in the standard plan
+    if (!emp.stdExcluded) {
       stdTotal += Math.round(emp.pay * rate / 100);
-      // Optimized plan: NOT safe harbor — full PS allocation forfeited
+    }
+    // Optimized forfeiture: only if employee is in the optimized plan
+    if (!emp.excluded) {
       optTotal += emp.psAlloc;
     }
   });
@@ -3193,6 +3261,7 @@ function parseCensusData(raw) {
   }
   departedEmployeeIndices = new Set();
   excludedEmployeeIndices = new Set();
+  stdExcludedEmployeeIndices = new Set();
   lastRenderedCensus = null;
   _lastCensusKey = null; _cachedCensus = null; // Invalidate census cache on new data
   if (!raw || raw.trim().length < 3) { detected.style.display = 'none'; parsedCensusEmployees = null; return; }
@@ -4213,6 +4282,7 @@ function runTestSuite() {
       name: 'C2. AlphaGraphics — 5% std with exclusions + under-1000-hrs (census)',
       censusText: 'Darlene Scruggs\t09/01/1971\t83029.08\nCindy Aquila\t07/18/1968\t30950.41\nTammy Coil\t05/15/1965\t116636.23\nChristopher May\t04/16/1967\t108618.41\nJason Jones\t07/23/1978\t54053.42\nDerrick Rose\t07/26/1982\t11910.00\nMartha Rangel\t05/25/1999\t2252.25\nKevin Evans\t09/15/1986\t68581.80\nRoman De Leon\t10/02/1975\t73699.38\nEsteban Gomez\t04/30/1985\t96122.92\nElizabeth Castro\t08/16/1998\t53220.18\nScot Crispin\t07/17/1978\t58762.23\nKyle Foster\t01/13/1987\t53450.83\nTerri Ferguson\t04/02/1960\t15655.62\nRafael Garcia\t06/22/1970\t69210.35\nNicholas Crowder\t11/08/2000\t6601.01\nNancy Calderon Reyes\t09/27/1996\t55805.33\nTinisha Howard\t07/26/1980\t4268.00\nAnndrea Benavidez\t08/13/1993\t59099.03\nPete Mendoza\t03/19/1986\t67093.55\nKatrina Hilker\t08/27/1970\t61761.93\nTheresa Beatty\t07/16/1967\t63990.56\nAmber Batchelder\t07/17/1988\t54575.00\nJustin Sullivan\t12/30/1993\t50176.49\nZackery Daughtrey\t07/05/1992\t48894.53\nAldo Morales\t12/03/1978\t31127.80\nShaun Pamplin\t12/16/1966\t33346.07',
       excludedIndices: [5, 6, 13, 15, 17, 21, 22, 23, 24, 25, 26],
+      stdExcludedIndices: [5, 6, 13, 15, 17, 25],
       input: { bizName:'AlphaGraphics', firstName:'Sherry', lastName:'Perry', ownerAge:68, ownerSalary:274345, ownerK1:0, nhceCount:27, nhceAvgPay:69381, nhceAvgAge:45, nhcePayLow:2252, nhcePayHigh:116636, hceNonOwnerCount:0, hceAvgPay:0, hceAvgAge:0, hceAllocRate:0, nhceOver100k:0, secureYear:2, forfeitures:0, year:'2025', taxRate:0.30, entityType:'S-Corp', stdRate:5, deferralEligMonths:12, psEligMonths:3, excludableNhces:11, nhcesUnder1000hrs:6, stdNhceTotalComp:1358859, additionalOwners:[{name:'Spencer Perry',age:29,salary:182020,k1:0,receivesPS:true,allocRate:1.0}] },
       validate: function(c, emps, issues) {
         // Verify correct employees are excluded (by name)
@@ -4316,6 +4386,11 @@ function runTestSuite() {
       } else {
         excludedEmployeeIndices = new Set();
       }
+      if (ct.stdExcludedIndices && ct.stdExcludedIndices.length > 0) {
+        stdExcludedEmployeeIndices = new Set(ct.stdExcludedIndices);
+      } else {
+        stdExcludedEmployeeIndices = new Set();
+      }
       _lastCensusKey = null; _cachedCensus = null;
       const c = independentCompute(ct.input);
       const ctIssues = [];
@@ -4366,6 +4441,7 @@ function runTestSuite() {
     // Reset census and exclusions after each test
     parsedCensusEmployees = null;
     excludedEmployeeIndices = new Set();
+    stdExcludedEmployeeIndices = new Set();
     _lastCensusKey = null; _cachedCensus = null;
     console.log('');
   }
