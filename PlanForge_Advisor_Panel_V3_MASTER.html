@@ -4855,6 +4855,7 @@ const META = {
   ownerComp: ${c.ownerComp},
   ownerAge: ${c.ownerAge},
   firstName: ${JSON.stringify(first)},
+  lastName: ${JSON.stringify(c.lastName || '')},
   additionalOwners: ${JSON.stringify((c.additionalOwners||[]).map(ao => ({name: ao.name, comp: ao.comp})))},
   totalComp: ${c.totalComp},
   isAnonymous: false,
@@ -5097,9 +5098,17 @@ function copyAnonymousEmbedCode() {
     html = html.split('Client').join(anonBizName);
   }
 
-  // Replace primary owner name with "Business Owner"
+  // Replace full owner name first (e.g. "John Smith" → "Business Owner"), then first name alone
+  if (META.firstName && META.lastName && META.firstName !== 'Owner') {
+    var fullName = META.firstName + ' ' + META.lastName;
+    html = html.split(fullName).join('Business Owner');
+  }
   if (META.firstName && META.firstName !== 'Owner') {
     html = html.split(META.firstName).join('Business Owner');
+  }
+  // Replace any remaining last name occurrences
+  if (META.lastName && META.lastName.length > 2) {
+    html = html.split(META.lastName).join('');
   }
 
   // Replace additional owner names with "Business Owner 2", "Business Owner 3", etc.
