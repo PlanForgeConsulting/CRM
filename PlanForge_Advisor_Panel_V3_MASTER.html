@@ -296,6 +296,7 @@
   </div>
   <div style="display:flex;gap:8px;">
     <button class="btn btn-illustration" onclick="generateIllustrationPDF()">📄 Generate Illustration</button>
+    <button class="btn" style="background:#6c757d;color:#fff;font-weight:700;letter-spacing:.5px;" onclick="generateIllustrationPDF(true)">📄 Anonymous PDF</button>
     <button class="btn" style="background:linear-gradient(135deg,#2E7D32 0%,#388E3C 100%);color:#fff;font-weight:700;letter-spacing:.5px;box-shadow:0 2px 8px rgba(46,125,50,.35);" onclick="generateParticipantView()">🖥 Participant View</button>
     <button class="btn btn-outline" style="color:#fff;border-color:rgba(255,255,255,.3);" onclick="exportJSON()">⬇ Export JSON</button>
     <button class="btn btn-outline" style="color:#fff;border-color:rgba(255,255,255,.3);" onclick="showImport()">⬆ Import JSON</button>
@@ -3564,7 +3565,7 @@ function toggleK1() {
 //  PDF ILLUSTRATION GENERATOR (html2pdf.js)
 // ══════════════════════════════════════════════════════════════
 
-function generateIllustrationPDF() {
+function generateIllustrationPDF(anonymous = false) {
   if (!currentComputed) { recalc(); }
   const c = currentComputed;
   if (!c) { alert('Please enter data and recalculate first.'); return; }
@@ -3613,8 +3614,20 @@ function generateIllustrationPDF() {
   const curNhce = c.optNhceRate;
   const curIdx = whatIf.findIndex(s => Math.abs(s.nhceRate - curNhce) < 0.13);
 
-  const name = [c.firstName, c.lastName].filter(Boolean).join(' ') || 'Owner';
-  const first = c.firstName || 'Owner';
+  // ── Identity fields — anonymized when generating anonymous PDF ──
+  let bizDisplayName, name, first, addlOwnerNames;
+  if (anonymous) {
+    const bizNum = Math.floor(Math.random() * 250) + 1;
+    bizDisplayName = 'Real Business #' + bizNum;
+    name = 'Business Owner';
+    first = 'Business Owner';
+    addlOwnerNames = (c.additionalOwners || []).map((ao, i) => 'Business Owner ' + (i + 2));
+  } else {
+    bizDisplayName = c.bizName || 'Client';
+    name = [c.firstName, c.lastName].filter(Boolean).join(' ') || 'Owner';
+    first = c.firstName || 'Owner';
+    addlOwnerNames = (c.additionalOwners || []).map(ao => ao.name);
+  }
   const nonOwn = c.nhceCountEligible + (c.hceNonOwnerCount || 0);
   const elig = nonOwn + 1 + (c.additionalOwners || []).length;
   const tp = Math.round(c.taxRate * 100);
@@ -3685,7 +3698,7 @@ function generateIllustrationPDF() {
       <div style="color:#fff;font-size:24px;font-weight:700;margin-top:3px;font-family:Georgia,serif;">Profit Share Illustration</div>
     </div>
     <div style="text-align:right;color:#fff;">
-      <div style="font-size:19px;font-weight:700;font-family:Georgia,serif;">${c.bizName || 'Client'}</div>
+      <div style="font-size:19px;font-weight:700;font-family:Georgia,serif;">${bizDisplayName}</div>
       <div style="font-size:11px;opacity:0.8;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">${c.year} Plan Year</div>
     </div>
   </div>
@@ -3695,11 +3708,11 @@ function generateIllustrationPDF() {
     <!-- CLIENT INFO BAR -->
     <div style="border-left:4px solid ${GOLD};background:#f8f9fa;padding:7px 18px;margin:10px 0 8px;display:flex;justify-content:space-between;align-items:center;">
       <div>
-        <div style="font-weight:700;font-size:12px;color:#222;">Owners: ${name} (age ${c.ownerAge})${(c.additionalOwners||[]).map(ao => `, ${ao.name} (age ${ao.age})`).join('')}</div>
+        <div style="font-weight:700;font-size:12px;color:#222;">Owners: ${name} (age ${c.ownerAge})${(c.additionalOwners||[]).map((ao, i) => `, ${addlOwnerNames[i]} (age ${ao.age})`).join('')}</div>
         <div style="color:#777;font-size:10.5px;margin-top:1px;">${elig} eligible employees &nbsp;|&nbsp; ${nonOwn} non-owner employees</div>
       </div>
       <div style="text-align:right;font-size:11px;color:#777;">
-        <div>${first}: <strong style="color:#222;">${$(c.ownerComp)}</strong>${(c.additionalOwners||[]).map(ao => ` &nbsp;|&nbsp; ${ao.name}: <strong style="color:#222;">${$(ao.comp)}</strong>`).join('')}</div>
+        <div>${anonymous ? 'Gross Salaries: <strong style="color:#222;">' + $(c.totalComp) + '</strong>' : first + ': <strong style="color:#222;">' + $(c.ownerComp) + '</strong>' + (c.additionalOwners||[]).map(ao => ' &nbsp;|&nbsp; ' + ao.name + ': <strong style="color:#222;">' + $(ao.comp) + '</strong>').join('')}</div>
         <div style="font-size:9px;margin-top:2px;color:#999;">Based on: <strong style="color:${lastRenderedCensus ? GREEN : GOLD};">${dataSource}</strong></div>
       </div>
     </div>
@@ -3807,7 +3820,7 @@ function generateIllustrationPDF() {
   <div style="background:${NAVY};padding:12px 44px 9px;display:flex;justify-content:space-between;align-items:flex-end;">
     <div>
       <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:${GOLD};font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">PlanForge Consulting</div>
-      <div style="color:#fff;font-size:20px;font-weight:700;margin-top:2px;font-family:Georgia,serif;">${c.bizName || 'Client'} — Plan Details</div>
+      <div style="color:#fff;font-size:20px;font-weight:700;margin-top:2px;font-family:Georgia,serif;">${bizDisplayName} — Plan Details</div>
     </div>
     <div style="text-align:right;color:#fff;font-size:11px;opacity:0.8;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">${c.year} Plan Year</div>
   </div>
@@ -3826,7 +3839,7 @@ function generateIllustrationPDF() {
     <div style="margin-bottom:8px;">
       <div style="font-weight:700;font-size:11px;color:#222;margin-bottom:2px;">PlanForge Optimized</div>
       <div style="font-size:10px;color:#555;margin-left:10px;border-left:3px solid #ddd;padding:3px 10px;line-height:1.35;">
-        A voluntary cross-tested profit sharing plan. ${first} receives up to the IRS maximum (${$(c.limits.additions415c)} in ${c.year}) while employees receive a competitive ${Math.round(c.optNhceRate)}% contribution. The owner's retained share goes directly into their retirement account — it is not a business expense.
+        A voluntary cross-tested profit sharing plan. ${anonymous ? 'The owner' : first} receives up to the IRS maximum (${$(c.limits.additions415c)} in ${c.year}) while employees receive a competitive ${Math.round(c.optNhceRate)}% contribution. The owner's retained share goes directly into their retirement account — it is not a business expense.
       </div>
     </div>
 
@@ -3886,7 +3899,7 @@ function generateIllustrationPDF() {
     </div>
 
     <div style="background:#fffdf7;border:1px solid ${LGOLD};border-radius:5px;text-align:center;padding:5px 12px;font-size:10.5px;margin-bottom:8px;line-height:1.3;">
-      With PlanForge Optimized, <strong>${first}</strong> receives <strong>${$(c.optOwnersRetained)}</strong> — that's <strong>${$(ownerDiff)}</strong> more than a typical plan, deposited directly into their retirement account.
+      With PlanForge Optimized, <strong>${anonymous ? 'the owner' : first}</strong> receives <strong>${$(c.optOwnersRetained)}</strong> — that's <strong>${$(ownerDiff)}</strong> more than a typical plan, deposited directly into their retirement account.
     </div>
 
     <!-- WHAT IF -->
@@ -3949,7 +3962,7 @@ function generateIllustrationPDF() {
   document.body.appendChild(container);
 
   const element = container.querySelector('#pf-illus');
-  const filename = `PlanForge_Illustration_${(c.bizName || 'Client').replace(/\s+/g, '_')}_${c.year}.pdf`;
+  const filename = `PlanForge_Illustration_${anonymous ? bizDisplayName.replace(/\s+/g, '_') : (c.bizName || 'Client').replace(/\s+/g, '_')}_${c.year}.pdf`;
 
   const opt = {
     margin:       0,
