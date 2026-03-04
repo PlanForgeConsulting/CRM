@@ -4708,6 +4708,7 @@ function generateParticipantView() {
       <div style="font-size:22px;font-weight:700;">${c.bizName || 'Client'}</div>
       <div class="sans" style="font-size:12px;opacity:0.8;">${c.year} Plan Year</div>
       <button id="copyEmbedBtn" onclick="copyEmbedCode()" class="sans" style="margin-top:6px;background:var(--gold);color:#fff;border:none;padding:5px 14px;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.5px;">Copy Embed HTML</button>
+      <button id="copyAnonBtn" onclick="copyAnonymousEmbedCode()" class="sans" style="margin-top:6px;margin-left:6px;background:#6c757d;color:#fff;border:none;padding:5px 14px;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.5px;">Copy Anonymous HTML</button>
     </div>
   </div>
 
@@ -5044,6 +5045,74 @@ function copyEmbedCode() {
       w.document.close();
       btn.textContent = 'Opened in new tab';
       setTimeout(function(){ btn.textContent = 'Copy Embed HTML'; }, 2000);
+    }
+    document.body.removeChild(ta);
+  }
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(html).then(onSuccess).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+// Copy anonymous embed code — strips names and business info for marketing use
+function copyAnonymousEmbedCode() {
+  const btn = document.getElementById('copyAnonBtn');
+  const embedBtn = document.getElementById('copyEmbedBtn');
+  embedBtn.style.display = 'none';
+  btn.style.display = 'none';
+  let html = '<!DOCTYPE html>\\n<html>' + document.documentElement.innerHTML + '</html>';
+  embedBtn.style.display = '';
+  btn.style.display = '';
+
+  // Generate random business number
+  const bizNum = Math.floor(Math.random() * 250) + 1;
+  const anonBizName = 'Real Business #' + bizNum;
+
+  // Replace business name everywhere
+  if (META.bizName && META.bizName !== 'Client') {
+    html = html.split(META.bizName).join(anonBizName);
+  } else {
+    html = html.split('Client').join(anonBizName);
+  }
+
+  // Replace primary owner name with "Business Owner"
+  if (META.firstName && META.firstName !== 'Owner') {
+    html = html.split(META.firstName).join('Business Owner');
+  }
+
+  // Replace additional owner names with "Business Owner 2", "Business Owner 3", etc.
+  if (META.additionalOwners && META.additionalOwners.length > 0) {
+    META.additionalOwners.forEach(function(ao, i) {
+      if (ao.name) {
+        html = html.split(ao.name).join('Business Owner ' + (i + 2));
+      }
+    });
+  }
+
+  function onSuccess() {
+    btn.textContent = 'Copied!';
+    btn.style.background = '#2E7D32';
+    setTimeout(function() { btn.textContent = 'Copy Anonymous HTML'; btn.style.background = '#6c757d'; }, 2000);
+  }
+  function fallbackCopy() {
+    var ta = document.createElement('textarea');
+    ta.value = html;
+    ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0;';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try {
+      var ok = document.execCommand('copy');
+      if (ok) { onSuccess(); } else { throw new Error('execCommand failed'); }
+    } catch(e) {
+      var w = window.open('', '_blank');
+      w.document.open();
+      w.document.write('<pre style="white-space:pre-wrap;word-wrap:break-word;font-size:11px;">' + html.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</pre>');
+      w.document.close();
+      btn.textContent = 'Opened in new tab';
+      setTimeout(function(){ btn.textContent = 'Copy Anonymous HTML'; }, 2000);
     }
     document.body.removeChild(ta);
   }
