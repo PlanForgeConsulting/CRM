@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * PlanForge Retirement Plan Illustration — V8 (Parameterized)
+ * PlanForge Profit Share Illustration — V8 (Parameterized)
  * ============================================================
  * Accepts ANY client data via the unified pipeline schema.
  * Preserves ALL V7 layout, typography, and visual design.
@@ -347,7 +347,7 @@ function generate(input, outputPath) {
     size: 'letter',
     margins: { top: 0, bottom: 0, left: 0, right: 0 },
     info: {
-      Title: `PlanForge Retirement Plan Illustration — ${D.company} ${D.year}`,
+      Title: `PlanForge Profit Share Illustration — ${D.company} ${D.year}`,
       Author: 'PlanForge Consulting',
     },
   });
@@ -403,7 +403,7 @@ function generate(input, outputPath) {
     doc.font('Lato-Bold').fontSize(10.5).fillColor(C.gold);
     doc.text('PLANFORGE CONSULTING', M, 14, { lineBreak: false });
     doc.font('Lato-Bold').fontSize(22).fillColor(C.white);
-    doc.text('Retirement Plan Illustration', M, 32, { lineBreak: false });
+    doc.text('Profit Share Illustration', M, 32, { lineBreak: false });
 
     rightText(D.company, M, 18, CW, 'Lato-Bold', 16, C.white);
     rightText(`${D.year} Plan Year`, M, 40, CW, 'Lato', 11, '#94A3B8');
