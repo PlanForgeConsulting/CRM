@@ -4843,6 +4843,8 @@ const META = {
   ownerAge: ${c.ownerAge},
   firstName: ${JSON.stringify(first)},
   additionalOwners: ${JSON.stringify((c.additionalOwners||[]).map(ao => ({name: ao.name, comp: ao.comp})))},
+  totalComp: ${c.totalComp},
+  isAnonymous: false,
   taxPct: ${tp},
   ficaLabel: ${JSON.stringify(ficaLabel)},
   entityType: ${JSON.stringify(c.entityType)},
@@ -4866,9 +4868,14 @@ function renderScenario(idx) {
     pill.classList.toggle('active', i === idx);
   });
 
-  // Owner comp — show each owner individually
-  let compHtml = META.firstName + ': <strong style="color:#222;">' + $(META.ownerComp) + '</strong>';
-  META.additionalOwners.forEach(ao => { compHtml += ' &nbsp;|&nbsp; ' + ao.name + ': <strong style="color:#222;">' + $(ao.comp) + '</strong>'; });
+  // Owner comp — show gross salaries when anonymous, individual owners otherwise
+  let compHtml;
+  if (META.isAnonymous) {
+    compHtml = 'Gross Salaries: <strong style="color:#222;">' + $(META.totalComp) + '</strong>';
+  } else {
+    compHtml = META.firstName + ': <strong style="color:#222;">' + $(META.ownerComp) + '</strong>';
+    META.additionalOwners.forEach(ao => { compHtml += ' &nbsp;|&nbsp; ' + ao.name + ': <strong style="color:#222;">' + $(ao.comp) + '</strong>'; });
+  }
   document.getElementById('ownerCompDisplay').innerHTML = compHtml;
 
   // Standard card
@@ -5090,6 +5097,9 @@ function copyAnonymousEmbedCode() {
       }
     });
   }
+
+  // Set anonymous flag so illustration shows Gross Salaries instead of individual owner compensation
+  html = html.split('isAnonymous: false').join('isAnonymous: true');
 
   function onSuccess() {
     btn.textContent = 'Copied!';
