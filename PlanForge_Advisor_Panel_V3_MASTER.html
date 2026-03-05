@@ -5206,11 +5206,18 @@ function renderLowerSections(s, activeIdx) {
   renderForfeitures(s);
 }
 
+// Wrap standalone HTML in an iframe srcdoc for safe embedding in page builders
+// (Elementor, WordPress, etc.) that strip <script> tags from pasted HTML.
+function wrapInIframe(rawHtml) {
+  var escaped = rawHtml.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+  return '<iframe srcdoc="' + escaped + '" style="width:100%;min-height:900px;border:none;" scrolling="auto" allowfullscreen></iframe>';
+}
+
 // Copy embed code — strips out the copy button itself so pasted HTML is clean
 function copyEmbedCode() {
   const btn = document.getElementById('copyEmbedBtn');
   btn.style.display = 'none';
-  const html = '<!DOCTYPE html>\\n<html>' + document.documentElement.innerHTML + '</html>';
+  const html = wrapInIframe('<!DOCTYPE html>\\n<html>' + document.documentElement.innerHTML + '</html>');
   btn.style.display = '';
 
   // Try modern clipboard API first, then fall back to execCommand
@@ -5274,10 +5281,12 @@ function copyAnonymousEmbedCode() {
   btn.style.display = 'none';
 
   // Capture the clean anonymous HTML
-  let html = '<!DOCTYPE html>\\n<html>' + document.documentElement.innerHTML + '</html>';
+  let rawHtml = '<!DOCTYPE html>\\n<html>' + document.documentElement.innerHTML + '</html>';
 
   // Replace the META definition in the captured script so it stays anonymous when re-opened
-  html = html.replace(/const META = \\{[\\s\\S]*?\\};\\nconst META_ANON/, 'const META = ' + JSON.stringify(META_ANON) + ';\\nconst META_ANON');
+  rawHtml = rawHtml.replace(/const META = \\{[\\s\\S]*?\\};\\nconst META_ANON/, 'const META = ' + JSON.stringify(META_ANON) + ';\\nconst META_ANON');
+
+  let html = wrapInIframe(rawHtml);
 
   // Restore everything back to original
   embedBtn.style.display = '';
