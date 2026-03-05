@@ -4906,7 +4906,7 @@ function generateParticipantView(anonymous = false) {
     <!-- WHAT IF -->
     <div class="section-title" style="font-family:Georgia,serif;">WHAT IF WE ADJUST THE EMPLOYEE RATE?</div>
     <div style="font-size:10px;color:#777;margin-bottom:6px;line-height:1.4;">
-      Changing the employee rate adjusts the owner's allocation and net cost. Below 5%, the gateway test caps the owner at 3&times; the employee rate. Click any scenario to see the full illustration update.
+      Changing the employee rate adjusts the owner's allocation and net cost. Below 5%, the gateway test caps the owner at 3&times; the employee rate. Click a scenario to update the illustration — click it again to return to the original view.
     </div>
     <div class="wi-cards" id="wiCards"></div>
 
@@ -4988,9 +4988,11 @@ const P = n => '('+$(Math.abs(n))+')';
 function escapeHTML(s){if(s==null)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 
 let showingInitial = true; // Track whether we're showing the initial advisor comparison
+let activeScenarioIdx = -1; // Track which What-If card is currently selected (-1 = none/initial)
 
 function renderInitialComparison() {
   showingInitial = true;
+  activeScenarioIdx = -1;
   const d = INITIAL;
 
   // Deselect rate pills
@@ -5048,8 +5050,10 @@ function renderInitialComparison() {
 
   // Comparison table, snapshot, what-if, forfeitures — render from default scenario
   // (uses single rate for clean 3-column layout, matching PDF page 2 behavior)
+  // No card highlighted initially — this is the advisor's original illustration;
+  // clicking a What-If card selects it, clicking again toggles back to this view.
   const s = SCENARIOS[META.defaultIdx];
-  renderLowerSections(s, META.defaultIdx);
+  renderLowerSections(s, -1);
 }
 
 function renderForfeitures(s) {
@@ -5077,7 +5081,13 @@ function renderForfeitures(s) {
 }
 
 function renderScenario(idx) {
+  // Toggle: clicking the already-selected card returns to the original advisor illustration
+  if (activeScenarioIdx === idx) {
+    renderInitialComparison();
+    return;
+  }
   showingInitial = false;
+  activeScenarioIdx = idx;
   const s = SCENARIOS[idx];
 
   // Rate pills
