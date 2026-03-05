@@ -4916,6 +4916,12 @@ function generateParticipantView() {
 </div>
 
 <` + `script>
+window.onerror = function(msg, src, line, col, err) {
+  var d = document.createElement('div');
+  d.style.cssText = 'position:fixed;top:0;left:0;right:0;background:red;color:#fff;padding:20px;z-index:9999;font-family:monospace;font-size:14px;white-space:pre-wrap;';
+  d.textContent = 'JS ERROR (line ' + line + '): ' + msg;
+  document.body ? document.body.prepend(d) : document.addEventListener('DOMContentLoaded', function(){ document.body.prepend(d); });
+};
 // ── Baked-in scenario data ──
 const SCENARIOS = ${scenariosJSON};
 const META = {
@@ -5332,12 +5338,19 @@ function copyAnonymousEmbedCode() {
 
 // Build rate pills
 function init() {
-  let pills = '';
-  SCENARIOS.forEach((s, i) => {
-    pills += '<div class="rate-pill" onclick="renderScenario('+i+')">'+s.rate+'%<span class="sub">'+$(s.optOwnerAlloc)+' owner</span></div>';
-  });
-  document.getElementById('rateBar').innerHTML = pills;
-  renderInitialComparison();
+  try {
+    let pills = '';
+    SCENARIOS.forEach((s, i) => {
+      pills += '<div class="rate-pill" onclick="renderScenario('+i+')">'+s.rate+'%<span class="sub">'+$(s.optOwnerAlloc)+' owner</span></div>';
+    });
+    document.getElementById('rateBar').innerHTML = pills;
+    renderInitialComparison();
+  } catch(e) {
+    var errDiv = document.createElement('div');
+    errDiv.style.cssText = 'position:fixed;top:0;left:0;right:0;background:red;color:#fff;padding:20px;z-index:9999;font-family:monospace;font-size:14px;white-space:pre-wrap;';
+    errDiv.textContent = 'JS ERROR: ' + e.message + '\\n\\nStack: ' + e.stack;
+    document.body.prepend(errDiv);
+  }
 }
 
 document.addEventListener('DOMContentLoaded', init);
