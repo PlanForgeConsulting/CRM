@@ -168,7 +168,7 @@
   .collapsed .collapse-toggle::after { content: ' ▸'; }
   .collapsed .panel-body { display: none; }
 
-  .ao-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 36px 32px; gap: 8px; align-items: end; margin-bottom: 8px; }
+  .ao-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 48px 32px; gap: 8px; align-items: end; margin-bottom: 8px; }
   .ao-header-row { align-items: center; margin-bottom: 4px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
   .ao-col-label { font-size: 11px; font-weight: 600; color: var(--gray); text-transform: uppercase; letter-spacing: .5px; }
   .ao-row input { font-size: 13px; padding: 6px 10px; }
@@ -296,7 +296,10 @@
   </div>
   <div style="display:flex;gap:8px;">
     <button class="btn btn-illustration" onclick="generateIllustrationPDF()">📄 Generate Illustration</button>
-    <button class="btn" style="background:#6c757d;color:#fff;font-weight:700;letter-spacing:.5px;" onclick="generateIllustrationPDF(true)">📄 Anonymous PDF</button>
+    <div style="display:flex;align-items:center;gap:4px;">
+      <button class="btn" style="background:#6c757d;color:#fff;font-weight:700;letter-spacing:.5px;" onclick="generateIllustrationPDF(true)">📄 Anonymous PDF</button>
+      <input type="number" id="anonBizNum" placeholder="#" min="1" max="999" style="width:58px;padding:6px 8px;border:1px solid rgba(255,255,255,.4);border-radius:6px;background:rgba(255,255,255,.15);color:#fff;font-size:13px;font-weight:600;text-align:center;" title="Custom business number for Anonymous PDF (leave blank for random)">
+    </div>
     <button class="btn" style="background:linear-gradient(135deg,#2E7D32 0%,#388E3C 100%);color:#fff;font-weight:700;letter-spacing:.5px;box-shadow:0 2px 8px rgba(46,125,50,.35);" onclick="generateParticipantView()">🖥 Participant View</button>
     <button class="btn btn-outline" style="color:#fff;border-color:rgba(255,255,255,.3);" onclick="exportJSON()">⬇ Export JSON</button>
     <button class="btn btn-outline" style="color:#fff;border-color:rgba(255,255,255,.3);" onclick="showImport()">⬆ Import JSON</button>
@@ -2531,7 +2534,7 @@ function runVerify() {
 
 // ── Additional Owners ──
 
-function addOwner(data) { additionalOwnersList.push(data || {}); renderOwners(); }
+function addOwner(data) { additionalOwnersList.push(data || {}); renderOwners(); recalc(); }
 function removeOwner(i) { additionalOwnersList.splice(i, 1); renderOwners(); recalc(); }
 
 function renderOwners() {
@@ -2547,7 +2550,7 @@ function renderOwners() {
   container.innerHTML = additionalOwnersList.map((ao, i) => `
     <div class="ao-row">
       <input type="text" id="ao_name_${i}" value="${escapeHTML(ao.name||'')}" placeholder="Name" oninput="debouncedRecalc()">
-      <input type="number" id="ao_age_${i}" value="${ao.age||40}" placeholder="Age" oninput="debouncedRecalc()">
+      <input type="number" id="ao_age_${i}" value="${ao.age||40}" placeholder="Age" min="21" max="85" oninput="debouncedRecalc()">
       <input type="number" id="ao_salary_${i}" value="${ao.salary||0}" placeholder="W-2" oninput="debouncedRecalc()">
       <input type="number" id="ao_k1_${i}" value="${showK1?(ao.k1||0):0}" placeholder="K-1" ${!showK1?'disabled class="k1-disabled"':''} oninput="debouncedRecalc()">
       <div style="text-align:center;padding-top:4px;"><input type="checkbox" id="ao_ps_${i}" ${ao.receivesPS !== false ? 'checked' : ''} onchange="recalc()" title="Include in profit sharing?"></div>
@@ -3623,7 +3626,8 @@ function generateIllustrationPDF(anonymous = false) {
   // ── Identity fields — anonymized when generating anonymous PDF ──
   let bizDisplayName, name, first, addlOwnerNames;
   if (anonymous) {
-    const bizNum = Math.floor(Math.random() * 250) + 1;
+    const customNum = parseInt(document.getElementById('anonBizNum')?.value);
+    const bizNum = (customNum > 0) ? customNum : Math.floor(Math.random() * 250) + 1;
     bizDisplayName = 'Real Business #' + bizNum;
     name = 'Business Owner';
     first = 'Business Owner';
@@ -4649,7 +4653,8 @@ function generateParticipantView() {
   });
 
   // Pre-compute anonymous values for marketing-safe HTML copy
-  const anonBizNum = Math.floor(Math.random() * 250) + 1;
+  const customAnonNum = parseInt(document.getElementById('anonBizNum')?.value);
+  const anonBizNum = (customAnonNum > 0) ? customAnonNum : Math.floor(Math.random() * 250) + 1;
   const anonBizName = 'Real Business #' + anonBizNum;
   const anonOwnerNames = 'Business Owner (age ' + c.ownerAge + ')' + (c.additionalOwners||[]).map((ao, i) => ', Business Owner ' + (i + 2) + ' (age ' + ao.age + ')').join('');
 
