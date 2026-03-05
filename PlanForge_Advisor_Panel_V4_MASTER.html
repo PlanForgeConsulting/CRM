@@ -3781,9 +3781,13 @@ function generateIllustrationPDF(anonymous = false) {
             ${c.optEstimatedForfeitures > 0 ? `<tr style="color:#999;"><td style="padding:3px 0;">Est. Forfeitures* (not in net cost)</td><td style="text-align:right;padding:3px 0;">${P(c.optEstimatedForfeitures)}</td></tr>` : ''}
           </table>
           <div style="display:flex;justify-content:space-between;align-items:center;background:${LGREEN};padding:7px 14px;margin:8px -16px 0;border-top:2px solid #c8e6c9;">
-            <span style="font-weight:700;font-size:11.5px;">Net Cost to Business</span>
+            <span style="font-weight:700;font-size:11.5px;">${!anonymous && optFee > 0 ? 'Net Cost (before fee)' : 'Net Cost to Business'}</span>
             <span style="font-weight:700;font-size:17px;font-family:Georgia,serif;">${$(c.optNetCost)}</span>
           </div>
+          ${!anonymous && optFee > 0 ? `<div style="display:flex;justify-content:space-between;align-items:center;background:#faf6ed;padding:4px 14px;margin:0 -16px;font-size:10px;color:#888;">
+            <span>Plus: PlanForge Fee (20%): <strong style="color:${GOLD};">${$(optFee)}</strong></span>
+            <span>Net After Fee: <strong style="color:${NAVY};">${$(c.optNetCost + optFee)}</strong></span>
+          </div>` : ''}
         </div>
         <div style="text-align:center;padding:8px 16px 10px;border-top:1px solid #c8e6c9;">
           <div style="color:#888;font-size:9.5px;">vs ${Math.round(typOptRate)}% Safe Harbor (Typical Strategy)</div>
