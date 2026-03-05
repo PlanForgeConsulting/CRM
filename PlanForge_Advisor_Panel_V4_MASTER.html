@@ -5243,7 +5243,7 @@ function renderLowerSections(s, activeIdx) {
 // Build clean standalone HTML from page components — more reliable than innerHTML
 // which can fail to properly serialize script elements in some browsers/contexts
 function buildStandaloneHTML(headHtml, bodyClone, scriptText) {
-  return '<!DOCTYPE html>\n<html lang="en">\n<head>\n' + headHtml + '\n</head>\n<body>\n' + bodyClone.innerHTML + '\n<' + 'script>\n' + scriptText + '\n</' + 'script>\n</body>\n</html>';
+  return '<!DOCTYPE html>\\n<html lang="en">\\n<head>\\n' + headHtml + '\\n</head>\\n<body>\\n' + bodyClone.innerHTML + '\\n<' + 'script>\\n' + scriptText + '\\n</' + 'script>\\n</body>\\n</html>';
 }
 
 // Wrap standalone HTML in an iframe srcdoc for safe embedding in page builders
