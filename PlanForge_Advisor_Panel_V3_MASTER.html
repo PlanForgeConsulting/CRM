@@ -669,6 +669,12 @@ function getAnnuityFactor(age) {
 // 0.75 × (1 - 0.1333) = 0.65%
 const PERMITTED_DISPARITY_ADJ = 0.65;
 
+// ── HTML Escaping ──
+function escapeHTML(str) {
+  if (str == null) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
 // ── State ──
 let currentComputed = null;
 let additionalOwnersList = [];
@@ -1134,7 +1140,7 @@ function findMaxHceRate(ownerMaxRate, nhceAllocRate, census, limits, additionalO
 function independentCompute(input) {
   const year = parseInt(input.year || new Date().getFullYear());
   const limits = getLimits(year);
-  const taxRate = input.taxRate || 0.30;
+  const taxRate = input.taxRate ?? 0.30;
 
   const ownerSalary = input.ownerSalary || 0;
   const ownerK1 = input.ownerK1 || 0;
@@ -1245,7 +1251,7 @@ function independentCompute(input) {
   const turnoverPctDecimal = (input.turnoverPct || 0) / 100;
   // Neither Standard nor Optimized PlanForge plans are safe harbor — full NHCE PS is forfeitable
   // Only the Typical baseline plan (computed separately) uses safe harbor vesting (first 3% vested)
-  const secureYear = Math.max(1, Math.min(input.secureYear || 1, 5));
+  const secureYear = Math.max(1, Math.min(Math.round(input.secureYear || 1), 5));
   const stdRate = input.stdRate || 3.0;
   const planMode = input.planDesignMode || 'maximize';
   const hceAllocRate = input.hceAllocRate;
@@ -1698,7 +1704,7 @@ function verifyIndependent(input) {
   // When census data is available, uses individual pays (no averaging)
   const year = parseInt(input.year || 2026);
   const lim = getLimits(year);
-  const tr = input.taxRate || 0.30;
+  const tr = input.taxRate ?? 0.30;
   const oCmp = Math.min((input.ownerSalary||0) + (input.ownerK1||0), lim.compCap401a17);
   const nCnt = Math.max(0, (input.nhceCount||0) - (input.excludableNhces||0));
   const nPay = input.nhceAvgPay || 0;
@@ -1707,7 +1713,7 @@ function verifyIndependent(input) {
   const addlRaw = (input.additionalOwners||[]);
   const addl = addlRaw.map(a => Math.min((a.salary||0)+(a.k1||0), lim.compCap401a17));
   const addlPS = addlRaw.map(a => a.receivesPS !== false);
-  const sYear = Math.max(1, Math.min(input.secureYear||1, 5));
+  const sYear = Math.max(1, Math.min(Math.round(input.secureYear||1), 5));
   const sRate = input.stdRate || 3;
   let forf = input.realForfeituresStd || input.realForfeitures || 0;
   const entityType = input.entityType || '';
@@ -2540,7 +2546,7 @@ function renderOwners() {
   const showK1 = et === 'LLC' || et === 'Partnership' || et === 'Sole Prop';
   container.innerHTML = additionalOwnersList.map((ao, i) => `
     <div class="ao-row">
-      <input type="text" id="ao_name_${i}" value="${ao.name||''}" placeholder="Name" oninput="debouncedRecalc()">
+      <input type="text" id="ao_name_${i}" value="${escapeHTML(ao.name||'')}" placeholder="Name" oninput="debouncedRecalc()">
       <input type="number" id="ao_age_${i}" value="${ao.age||40}" placeholder="Age" oninput="debouncedRecalc()">
       <input type="number" id="ao_salary_${i}" value="${ao.salary||0}" placeholder="W-2" oninput="debouncedRecalc()">
       <input type="number" id="ao_k1_${i}" value="${showK1?(ao.k1||0):0}" placeholder="K-1" ${!showK1?'disabled class="k1-disabled"':''} oninput="debouncedRecalc()">
@@ -2574,7 +2580,7 @@ function loadScenario(idx) {
   document.getElementById('ownerSalary').value = s.ownerSalary || 0;
   document.getElementById('ownerK1').value = s.ownerK1 || 0;
   document.getElementById('taxYear').value = s.year || '2026';
-  document.getElementById('taxRate').value = (s.taxRate || 0.30) * 100;
+  document.getElementById('taxRate').value = (s.taxRate ?? 0.30) * 100;
   document.getElementById('nhceCount').value = s.nhceCount || 0;
   document.getElementById('nhceAvgPay').value = s.nhceAvgPay || 0;
   document.getElementById('nhceAvgAge').value = s.nhceAvgAge || 38;
@@ -3148,7 +3154,7 @@ function renderDepartureTable(computed) {
     // Opt exclusion: checked = NOT in optimized plan
     html += `<td><input type="checkbox" class="excl-check" data-emp-idx="${emp.index}" ${isOptExcl ? '' : 'checked'} title="Include in Optimized plan" onchange="toggleExclusion(${emp.index}, !this.checked)"></td>`;
     html += `<td><input type="checkbox" class="dep-check" data-emp-idx="${emp.index}" ${isDeparted ? 'checked' : ''} ${depCheckDisabled} title="${depCheckTitle}" onchange="toggleDeparture(${emp.index}, this.checked)"></td>`;
-    html += `<td>${emp.name}</td>`;
+    html += `<td>${escapeHTML(emp.name)}</td>`;
     html += `<td style="text-align:right;">${fmt(emp.pay)}</td>`;
     html += `<td style="text-align:right;${isStdExcl ? 'color:#ccc;' : 'font-weight:600;'}">${isStdExcl ? '—' : (emp.stdAlloc > 0 ? fmt(emp.stdAlloc) : '—')}</td>`;
     html += `<td style="text-align:right;${isOptExcl ? 'color:#ccc;' : 'font-weight:600;'}">${isOptExcl ? '—' : (emp.psAlloc > 0 ? fmt(emp.psAlloc) : '—')}</td>`;
@@ -3698,7 +3704,7 @@ function generateIllustrationPDF(anonymous = false) {
       <div style="color:#fff;font-size:24px;font-weight:700;margin-top:3px;font-family:Georgia,serif;">Profit Share Illustration</div>
     </div>
     <div style="text-align:right;color:#fff;">
-      <div style="font-size:19px;font-weight:700;font-family:Georgia,serif;">${bizDisplayName}</div>
+      <div style="font-size:19px;font-weight:700;font-family:Georgia,serif;">${escapeHTML(bizDisplayName)}</div>
       <div style="font-size:11px;opacity:0.8;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">${c.year} Plan Year</div>
     </div>
   </div>
@@ -3708,11 +3714,11 @@ function generateIllustrationPDF(anonymous = false) {
     <!-- CLIENT INFO BAR -->
     <div style="border-left:4px solid ${GOLD};background:#f8f9fa;padding:7px 18px;margin:10px 0 8px;display:flex;justify-content:space-between;align-items:center;">
       <div>
-        <div style="font-weight:700;font-size:12px;color:#222;">Owners: ${name} (age ${c.ownerAge})${(c.additionalOwners||[]).map((ao, i) => `, ${addlOwnerNames[i]} (age ${ao.age})`).join('')}</div>
+        <div style="font-weight:700;font-size:12px;color:#222;">Owners: ${escapeHTML(name)} (age ${c.ownerAge})${(c.additionalOwners||[]).map((ao, i) => `, ${escapeHTML(addlOwnerNames[i])} (age ${ao.age})`).join('')}</div>
         <div style="color:#777;font-size:10.5px;margin-top:1px;">${elig} eligible employees &nbsp;|&nbsp; ${nonOwn} non-owner employees</div>
       </div>
       <div style="text-align:right;font-size:11px;color:#777;">
-        <div>${anonymous ? 'Gross Salaries: <strong style="color:#222;">' + $(c.totalComp) + '</strong>' : first + ': <strong style="color:#222;">' + $(c.ownerComp) + '</strong>' + (c.additionalOwners||[]).map(ao => ' &nbsp;|&nbsp; ' + ao.name + ': <strong style="color:#222;">' + $(ao.comp) + '</strong>').join('')}</div>
+        <div>${anonymous ? 'Gross Salaries: <strong style="color:#222;">' + $(c.totalComp) + '</strong>' : escapeHTML(first) + ': <strong style="color:#222;">' + $(c.ownerComp) + '</strong>' + (c.additionalOwners||[]).map(ao => ' &nbsp;|&nbsp; ' + escapeHTML(ao.name) + ': <strong style="color:#222;">' + $(ao.comp) + '</strong>').join('')}</div>
         <div style="font-size:9px;margin-top:2px;color:#999;">Based on: <strong style="color:${lastRenderedCensus ? GREEN : GOLD};">${dataSource}</strong></div>
       </div>
     </div>
@@ -3839,7 +3845,7 @@ function generateIllustrationPDF(anonymous = false) {
     <div style="margin-bottom:8px;">
       <div style="font-weight:700;font-size:11px;color:#222;margin-bottom:2px;">PlanForge Optimized</div>
       <div style="font-size:10px;color:#555;margin-left:10px;border-left:3px solid #ddd;padding:3px 10px;line-height:1.35;">
-        A voluntary cross-tested profit sharing plan. ${anonymous ? 'The owner' : first} receives up to the IRS maximum (${$(c.limits.additions415c)} in ${c.year}) while employees receive a competitive ${Math.round(c.optNhceRate)}% contribution. The owner's retained share goes directly into their retirement account — it is not a business expense.
+        A voluntary cross-tested profit sharing plan. ${anonymous ? 'The owner' : escapeHTML(first)} receives up to the IRS maximum (${$(c.limits.additions415c)} in ${c.year}) while employees receive a competitive ${Math.round(c.optNhceRate)}% contribution. The owner's retained share goes directly into their retirement account — it is not a business expense.
       </div>
     </div>
 
@@ -3899,7 +3905,7 @@ function generateIllustrationPDF(anonymous = false) {
     </div>
 
     <div style="background:#fffdf7;border:1px solid ${LGOLD};border-radius:5px;text-align:center;padding:5px 12px;font-size:10.5px;margin-bottom:8px;line-height:1.3;">
-      With PlanForge Optimized, <strong>${anonymous ? 'the owner' : first}</strong> receives <strong>${$(c.optOwnersRetained)}</strong> — that's <strong>${$(ownerDiff)}</strong> more than a typical plan, deposited directly into their retirement account.
+      With PlanForge Optimized, <strong>${anonymous ? 'the owner' : escapeHTML(first)}</strong> receives <strong>${$(c.optOwnersRetained)}</strong> — that's <strong>${$(ownerDiff)}</strong> more than a typical plan, deposited directly into their retirement account.
     </div>
 
     <!-- WHAT IF -->
@@ -4580,7 +4586,7 @@ function generateParticipantView() {
   const elig = nonOwn + 1 + (c.additionalOwners || []).length;
   const tp = Math.round(c.taxRate * 100);
   const ficaLabel = c.entityType === 'LLC' ? 'FICA Savings (SE Tax)' : 'S-Corp FICA Savings';
-  const ownerNames = name + (c.additionalOwners||[]).map(ao => `, ${ao.name} (age ${ao.age})`).join('');
+  const ownerNames = name + (c.additionalOwners||[]).map(ao => `, ${ao.name} (age ${ao.age})`).join(''); // Escaped when interpolated into HTML
   const dataSource = lastRenderedCensus ? 'Census Data' : 'Summary Data';
   const defaultIdx = scenarios.findIndex(s => Math.abs(s.rate - curRate) < 0.1);
 
@@ -4696,7 +4702,7 @@ function generateParticipantView() {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title data-pf="title">PlanForge — ${c.bizName || 'Client'} Plan Illustration</title>
+<title data-pf="title">PlanForge — ${escapeHTML(c.bizName || 'Client')} Plan Illustration</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family: Georgia,'Times New Roman',serif; color:#333; background:#f4f5f7; line-height:1.4; }
@@ -4781,7 +4787,7 @@ function generateParticipantView() {
       <div style="color:#fff;font-size:26px;font-weight:700;margin-top:4px;">Profit Share Illustration</div>
     </div>
     <div style="text-align:right;color:#fff;">
-      <div data-pf="bizName" style="font-size:22px;font-weight:700;">${c.bizName || 'Client'}</div>
+      <div data-pf="bizName" style="font-size:22px;font-weight:700;">${escapeHTML(c.bizName || 'Client')}</div>
       <div class="sans" style="font-size:12px;opacity:0.8;">${c.year} Plan Year</div>
       <button id="copyEmbedBtn" onclick="copyEmbedCode()" class="sans" style="margin-top:6px;background:var(--gold);color:#fff;border:none;padding:5px 14px;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.5px;">Copy Embed HTML</button>
       <button id="copyAnonBtn" onclick="copyAnonymousEmbedCode()" class="sans" style="margin-top:6px;margin-left:6px;background:#6c757d;color:#fff;border:none;padding:5px 14px;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.5px;">Copy Anonymous HTML</button>
@@ -4796,7 +4802,7 @@ function generateParticipantView() {
     <!-- CLIENT INFO -->
     <div class="info-bar">
       <div>
-        <div data-pf="ownerInfo" style="font-weight:700;font-size:13px;color:#222;">Owners: ${ownerNames} (age ${c.ownerAge})</div>
+        <div data-pf="ownerInfo" style="font-weight:700;font-size:13px;color:#222;">Owners: ${escapeHTML(ownerNames)} (age ${c.ownerAge})</div>
         <div style="color:#777;font-size:11px;margin-top:2px;">${elig} eligible employees &nbsp;|&nbsp; ${nonOwn} non-owner employees</div>
       </div>
       <div style="text-align:right;font-size:12px;color:#777;">
@@ -4940,7 +4946,7 @@ const META_ANON = {
   ownerAge: ${c.ownerAge},
   firstName: 'Business Owner',
   lastName: '',
-  additionalOwners: ${JSON.stringify((c.additionalOwners||[]).map((ao, i) => ({name: 'Business Owner ' + (i + 2), comp: ao.comp})))},
+  additionalOwners: ${JSON.stringify((c.additionalOwners||[]).map((ao, i) => ({name: 'Business Owner ' + (i + 2), comp: (c.additionalOwners||[]).length > 0 ? Math.round((c.additionalOwners||[]).reduce((s,a) => s + a.comp, 0) / (c.additionalOwners||[]).length) : 0})))},
   totalComp: ${c.totalComp},
   isAnonymous: true,
   taxPct: ${tp},
@@ -4962,6 +4968,7 @@ const INITIAL = ${initialJSON};
 
 const $ = n => { const a=Math.abs(Math.round(n)); const s='$'+a.toLocaleString('en-US'); return n<-0.5?'-'+s:s; };
 const P = n => '('+$(Math.abs(n))+')';
+function escapeHTML(s){if(s==null)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 
 let showingInitial = true; // Track whether we're showing the initial advisor comparison
 
@@ -4977,8 +4984,8 @@ function renderInitialComparison() {
   if (META.isAnonymous) {
     compHtml = 'Gross Salaries: <strong style="color:#222;">' + $(META.totalComp) + '</strong>';
   } else {
-    compHtml = META.firstName + ': <strong style="color:#222;">' + $(META.ownerComp) + '</strong>';
-    META.additionalOwners.forEach(ao => { compHtml += ' &nbsp;|&nbsp; ' + ao.name + ': <strong style="color:#222;">' + $(ao.comp) + '</strong>'; });
+    compHtml = escapeHTML(META.firstName) + ': <strong style="color:#222;">' + $(META.ownerComp) + '</strong>';
+    META.additionalOwners.forEach(ao => { compHtml += ' &nbsp;|&nbsp; ' + escapeHTML(ao.name) + ': <strong style="color:#222;">' + $(ao.comp) + '</strong>'; });
   }
   document.getElementById('ownerCompDisplay').innerHTML = compHtml;
 
@@ -5066,8 +5073,8 @@ function renderScenario(idx) {
   if (META.isAnonymous) {
     compHtml = 'Gross Salaries: <strong style="color:#222;">' + $(META.totalComp) + '</strong>';
   } else {
-    compHtml = META.firstName + ': <strong style="color:#222;">' + $(META.ownerComp) + '</strong>';
-    META.additionalOwners.forEach(ao => { compHtml += ' &nbsp;|&nbsp; ' + ao.name + ': <strong style="color:#222;">' + $(ao.comp) + '</strong>'; });
+    compHtml = escapeHTML(META.firstName) + ': <strong style="color:#222;">' + $(META.ownerComp) + '</strong>';
+    META.additionalOwners.forEach(ao => { compHtml += ' &nbsp;|&nbsp; ' + escapeHTML(ao.name) + ': <strong style="color:#222;">' + $(ao.comp) + '</strong>'; });
   }
   document.getElementById('ownerCompDisplay').innerHTML = compHtml;
 
@@ -5172,7 +5179,7 @@ function renderLowerSections(s, activeIdx) {
   snap += '<div class="snap-box" style="border:2px solid var(--green);position:relative;"><div style="position:absolute;top:-10px;right:8px;background:var(--gold);color:#fff;font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;">'+s.ownerMult+'x MORE</div><div style="font-weight:700;color:var(--green);font-size:13px;">Optimized</div><div style="font-size:10px;color:#999;">Cross-Tested</div><div style="font-size:22px;font-weight:700;color:var(--green);margin-top:4px;">'+$(s.optOwnersRetained)+'</div></div>';
   document.getElementById('snapshotBoxes').innerHTML = snap;
 
-  document.getElementById('snapshotCallout').innerHTML = 'With PlanForge Optimized, <strong>'+META.firstName+'</strong> receives <strong>'+$(s.optOwnersRetained)+'</strong> — that\\'s <strong>'+$(s.ownerDiff)+'</strong> more than a typical plan, deposited directly into their retirement account.';
+  document.getElementById('snapshotCallout').innerHTML = 'With PlanForge Optimized, <strong>'+escapeHTML(META.firstName)+'</strong> receives <strong>'+$(s.optOwnersRetained)+'</strong> — that\\'s <strong>'+$(s.ownerDiff)+'</strong> more than a typical plan, deposited directly into their retirement account.';
 
   // What-if cards
   let wi = '';
