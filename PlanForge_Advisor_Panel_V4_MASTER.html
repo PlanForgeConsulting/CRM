@@ -5293,8 +5293,8 @@ function copyEmbedCode() {
   // Clone body, remove scripts and copy buttons
   var bodyClone = document.body.cloneNode(true);
   bodyClone.querySelectorAll('script, #copyEmbedBtn, #copyAnonBtn').forEach(function(el) { el.remove(); });
-  // Get script text directly from the script element (reliable for inline scripts)
-  var scriptText = document.querySelector('script').textContent;
+  // Get script text from all script elements (error handler + main app)
+  var scriptText = Array.from(document.querySelectorAll('script')).map(function(s) { return s.textContent; }).join('\\n');
   var html = buildStandaloneHTML(document.head.innerHTML, bodyClone, scriptText);
   copyToClipboard(wrapInIframe(html), btn, 'Copy Embed HTML');
 }
@@ -5323,8 +5323,8 @@ function copyAnonymousEmbedCode() {
   var bodyClone = document.body.cloneNode(true);
   bodyClone.querySelectorAll('script, #copyEmbedBtn, #copyAnonBtn').forEach(function(el) { el.remove(); });
 
-  // Get script text and replace META definition with anonymous version
-  var scriptText = document.querySelector('script').textContent;
+  // Get script text from all scripts and replace META definition with anonymous version
+  var scriptText = Array.from(document.querySelectorAll('script')).map(function(s) { return s.textContent; }).join('\\n');
   scriptText = scriptText.replace(/const META = \\{[\\s\\S]*?\\};\\s*\\nconst META_ANON/, 'const META = ' + JSON.stringify(META_ANON) + ';\\nconst META_ANON');
 
   // Update title in head
