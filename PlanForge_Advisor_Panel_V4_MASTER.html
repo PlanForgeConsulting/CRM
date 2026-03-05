@@ -3780,13 +3780,9 @@ function generateIllustrationPDF(anonymous = false) {
             ${c.optEstimatedForfeitures > 0 ? `<tr style="color:#999;"><td style="padding:3px 0;">Est. Forfeitures* (not in net cost)</td><td style="text-align:right;padding:3px 0;">${P(c.optEstimatedForfeitures)}</td></tr>` : ''}
           </table>
           <div style="display:flex;justify-content:space-between;align-items:center;background:${LGREEN};padding:7px 14px;margin:8px -16px 0;border-top:2px solid #c8e6c9;">
-            <span style="font-weight:700;font-size:11.5px;">${optFee > 0 ? 'Net Cost (before fee)' : 'Net Cost to Business'}</span>
+            <span style="font-weight:700;font-size:11.5px;">Net Cost to Business</span>
             <span style="font-weight:700;font-size:17px;font-family:Georgia,serif;">${$(c.optNetCost)}</span>
           </div>
-          ${optFee > 0 ? `<div style="display:flex;justify-content:space-between;align-items:center;background:#faf6ed;padding:4px 14px;margin:0 -16px;font-size:10px;color:#888;">
-            <span>Plus: PlanForge Fee (20%): <strong style="color:${GOLD};">${$(optFee)}</strong></span>
-            <span>Net After Fee: <strong style="color:${NAVY};">${$(c.optNetCost + optFee)}</strong></span>
-          </div>` : ''}
         </div>
         <div style="text-align:center;padding:8px 16px 10px;border-top:1px solid #c8e6c9;">
           <div style="color:#888;font-size:9.5px;">vs ${Math.round(typOptRate)}% Safe Harbor (Typical Strategy)</div>
@@ -3876,7 +3872,7 @@ function generateIllustrationPDF(anonymous = false) {
         </tr>
       </thead>
       <tbody>
-        ${trow('Total Profit Share', $(typ3.totalPS), $(c.stdTotalPS), $(c.optTotalPS) + ' <span style="font-size:8px;color:#999;">(' + c.optNhceRate.toFixed(1) + '% XT)</span>')}
+        ${trow('Total Profit Share', $(typ3.totalPS), $(c.stdTotalPS), $(c.optTotalPS))}
         ${trow("Less: Owner's Retained", P(typ3.ownersRetained), P(c.stdOwnersRetained), P(c.optOwnersRetained), {c3: GREEN})}
         ${trow('Less: Tax Deductions (' + tp + '%)', P(typ3.taxDeductions), P(c.stdTaxSavings), P(c.optTaxSavings))}
         ${trow('Less: SECURE 2.0 Credits', '$0', P(c.stdSecureCredits), P(c.secureCredits))}
@@ -4861,12 +4857,8 @@ function generateParticipantView(anonymous = false) {
           <div class="hero-sub">in tax savings</div>
           <table class="metrics" id="optMetrics"></table>
           <div class="net-cost-bar green">
-            <span style="font-weight:700;font-size:12px;" id="optNetCostLabel">Net Cost to Business</span>
+            <span style="font-weight:700;font-size:12px;">Net Cost to Business</span>
             <span style="font-weight:700;font-size:19px;" id="optNetCostDisplay"></span>
-          </div>
-          <div id="optFeeRow" style="display:none;text-align:center;padding:4px 12px;background:#faf6ed;border-radius:0 0 6px 6px;font-size:11px;color:#888;">
-            <span>Plus: PlanForge Fee (20%): <strong style="color:var(--gold);" id="optFeeDisplay"></strong></span>
-            <span style="margin-left:8px;">Net After Fee: <strong style="color:var(--navy);" id="optAfterFeeDisplay"></strong></span>
           </div>
         </div>
         <div class="card-footer" style="border-top:1px solid #c8e6c9;">
@@ -5034,16 +5026,6 @@ function renderInitialComparison() {
   // Optimized card — uses advisor's optNhceRate
   document.getElementById('optHeroNum').textContent = $(d.optHero);
   document.getElementById('optNetCostDisplay').textContent = $(d.optNetCost);
-  // Fee display on Optimized card
-  if (d.fee > 0) {
-    document.getElementById('optNetCostLabel').textContent = 'Net Cost (before fee)';
-    document.getElementById('optFeeDisplay').textContent = $(d.fee);
-    document.getElementById('optAfterFeeDisplay').textContent = $(d.optNetCost + d.fee);
-    document.getElementById('optFeeRow').style.display = '';
-  } else {
-    document.getElementById('optNetCostLabel').textContent = 'Net Cost to Business';
-    document.getElementById('optFeeRow').style.display = 'none';
-  }
   document.getElementById('optSaveLabel').textContent = 'vs ' + d.typOptRate + '% Safe Harbor (Typical Strategy)';
   document.getElementById('optSaveNum').textContent = 'Save ' + $(d.optSave);
   document.getElementById('optSavePct').textContent = d.optPct + '% less than a typical plan';
@@ -5141,16 +5123,6 @@ function renderScenario(idx) {
   // Optimized card
   document.getElementById('optHeroNum').textContent = $(s.optHero);
   document.getElementById('optNetCostDisplay').textContent = $(s.optNetCost);
-  // Fee display on Optimized card
-  if (s.fee > 0) {
-    document.getElementById('optNetCostLabel').textContent = 'Net Cost (before fee)';
-    document.getElementById('optFeeDisplay').textContent = $(s.fee);
-    document.getElementById('optAfterFeeDisplay').textContent = $(s.optNetCost + s.fee);
-    document.getElementById('optFeeRow').style.display = '';
-  } else {
-    document.getElementById('optNetCostLabel').textContent = 'Net Cost to Business';
-    document.getElementById('optFeeRow').style.display = 'none';
-  }
   document.getElementById('optSaveLabel').textContent = 'vs ' + Math.max(3, s.rate) + '% Safe Harbor (Typical Strategy)';
   document.getElementById('optSaveNum').textContent = 'Save ' + $(s.optSave);
   document.getElementById('optSavePct').textContent = s.optPct + '% less than a typical plan';
