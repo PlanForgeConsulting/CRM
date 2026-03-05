@@ -4938,6 +4938,8 @@ window.onerror = function(msg, src, line, col, err) {
   d.textContent = 'JS ERROR (line ' + line + '): ' + msg;
   document.body ? document.body.prepend(d) : document.addEventListener('DOMContentLoaded', function(){ document.body.prepend(d); });
 };
+</` + `script>
+<` + `script>
 // ── Baked-in scenario data ──
 const SCENARIOS = ${scenariosJSON};
 const META = {
