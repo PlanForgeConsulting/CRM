@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PlanForge Advisor Panel — V3 Cross-Testing Engine</title>
+<title>PlanForge Advisor Panel — V4 Cross-Testing Engine</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@300;400;500;600;700;800&display=swap');
 
@@ -168,7 +168,7 @@
   .collapsed .collapse-toggle::after { content: ' ▸'; }
   .collapsed .panel-body { display: none; }
 
-  .ao-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 36px 32px; gap: 8px; align-items: end; margin-bottom: 8px; }
+  .ao-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 48px 32px; gap: 8px; align-items: end; margin-bottom: 8px; }
   .ao-header-row { align-items: center; margin-bottom: 4px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
   .ao-col-label { font-size: 11px; font-weight: 600; color: var(--gray); text-transform: uppercase; letter-spacing: .5px; }
   .ao-row input { font-size: 13px; padding: 6px 10px; }
@@ -242,7 +242,7 @@
   .census-detected.auto { background: var(--greenBg); color: var(--green); }
   .census-detected.manual { background: var(--lightGray); color: var(--gray); }
 
-  /* ── V3: Cross-Testing Detail Panel ── */
+  /* ── V4: Cross-Testing Detail Panel ── */
   .xt-detail { margin-top: 16px; }
   .xt-detail-header {
     padding: 12px 20px; background: linear-gradient(135deg, #1a237e 0%, #283593 100%);
@@ -292,12 +292,16 @@
 <div class="topbar">
   <div>
     <h1>PLANFORGE CONSULTING</h1>
-    <div class="subtitle">Advisor Panel — V3 Cross-Testing Engine</div>
+    <div class="subtitle">Advisor Panel — V4 Cross-Testing Engine</div>
   </div>
   <div style="display:flex;gap:8px;">
     <button class="btn btn-illustration" onclick="generateIllustrationPDF()">📄 Generate Illustration</button>
-    <button class="btn" style="background:#6c757d;color:#fff;font-weight:700;letter-spacing:.5px;" onclick="generateIllustrationPDF(true)">📄 Anonymous PDF</button>
+    <div style="display:flex;align-items:center;gap:4px;">
+      <button class="btn" style="background:#6c757d;color:#fff;font-weight:700;letter-spacing:.5px;" onclick="generateIllustrationPDF(true)">📄 Anonymous PDF</button>
+      <input type="number" id="anonBizNum" placeholder="#" min="1" max="999" style="width:58px;padding:6px 8px;border:1px solid rgba(255,255,255,.4);border-radius:6px;background:rgba(255,255,255,.15);color:#fff;font-size:13px;font-weight:600;text-align:center;" title="Custom business number for Anonymous PDF (leave blank for random)">
+    </div>
     <button class="btn" style="background:linear-gradient(135deg,#2E7D32 0%,#388E3C 100%);color:#fff;font-weight:700;letter-spacing:.5px;box-shadow:0 2px 8px rgba(46,125,50,.35);" onclick="generateParticipantView()">🖥 Participant View</button>
+    <button class="btn" style="background:#6c757d;color:#fff;font-weight:700;letter-spacing:.5px;" onclick="generateParticipantView(true)">🖥 Anon View</button>
     <button class="btn btn-outline" style="color:#fff;border-color:rgba(255,255,255,.3);" onclick="exportJSON()">⬇ Export JSON</button>
     <button class="btn btn-outline" style="color:#fff;border-color:rgba(255,255,255,.3);" onclick="showImport()">⬆ Import JSON</button>
   </div>
@@ -573,7 +577,7 @@
       </div>
     </div>
 
-    <!-- V3: Cross-Testing Detail Panel -->
+    <!-- V4: Cross-Testing Detail Panel -->
     <div class="xt-detail hidden" id="xtDetailPanel">
       <div class="xt-detail-header">
         <span>📊 Cross-Testing Detail — EBAR Analysis</span>
@@ -626,7 +630,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
 /* ═══════════════════════════════════════════════════════════════
-   PLANFORGE V3 — REAL CROSS-TESTING ENGINE
+   PLANFORGE V4 — REAL CROSS-TESTING ENGINE
    ═══════════════════════════════════════════════════════════════ */
 
 // ── IRS Limits ──
@@ -701,7 +705,7 @@ function debouncedRecalc() {
 }
 
 // ══════════════════════════════════════════════════════════════
-//  CROSS-TESTING MATH ENGINE (V3 Core)
+//  CROSS-TESTING MATH ENGINE (V4 Core)
 // ══════════════════════════════════════════════════════════════
 
 /**
@@ -1134,7 +1138,7 @@ function findMaxHceRate(ownerMaxRate, nhceAllocRate, census, limits, additionalO
 
 
 // ══════════════════════════════════════════════════════════════
-//  PRIMARY COMPUTATION ENGINE (V3)
+//  PRIMARY COMPUTATION ENGINE (V4)
 // ══════════════════════════════════════════════════════════════
 
 function independentCompute(input) {
@@ -1853,7 +1857,7 @@ function runComplianceChecks(input, computed) {
     checks.push({ rule:'Gateway Test', status:'PASS', message:`NHCE rate ${computed.optNhceRate.toFixed(2)}% ≥ 5% — cross-testing available` });
   }
 
-  // Cross-Testing (V3: real EBAR-based test)
+  // Cross-Testing (V4: real EBAR-based test)
   if (computed.crossTestResult) {
     const xt = computed.crossTestResult;
     if (xt.allPass) {
@@ -2531,7 +2535,7 @@ function runVerify() {
 
 // ── Additional Owners ──
 
-function addOwner(data) { additionalOwnersList.push(data || {}); renderOwners(); }
+function addOwner(data) { additionalOwnersList.push(data || {}); renderOwners(); recalc(); }
 function removeOwner(i) { additionalOwnersList.splice(i, 1); renderOwners(); recalc(); }
 
 function renderOwners() {
@@ -2547,7 +2551,7 @@ function renderOwners() {
   container.innerHTML = additionalOwnersList.map((ao, i) => `
     <div class="ao-row">
       <input type="text" id="ao_name_${i}" value="${escapeHTML(ao.name||'')}" placeholder="Name" oninput="debouncedRecalc()">
-      <input type="number" id="ao_age_${i}" value="${ao.age||40}" placeholder="Age" oninput="debouncedRecalc()">
+      <input type="number" id="ao_age_${i}" value="${ao.age||40}" placeholder="Age" min="21" max="85" oninput="debouncedRecalc()">
       <input type="number" id="ao_salary_${i}" value="${ao.salary||0}" placeholder="W-2" oninput="debouncedRecalc()">
       <input type="number" id="ao_k1_${i}" value="${showK1?(ao.k1||0):0}" placeholder="K-1" ${!showK1?'disabled class="k1-disabled"':''} oninput="debouncedRecalc()">
       <div style="text-align:center;padding-top:4px;"><input type="checkbox" id="ao_ps_${i}" ${ao.receivesPS !== false ? 'checked' : ''} onchange="recalc()" title="Include in profit sharing?"></div>
@@ -2721,7 +2725,7 @@ function initScenarios() {
 function exportJSON() {
   const input = getInputFromForm();
   const computed = currentComputed || independentCompute(input);
-  const payload = { ...input, _computed: { optOwnerAlloc: computed.optOwnerAlloc, optNetCost: computed.optNetCost, stdNetCost: computed.stdNetCost, crossTestPassed: computed.crossTestResult?.allPass }, _exportedAt: new Date().toISOString(), _version: 'advisor-panel-v3' };
+  const payload = { ...input, _computed: { optOwnerAlloc: computed.optOwnerAlloc, optNetCost: computed.optNetCost, stdNetCost: computed.stdNetCost, crossTestPassed: computed.crossTestResult?.allPass }, _exportedAt: new Date().toISOString(), _version: 'advisor-panel-v4' };
   // Include census data for round-trip export → re-import
   const censusVal = document.getElementById('censusPaste').value.trim();
   if (censusVal) payload.censusText = censusVal;
@@ -3623,7 +3627,8 @@ function generateIllustrationPDF(anonymous = false) {
   // ── Identity fields — anonymized when generating anonymous PDF ──
   let bizDisplayName, name, first, addlOwnerNames;
   if (anonymous) {
-    const bizNum = Math.floor(Math.random() * 250) + 1;
+    const customNum = parseInt(document.getElementById('anonBizNum')?.value);
+    const bizNum = (customNum > 0) ? customNum : Math.floor(Math.random() * 250) + 1;
     bizDisplayName = 'Real Business #' + bizNum;
     name = 'Business Owner';
     first = 'Business Owner';
@@ -3670,8 +3675,7 @@ function generateIllustrationPDF(anonymous = false) {
     const scenOptNetCost = s.netCost;
     const sv = Math.max(0, s.stdNetCost - scenOptNetCost);
     const scenFee = Math.round(0.20 * sv);
-    // Displayed net cost = optimized net cost + fee (exclude fee in anonymous mode)
-    const displayedNC = anonymous ? scenOptNetCost : scenOptNetCost + scenFee;
+    const displayedNC = scenOptNetCost + scenFee;
     const bdr = active ? GREEN : '#ccd5de';
     const bg = active ? '#f0faf0' : '#fafbfc';
     // Cross-test advantage: what owner gets via cross-testing vs flat
@@ -3686,7 +3690,7 @@ function generateIllustrationPDF(anonymous = false) {
         <div style="font-size:8.5px;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Net Cost</div>
         <div style="font-size:14px;font-weight:700;color:${NAVY};margin:1px 0;">${$(displayedNC)}</div>
       </div>
-      ${anonymous ? '' : `<div style="font-size:8.5px;color:#888;margin-top:2px;">Optimized Fee: ${$(scenFee)}</div>`}
+      <div style="font-size:8.5px;color:#888;margin-top:2px;">Optimized Fee: ${$(scenFee)}</div>
       <div style="font-size:10px;color:${GREEN};font-weight:700;margin-top:2px;">Saves ${$(sv)}</div>
       ${active ? `<div style="font-size:8.5px;color:${GREEN};font-weight:700;margin-top:3px;text-transform:uppercase;letter-spacing:0.5px;">CURRENT</div>` : ''}
     </div>`;
@@ -3868,17 +3872,17 @@ function generateIllustrationPDF(anonymous = false) {
         </tr>
       </thead>
       <tbody>
-        ${trow('Total Profit Share', $(typ3.totalPS), $(c.stdTotalPS), $(c.optTotalPS) + ' <span style="font-size:8px;color:#999;">(' + c.optNhceRate.toFixed(1) + '% XT)</span>')}
+        ${trow('Total Profit Share', $(typ3.totalPS), $(c.stdTotalPS), $(c.optTotalPS))}
         ${trow("Less: Owner's Retained", P(typ3.ownersRetained), P(c.stdOwnersRetained), P(c.optOwnersRetained), {c3: GREEN})}
         ${trow('Less: Tax Deductions (' + tp + '%)', P(typ3.taxDeductions), P(c.stdTaxSavings), P(c.optTaxSavings))}
         ${trow('Less: SECURE 2.0 Credits', '$0', P(c.stdSecureCredits), P(c.secureCredits))}
         ${(c.realForfeituresStd > 0 || c.realForfeitures > 0) ? trow('Less: Forfeitures (actual)', '$0', P(c.realForfeituresStd), P(c.realForfeitures)) : ''}
         ${(c.stdEstimatedForfeitures > 0 || c.optEstimatedForfeitures > 0 || typ3.estimatedForfeitures > 0) ? trow('Est. Forfeitures* (not in net cost)', typ3.estimatedForfeitures > 0 ? P(typ3.estimatedForfeitures) : '$0', P(c.stdEstimatedForfeitures), P(c.optEstimatedForfeitures), {c1:'#aaa', c2:'#aaa', c3:'#aaa', labelColor:'#aaa'}) : ''}
         ${c.stdFicaSavings > 0 || c.optFicaSavings > 0 ? trow('Less: ' + ficaLabel, P(typ3.ficaSavings), P(c.stdFicaSavings), P(c.optFicaSavings)) : ''}
-        ${trow(anonymous ? 'Net Cost' : 'Net Cost (before fee)', $(typ3.netCost), $(c.stdNetCost), $(c.optNetCost), {bold:true, bg:'#f5f6f8', borderTop:true, c1:'#B22234', c2:NAVY, c3:NAVY})}
-        ${!anonymous && optFee > 0 ? trow('Plus: PlanForge Optimized Fee (20%)', '—', '—', $(optFee), {c3: GOLD}) : ''}
-        ${!anonymous && optFee > 0 ? trow('Net Cost (after fee)', $(typ3.netCost), $(c.stdNetCost), $(c.optNetCost + optFee), {bold:true, bg:'#f0f1f3', borderTop:true, c1:'#B22234', c2:NAVY, c3:NAVY}) : ''}
-        ${trow('Your Savings vs Typical', '—', $(typ3.netCost - c.stdNetCost), $(typ3.netCost - (c.optNetCost + (anonymous ? 0 : optFee))), {bold:true, bg:LGREEN, labelColor:GREEN, c1:'#aaa', c2:GREEN, c3:GREEN, borderBot:false})}
+        ${trow(optFee > 0 ? 'Net Cost (before fee)' : 'Net Cost', $(typ3.netCost), $(c.stdNetCost), $(c.optNetCost), {bold:true, bg:'#f5f6f8', borderTop:true, c1:'#B22234', c2:NAVY, c3:NAVY})}
+        ${optFee > 0 ? trow('Plus: PlanForge Optimized Fee (20%)', '—', '—', $(optFee), {c3: GOLD}) : ''}
+        ${optFee > 0 ? trow('Net Cost (after fee)', $(typ3.netCost), $(c.stdNetCost), $(c.optNetCost + optFee), {bold:true, bg:'#f0f1f3', borderTop:true, c1:'#B22234', c2:NAVY, c3:NAVY}) : ''}
+        ${trow('Your Savings vs Typical', '—', $(typ3.netCost - c.stdNetCost), $(typ3.netCost - (c.optNetCost + optFee)), {bold:true, bg:LGREEN, labelColor:GREEN, c1:'#aaa', c2:GREEN, c3:GREEN, borderBot:false})}
       </tbody>
     </table>
 
@@ -4522,7 +4526,7 @@ function runTestSuite() {
 //  INTERACTIVE PARTICIPANT VIEW GENERATOR
 // ══════════════════════════════════════════════════════════════
 
-function generateParticipantView() {
+function generateParticipantView(anonymous = false) {
   if (!currentComputed) { recalc(); }
   const c = currentComputed;
   if (!c) { alert('Please enter data and recalculate first.'); return; }
@@ -4580,13 +4584,24 @@ function generateParticipantView() {
   });
 
   // Static info from current computation
-  const name = [c.firstName, c.lastName].filter(Boolean).join(' ') || 'Owner';
-  const first = c.firstName || 'Owner';
+  let name, first, ownerNames, bizDisplay;
+  if (anonymous) {
+    const customNum = parseInt(document.getElementById('anonBizNum')?.value);
+    const bizNum = (customNum > 0) ? customNum : Math.floor(Math.random() * 250) + 1;
+    bizDisplay = 'Real Business #' + bizNum;
+    name = 'Business Owner';
+    first = 'Business Owner';
+    ownerNames = 'Business Owner (age ' + c.ownerAge + ')' + (c.additionalOwners||[]).map((ao, i) => ', Business Owner ' + (i + 2) + ' (age ' + ao.age + ')').join('');
+  } else {
+    name = [c.firstName, c.lastName].filter(Boolean).join(' ') || 'Owner';
+    first = c.firstName || 'Owner';
+    bizDisplay = c.bizName || 'Client';
+    ownerNames = name + (c.additionalOwners||[]).map(ao => `, ${ao.name} (age ${ao.age})`).join('');
+  }
   const nonOwn = c.nhceCountEligible + (c.hceNonOwnerCount || 0);
   const elig = nonOwn + 1 + (c.additionalOwners || []).length;
   const tp = Math.round(c.taxRate * 100);
   const ficaLabel = c.entityType === 'LLC' ? 'FICA Savings (SE Tax)' : 'S-Corp FICA Savings';
-  const ownerNames = name + (c.additionalOwners||[]).map(ao => `, ${ao.name} (age ${ao.age})`).join(''); // Escaped when interpolated into HTML
   const dataSource = lastRenderedCensus ? 'Census Data' : 'Summary Data';
   const defaultIdx = scenarios.findIndex(s => Math.abs(s.rate - curRate) < 0.1);
 
@@ -4649,7 +4664,8 @@ function generateParticipantView() {
   });
 
   // Pre-compute anonymous values for marketing-safe HTML copy
-  const anonBizNum = Math.floor(Math.random() * 250) + 1;
+  const customAnonNum = parseInt(document.getElementById('anonBizNum')?.value);
+  const anonBizNum = (customAnonNum > 0) ? customAnonNum : Math.floor(Math.random() * 250) + 1;
   const anonBizName = 'Real Business #' + anonBizNum;
   const anonOwnerNames = 'Business Owner (age ' + c.ownerAge + ')' + (c.additionalOwners||[]).map((ao, i) => ', Business Owner ' + (i + 2) + ' (age ' + ao.age + ')').join('');
 
@@ -4702,7 +4718,7 @@ function generateParticipantView() {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title data-pf="title">PlanForge — ${escapeHTML(c.bizName || 'Client')} Plan Illustration</title>
+<title data-pf="title">PlanForge — ${escapeHTML(bizDisplay)} Plan Illustration</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family: Georgia,'Times New Roman',serif; color:#333; background:#f4f5f7; line-height:1.4; }
@@ -4787,7 +4803,7 @@ function generateParticipantView() {
       <div style="color:#fff;font-size:26px;font-weight:700;margin-top:4px;">Profit Share Illustration</div>
     </div>
     <div style="text-align:right;color:#fff;">
-      <div data-pf="bizName" style="font-size:22px;font-weight:700;">${escapeHTML(c.bizName || 'Client')}</div>
+      <div data-pf="bizName" style="font-size:22px;font-weight:700;">${escapeHTML(bizDisplay)}</div>
       <div class="sans" style="font-size:12px;opacity:0.8;">${c.year} Plan Year</div>
       <button id="copyEmbedBtn" onclick="copyEmbedCode()" class="sans" style="margin-top:6px;background:var(--gold);color:#fff;border:none;padding:5px 14px;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.5px;">Copy Embed HTML</button>
       <button id="copyAnonBtn" onclick="copyAnonymousEmbedCode()" class="sans" style="margin-top:6px;margin-left:6px;background:#6c757d;color:#fff;border:none;padding:5px 14px;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.5px;">Copy Anonymous HTML</button>
@@ -4889,7 +4905,7 @@ function generateParticipantView() {
     <!-- WHAT IF -->
     <div class="section-title" style="font-family:Georgia,serif;">WHAT IF WE ADJUST THE EMPLOYEE RATE?</div>
     <div style="font-size:10px;color:#777;margin-bottom:6px;line-height:1.4;">
-      Changing the employee rate adjusts the owner's allocation and net cost. Below 5%, the gateway test caps the owner at 3&times; the employee rate. Click any scenario to see the full illustration update.
+      Changing the employee rate adjusts the owner's allocation and net cost. Below 5%, the gateway test caps the owner at 3&times; the employee rate. Click a scenario to update the illustration — click it again to return to the original view.
     </div>
     <div class="wi-cards" id="wiCards"></div>
 
@@ -4927,15 +4943,15 @@ window.onerror = function(msg, src, line, col, err) {
 // ── Baked-in scenario data ──
 const SCENARIOS = ${scenariosJSON};
 const META = {
-  bizName: ${JSON.stringify(c.bizName || 'Client')},
+  bizName: ${anonymous ? JSON.stringify(bizDisplay) : JSON.stringify(c.bizName || 'Client')},
   year: ${JSON.stringify(c.year)},
   ownerComp: ${c.ownerComp},
   ownerAge: ${c.ownerAge},
   firstName: ${JSON.stringify(first)},
-  lastName: ${JSON.stringify(c.lastName || '')},
-  additionalOwners: ${JSON.stringify((c.additionalOwners||[]).map(ao => ({name: ao.name, comp: ao.comp})))},
+  lastName: ${anonymous ? '""' : JSON.stringify(c.lastName || '')},
+  additionalOwners: ${anonymous ? JSON.stringify((c.additionalOwners||[]).map((ao, i) => ({name: 'Business Owner ' + (i + 2), comp: (c.additionalOwners||[]).length > 0 ? Math.round((c.additionalOwners||[]).reduce((s,a) => s + a.comp, 0) / (c.additionalOwners||[]).length) : 0}))) : JSON.stringify((c.additionalOwners||[]).map(ao => ({name: ao.name, comp: ao.comp})))},
   totalComp: ${c.totalComp},
-  isAnonymous: false,
+  isAnonymous: ${anonymous},
   taxPct: ${tp},
   ficaLabel: ${JSON.stringify(ficaLabel)},
   entityType: ${JSON.stringify(c.entityType)},
@@ -4979,9 +4995,11 @@ const P = n => '('+$(Math.abs(n))+')';
 function escapeHTML(s){if(s==null)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 
 let showingInitial = true; // Track whether we're showing the initial advisor comparison
+let activeScenarioIdx = -1; // Track which What-If card is currently selected (-1 = none/initial)
 
 function renderInitialComparison() {
   showingInitial = true;
+  activeScenarioIdx = -1;
   const d = INITIAL;
 
   // Deselect rate pills
@@ -5039,6 +5057,8 @@ function renderInitialComparison() {
 
   // Comparison table, snapshot, what-if, forfeitures — render from default scenario
   // (uses single rate for clean 3-column layout, matching PDF page 2 behavior)
+  // No card highlighted initially — this is the advisor's original illustration;
+  // clicking a What-If card selects it, clicking again toggles back to this view.
   const s = SCENARIOS[META.defaultIdx];
   renderLowerSections(s, -1);
 }
@@ -5068,7 +5088,13 @@ function renderForfeitures(s) {
 }
 
 function renderScenario(idx) {
+  // Toggle: clicking the already-selected card returns to the original advisor illustration
+  if (activeScenarioIdx === idx) {
+    renderInitialComparison();
+    return;
+  }
   showingInitial = false;
+  activeScenarioIdx = idx;
   const s = SCENARIOS[idx];
 
   // Rate pills
@@ -5170,12 +5196,12 @@ function renderLowerSections(s, activeIdx) {
   if (s.stdFicaSavings > 0 || s.optFicaSavings > 0) {
     tbl += tr('Less: '+META.ficaLabel, P(s.typFicaSavings), P(s.stdFicaSavings), P(s.optFicaSavings));
   }
-  tbl += tr(META.isAnonymous ? 'Net Cost' : 'Net Cost (before fee)', $(s.typNetCost), $(s.stdNetCost), $(s.optNetCost), {bold:true, bg:'#f5f6f8', borderTop:true, c1:'#B22234', c2:'var(--navy)', c3:'var(--navy)'});
-  if (s.fee > 0 && !META.isAnonymous) {
+  tbl += tr(s.fee > 0 ? 'Net Cost (before fee)' : 'Net Cost', $(s.typNetCost), $(s.stdNetCost), $(s.optNetCost), {bold:true, bg:'#f5f6f8', borderTop:true, c1:'#B22234', c2:'var(--navy)', c3:'var(--navy)'});
+  if (s.fee > 0) {
     tbl += tr('Plus: PlanForge Fee (20%)', '—', '—', $(s.fee), {c3:'var(--gold)'});
     tbl += tr('Net Cost (after fee)', $(s.typNetCost), $(s.stdNetCost), $(s.optNetCost + s.fee), {bold:true, bg:'#f0f1f3', borderTop:true, c1:'#B22234', c2:'var(--navy)', c3:'var(--navy)'});
   }
-  const savingsFee = META.isAnonymous ? 0 : s.fee;
+  const savingsFee = s.fee;
   tbl += tr('Your Savings vs Typical', '—', $(s.typNetCost - s.stdNetCost), $(s.typNetCost - (s.optNetCost + savingsFee)), {bold:true, bg:'var(--lgreen)', labelColor:'var(--green)', c1:'#aaa', c2:'var(--green)', c3:'var(--green)'});
   tbl += '</tbody>';
   document.getElementById('compTable').innerHTML = tbl;
@@ -5202,8 +5228,8 @@ function renderLowerSections(s, activeIdx) {
     wi += '<div style="font-size:11px;color:#333;margin-top:3px;font-weight:600;">Owner: '+$(sc.optOwnerAlloc)+'</div>';
     wi += '<div style="font-size:9px;color:'+deltaColor+';margin-top:2px;">'+deltaLabel+'</div>';
     wi += '<div style="margin-top:4px;padding-top:4px;border-top:1px solid '+(active?'#c8e6c9':'#e8e8e8')+';"><div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.5px;">Net Cost</div>';
-    wi += '<div style="font-size:16px;font-weight:700;color:var(--navy);margin:2px 0;">'+$(META.isAnonymous ? sc.optNetCost : sc.displayedNetCost)+'</div></div>';
-    if (sc.fee > 0 && !META.isAnonymous) wi += '<div style="font-size:9px;color:#888;">Fee: '+$(sc.fee)+'</div>';
+    wi += '<div style="font-size:16px;font-weight:700;color:var(--navy);margin:2px 0;">'+$(sc.displayedNetCost)+'</div></div>';
+    if (sc.fee > 0) wi += '<div style="font-size:9px;color:#888;">Fee: '+$(sc.fee)+'</div>';
     wi += '<div style="font-size:11px;color:var(--green);font-weight:700;margin-top:3px;">Saves '+$(sc.netCostSavings)+'</div>';
     if (active) wi += '<div style="font-size:9px;color:var(--green);font-weight:700;margin-top:4px;text-transform:uppercase;letter-spacing:.5px;">SELECTED</div>';
     wi += '</div>';
@@ -5214,25 +5240,25 @@ function renderLowerSections(s, activeIdx) {
   renderForfeitures(s);
 }
 
+// Build clean standalone HTML from page components — more reliable than innerHTML
+// which can fail to properly serialize script elements in some browsers/contexts
+function buildStandaloneHTML(headHtml, bodyClone, scriptText) {
+  return '<!DOCTYPE html>\\n<html lang="en">\\n<head>\\n' + headHtml + '\\n</head>\\n<body>\\n' + bodyClone.innerHTML + '\\n<' + 'script>\\n' + scriptText + '\\n</' + 'script>\\n</body>\\n</html>';
+}
+
 // Wrap standalone HTML in an iframe srcdoc for safe embedding in page builders
 // (Elementor, WordPress, etc.) that strip <script> tags from pasted HTML.
 function wrapInIframe(rawHtml) {
+  // Escape for srcdoc attribute: &, ", <entity refs already safe>
   var escaped = rawHtml.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
   return '<iframe srcdoc="' + escaped + '" style="width:100%;min-height:900px;border:none;" scrolling="auto" allowfullscreen></iframe>';
 }
 
-// Copy embed code — strips out the copy button itself so pasted HTML is clean
-function copyEmbedCode() {
-  const btn = document.getElementById('copyEmbedBtn');
-  btn.style.display = 'none';
-  const html = wrapInIframe('<!DOCTYPE html>\\n<html>' + document.documentElement.innerHTML + '</html>');
-  btn.style.display = '';
-
-  // Try modern clipboard API first, then fall back to execCommand
+function copyToClipboard(html, btn, label) {
   function onSuccess() {
     btn.textContent = 'Copied!';
     btn.style.background = '#2E7D32';
-    setTimeout(() => { btn.textContent = 'Copy Embed HTML'; btn.style.background = 'var(--gold)'; }, 2000);
+    setTimeout(function() { btn.textContent = label; btn.style.background = label === 'Copy Embed HTML' ? 'var(--gold)' : '#6c757d'; }, 2000);
   }
   function fallbackCopy() {
     var ta = document.createElement('textarea');
@@ -5245,17 +5271,15 @@ function copyEmbedCode() {
       var ok = document.execCommand('copy');
       if (ok) { onSuccess(); } else { throw new Error('execCommand failed'); }
     } catch(e) {
-      // Last resort: open in new window for manual copy
       var w = window.open('', '_blank');
       w.document.open();
       w.document.write('<pre style="white-space:pre-wrap;word-wrap:break-word;font-size:11px;">' + html.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</pre>');
       w.document.close();
       btn.textContent = 'Opened in new tab';
-      setTimeout(function(){ btn.textContent = 'Copy Embed HTML'; }, 2000);
+      setTimeout(function(){ btn.textContent = label; }, 2000);
     }
     document.body.removeChild(ta);
   }
-
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(html).then(onSuccess).catch(fallbackCopy);
   } else {
@@ -5263,13 +5287,24 @@ function copyEmbedCode() {
   }
 }
 
-// Copy anonymous embed code — uses pre-computed META_ANON to avoid fragile string replacement
+// Copy embed code — builds clean HTML from components for reliable script execution
+function copyEmbedCode() {
+  var btn = document.getElementById('copyEmbedBtn');
+  // Clone body, remove scripts and copy buttons
+  var bodyClone = document.body.cloneNode(true);
+  bodyClone.querySelectorAll('script, #copyEmbedBtn, #copyAnonBtn').forEach(function(el) { el.remove(); });
+  // Get script text from all script elements (error handler + main app)
+  var scriptText = Array.from(document.querySelectorAll('script')).map(function(s) { return s.textContent; }).join('\\n');
+  var html = buildStandaloneHTML(document.head.innerHTML, bodyClone, scriptText);
+  copyToClipboard(wrapInIframe(html), btn, 'Copy Embed HTML');
+}
+
+// Copy anonymous embed code — swaps to anonymous data, builds clean HTML
 function copyAnonymousEmbedCode() {
-  const btn = document.getElementById('copyAnonBtn');
-  const embedBtn = document.getElementById('copyEmbedBtn');
+  var btn = document.getElementById('copyAnonBtn');
 
   // Temporarily swap META with anonymous version and re-render
-  const origMETA = Object.assign({}, META);
+  var origMETA = Object.assign({}, META);
   Object.assign(META, META_ANON);
   renderInitialComparison();
 
@@ -5284,58 +5319,28 @@ function copyAnonymousEmbedCode() {
   if (bizEl) bizEl.textContent = META_ANON.anonBizName;
   if (ownerEl) ownerEl.textContent = 'Owners: ' + META_ANON.anonOwnerNames;
 
-  // Hide buttons before capture
-  embedBtn.style.display = 'none';
-  btn.style.display = 'none';
+  // Clone body, remove scripts and copy buttons
+  var bodyClone = document.body.cloneNode(true);
+  bodyClone.querySelectorAll('script, #copyEmbedBtn, #copyAnonBtn').forEach(function(el) { el.remove(); });
 
-  // Capture the clean anonymous HTML
-  let rawHtml = '<!DOCTYPE html>\\n<html>' + document.documentElement.innerHTML + '</html>';
+  // Get script text from all scripts and replace META definition with anonymous version
+  var scriptText = Array.from(document.querySelectorAll('script')).map(function(s) { return s.textContent; }).join('\\n');
+  scriptText = scriptText.replace(/const META = \\{[\\s\\S]*?\\};\\s*\\nconst META_ANON/, 'const META = ' + JSON.stringify(META_ANON) + ';\\nconst META_ANON');
 
-  // Replace the META definition in the captured script so it stays anonymous when re-opened
-  rawHtml = rawHtml.replace(/const META = \\{[\\s\\S]*?\\};\\nconst META_ANON/, 'const META = ' + JSON.stringify(META_ANON) + ';\\nconst META_ANON');
+  // Update title in head
+  var headHtml = document.head.innerHTML;
+  headHtml = headHtml.replace(/<title[^>]*>[^<]*<\\/title>/, '<title>PlanForge \\u2014 ' + META_ANON.anonBizName + ' Plan Illustration<\\/title>');
 
-  let html = wrapInIframe(rawHtml);
+  var html = wrapInIframe(buildStandaloneHTML(headHtml, bodyClone, scriptText));
 
   // Restore everything back to original
-  embedBtn.style.display = '';
-  btn.style.display = '';
   if (titleEl) titleEl.textContent = origTitle;
   if (bizEl) bizEl.textContent = origBiz;
   if (ownerEl) ownerEl.textContent = origOwner;
   Object.assign(META, origMETA);
   renderInitialComparison();
 
-  function onSuccess() {
-    btn.textContent = 'Copied!';
-    btn.style.background = '#2E7D32';
-    setTimeout(function() { btn.textContent = 'Copy Anonymous HTML'; btn.style.background = '#6c757d'; }, 2000);
-  }
-  function fallbackCopy() {
-    var ta = document.createElement('textarea');
-    ta.value = html;
-    ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0;';
-    document.body.appendChild(ta);
-    ta.focus();
-    ta.select();
-    try {
-      var ok = document.execCommand('copy');
-      if (ok) { onSuccess(); } else { throw new Error('execCommand failed'); }
-    } catch(e) {
-      var w = window.open('', '_blank');
-      w.document.open();
-      w.document.write('<pre style="white-space:pre-wrap;word-wrap:break-word;font-size:11px;">' + html.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</pre>');
-      w.document.close();
-      btn.textContent = 'Opened in new tab';
-      setTimeout(function(){ btn.textContent = 'Copy Anonymous HTML'; }, 2000);
-    }
-    document.body.removeChild(ta);
-  }
-
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(html).then(onSuccess).catch(fallbackCopy);
-  } else {
-    fallbackCopy();
-  }
+  copyToClipboard(html, btn, 'Copy Anonymous HTML');
 }
 
 // Build rate pills
@@ -5367,7 +5372,7 @@ document.addEventListener('DOMContentLoaded', init);
   // Also offer download
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'PlanForge_Illustration_' + (c.bizName || 'Client').replace(/\s+/g, '_') + '_' + c.year + '.html';
+  a.download = 'PlanForge_Illustration_' + (anonymous ? bizDisplay : (c.bizName || 'Client')).replace(/\s+/g, '_') + '_' + c.year + '.html';
   a.click();
 }
 
