@@ -301,6 +301,7 @@
       <input type="number" id="anonBizNum" placeholder="#" min="1" max="999" style="width:58px;padding:6px 8px;border:1px solid rgba(255,255,255,.4);border-radius:6px;background:rgba(255,255,255,.15);color:#fff;font-size:13px;font-weight:600;text-align:center;" title="Custom business number for Anonymous PDF (leave blank for random)">
     </div>
     <button class="btn" style="background:linear-gradient(135deg,#2E7D32 0%,#388E3C 100%);color:#fff;font-weight:700;letter-spacing:.5px;box-shadow:0 2px 8px rgba(46,125,50,.35);" onclick="generateParticipantView()">🖥 Participant View</button>
+    <button class="btn" style="background:#6c757d;color:#fff;font-weight:700;letter-spacing:.5px;" onclick="generateParticipantView(true)">🖥 Anon View</button>
     <button class="btn btn-outline" style="color:#fff;border-color:rgba(255,255,255,.3);" onclick="exportJSON()">⬇ Export JSON</button>
     <button class="btn btn-outline" style="color:#fff;border-color:rgba(255,255,255,.3);" onclick="showImport()">⬆ Import JSON</button>
   </div>
@@ -4526,7 +4527,7 @@ function runTestSuite() {
 //  INTERACTIVE PARTICIPANT VIEW GENERATOR
 // ══════════════════════════════════════════════════════════════
 
-function generateParticipantView() {
+function generateParticipantView(anonymous = false) {
   if (!currentComputed) { recalc(); }
   const c = currentComputed;
   if (!c) { alert('Please enter data and recalculate first.'); return; }
@@ -4584,13 +4585,24 @@ function generateParticipantView() {
   });
 
   // Static info from current computation
-  const name = [c.firstName, c.lastName].filter(Boolean).join(' ') || 'Owner';
-  const first = c.firstName || 'Owner';
+  let name, first, ownerNames, bizDisplay;
+  if (anonymous) {
+    const customNum = parseInt(document.getElementById('anonBizNum')?.value);
+    const bizNum = (customNum > 0) ? customNum : Math.floor(Math.random() * 250) + 1;
+    bizDisplay = 'Real Business #' + bizNum;
+    name = 'Business Owner';
+    first = 'Business Owner';
+    ownerNames = 'Business Owner (age ' + c.ownerAge + ')' + (c.additionalOwners||[]).map((ao, i) => ', Business Owner ' + (i + 2) + ' (age ' + ao.age + ')').join('');
+  } else {
+    name = [c.firstName, c.lastName].filter(Boolean).join(' ') || 'Owner';
+    first = c.firstName || 'Owner';
+    bizDisplay = c.bizName || 'Client';
+    ownerNames = name + (c.additionalOwners||[]).map(ao => `, ${ao.name} (age ${ao.age})`).join('');
+  }
   const nonOwn = c.nhceCountEligible + (c.hceNonOwnerCount || 0);
   const elig = nonOwn + 1 + (c.additionalOwners || []).length;
   const tp = Math.round(c.taxRate * 100);
   const ficaLabel = c.entityType === 'LLC' ? 'FICA Savings (SE Tax)' : 'S-Corp FICA Savings';
-  const ownerNames = name + (c.additionalOwners||[]).map(ao => `, ${ao.name} (age ${ao.age})`).join(''); // Escaped when interpolated into HTML
   const dataSource = lastRenderedCensus ? 'Census Data' : 'Summary Data';
   const defaultIdx = scenarios.findIndex(s => Math.abs(s.rate - curRate) < 0.1);
 
@@ -4707,7 +4719,7 @@ function generateParticipantView() {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title data-pf="title">PlanForge — ${escapeHTML(c.bizName || 'Client')} Plan Illustration</title>
+<title data-pf="title">PlanForge — ${escapeHTML(bizDisplay)} Plan Illustration</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family: Georgia,'Times New Roman',serif; color:#333; background:#f4f5f7; line-height:1.4; }
@@ -4792,7 +4804,7 @@ function generateParticipantView() {
       <div style="color:#fff;font-size:26px;font-weight:700;margin-top:4px;">Profit Share Illustration</div>
     </div>
     <div style="text-align:right;color:#fff;">
-      <div data-pf="bizName" style="font-size:22px;font-weight:700;">${escapeHTML(c.bizName || 'Client')}</div>
+      <div data-pf="bizName" style="font-size:22px;font-weight:700;">${escapeHTML(bizDisplay)}</div>
       <div class="sans" style="font-size:12px;opacity:0.8;">${c.year} Plan Year</div>
       <button id="copyEmbedBtn" onclick="copyEmbedCode()" class="sans" style="margin-top:6px;background:var(--gold);color:#fff;border:none;padding:5px 14px;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.5px;">Copy Embed HTML</button>
       <button id="copyAnonBtn" onclick="copyAnonymousEmbedCode()" class="sans" style="margin-top:6px;margin-left:6px;background:#6c757d;color:#fff;border:none;padding:5px 14px;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.5px;">Copy Anonymous HTML</button>
@@ -4924,15 +4936,15 @@ function generateParticipantView() {
 // ── Baked-in scenario data ──
 const SCENARIOS = ${scenariosJSON};
 const META = {
-  bizName: ${JSON.stringify(c.bizName || 'Client')},
+  bizName: ${anonymous ? JSON.stringify(bizDisplay) : JSON.stringify(c.bizName || 'Client')},
   year: ${JSON.stringify(c.year)},
   ownerComp: ${c.ownerComp},
   ownerAge: ${c.ownerAge},
   firstName: ${JSON.stringify(first)},
-  lastName: ${JSON.stringify(c.lastName || '')},
-  additionalOwners: ${JSON.stringify((c.additionalOwners||[]).map(ao => ({name: ao.name, comp: ao.comp})))},
+  lastName: ${anonymous ? '""' : JSON.stringify(c.lastName || '')},
+  additionalOwners: ${anonymous ? JSON.stringify((c.additionalOwners||[]).map((ao, i) => ({name: 'Business Owner ' + (i + 2), comp: (c.additionalOwners||[]).length > 0 ? Math.round((c.additionalOwners||[]).reduce((s,a) => s + a.comp, 0) / (c.additionalOwners||[]).length) : 0}))) : JSON.stringify((c.additionalOwners||[]).map(ao => ({name: ao.name, comp: ao.comp})))},
   totalComp: ${c.totalComp},
-  isAnonymous: false,
+  isAnonymous: ${anonymous},
   taxPct: ${tp},
   ficaLabel: ${JSON.stringify(ficaLabel)},
   entityType: ${JSON.stringify(c.entityType)},
@@ -5037,7 +5049,7 @@ function renderInitialComparison() {
   // Comparison table, snapshot, what-if, forfeitures — render from default scenario
   // (uses single rate for clean 3-column layout, matching PDF page 2 behavior)
   const s = SCENARIOS[META.defaultIdx];
-  renderLowerSections(s, -1);
+  renderLowerSections(s, META.defaultIdx);
 }
 
 function renderForfeitures(s) {
@@ -5348,7 +5360,7 @@ document.addEventListener('DOMContentLoaded', init);
   // Also offer download
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'PlanForge_Illustration_' + (c.bizName || 'Client').replace(/\s+/g, '_') + '_' + c.year + '.html';
+  a.download = 'PlanForge_Illustration_' + (anonymous ? bizDisplay : (c.bizName || 'Client')).replace(/\s+/g, '_') + '_' + c.year + '.html';
   a.click();
 }
 
