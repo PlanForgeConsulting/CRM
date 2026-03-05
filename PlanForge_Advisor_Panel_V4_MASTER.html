@@ -3675,8 +3675,7 @@ function generateIllustrationPDF(anonymous = false) {
     const scenOptNetCost = s.netCost;
     const sv = Math.max(0, s.stdNetCost - scenOptNetCost);
     const scenFee = Math.round(0.20 * sv);
-    // Displayed net cost = optimized net cost + fee (exclude fee in anonymous mode)
-    const displayedNC = anonymous ? scenOptNetCost : scenOptNetCost + scenFee;
+    const displayedNC = scenOptNetCost + scenFee;
     const bdr = active ? GREEN : '#ccd5de';
     const bg = active ? '#f0faf0' : '#fafbfc';
     // Cross-test advantage: what owner gets via cross-testing vs flat
@@ -3691,7 +3690,7 @@ function generateIllustrationPDF(anonymous = false) {
         <div style="font-size:8.5px;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Net Cost</div>
         <div style="font-size:14px;font-weight:700;color:${NAVY};margin:1px 0;">${$(displayedNC)}</div>
       </div>
-      ${anonymous ? '' : `<div style="font-size:8.5px;color:#888;margin-top:2px;">Optimized Fee: ${$(scenFee)}</div>`}
+      <div style="font-size:8.5px;color:#888;margin-top:2px;">Optimized Fee: ${$(scenFee)}</div>
       <div style="font-size:10px;color:${GREEN};font-weight:700;margin-top:2px;">Saves ${$(sv)}</div>
       ${active ? `<div style="font-size:8.5px;color:${GREEN};font-weight:700;margin-top:3px;text-transform:uppercase;letter-spacing:0.5px;">CURRENT</div>` : ''}
     </div>`;
@@ -3781,10 +3780,10 @@ function generateIllustrationPDF(anonymous = false) {
             ${c.optEstimatedForfeitures > 0 ? `<tr style="color:#999;"><td style="padding:3px 0;">Est. Forfeitures* (not in net cost)</td><td style="text-align:right;padding:3px 0;">${P(c.optEstimatedForfeitures)}</td></tr>` : ''}
           </table>
           <div style="display:flex;justify-content:space-between;align-items:center;background:${LGREEN};padding:7px 14px;margin:8px -16px 0;border-top:2px solid #c8e6c9;">
-            <span style="font-weight:700;font-size:11.5px;">${!anonymous && optFee > 0 ? 'Net Cost (before fee)' : 'Net Cost to Business'}</span>
+            <span style="font-weight:700;font-size:11.5px;">${optFee > 0 ? 'Net Cost (before fee)' : 'Net Cost to Business'}</span>
             <span style="font-weight:700;font-size:17px;font-family:Georgia,serif;">${$(c.optNetCost)}</span>
           </div>
-          ${!anonymous && optFee > 0 ? `<div style="display:flex;justify-content:space-between;align-items:center;background:#faf6ed;padding:4px 14px;margin:0 -16px;font-size:10px;color:#888;">
+          ${optFee > 0 ? `<div style="display:flex;justify-content:space-between;align-items:center;background:#faf6ed;padding:4px 14px;margin:0 -16px;font-size:10px;color:#888;">
             <span>Plus: PlanForge Fee (20%): <strong style="color:${GOLD};">${$(optFee)}</strong></span>
             <span>Net After Fee: <strong style="color:${NAVY};">${$(c.optNetCost + optFee)}</strong></span>
           </div>` : ''}
@@ -3884,10 +3883,10 @@ function generateIllustrationPDF(anonymous = false) {
         ${(c.realForfeituresStd > 0 || c.realForfeitures > 0) ? trow('Less: Forfeitures (actual)', '$0', P(c.realForfeituresStd), P(c.realForfeitures)) : ''}
         ${(c.stdEstimatedForfeitures > 0 || c.optEstimatedForfeitures > 0 || typ3.estimatedForfeitures > 0) ? trow('Est. Forfeitures* (not in net cost)', typ3.estimatedForfeitures > 0 ? P(typ3.estimatedForfeitures) : '$0', P(c.stdEstimatedForfeitures), P(c.optEstimatedForfeitures), {c1:'#aaa', c2:'#aaa', c3:'#aaa', labelColor:'#aaa'}) : ''}
         ${c.stdFicaSavings > 0 || c.optFicaSavings > 0 ? trow('Less: ' + ficaLabel, P(typ3.ficaSavings), P(c.stdFicaSavings), P(c.optFicaSavings)) : ''}
-        ${trow(anonymous ? 'Net Cost' : 'Net Cost (before fee)', $(typ3.netCost), $(c.stdNetCost), $(c.optNetCost), {bold:true, bg:'#f5f6f8', borderTop:true, c1:'#B22234', c2:NAVY, c3:NAVY})}
-        ${!anonymous && optFee > 0 ? trow('Plus: PlanForge Optimized Fee (20%)', '—', '—', $(optFee), {c3: GOLD}) : ''}
-        ${!anonymous && optFee > 0 ? trow('Net Cost (after fee)', $(typ3.netCost), $(c.stdNetCost), $(c.optNetCost + optFee), {bold:true, bg:'#f0f1f3', borderTop:true, c1:'#B22234', c2:NAVY, c3:NAVY}) : ''}
-        ${trow('Your Savings vs Typical', '—', $(typ3.netCost - c.stdNetCost), $(typ3.netCost - (c.optNetCost + (anonymous ? 0 : optFee))), {bold:true, bg:LGREEN, labelColor:GREEN, c1:'#aaa', c2:GREEN, c3:GREEN, borderBot:false})}
+        ${trow(optFee > 0 ? 'Net Cost (before fee)' : 'Net Cost', $(typ3.netCost), $(c.stdNetCost), $(c.optNetCost), {bold:true, bg:'#f5f6f8', borderTop:true, c1:'#B22234', c2:NAVY, c3:NAVY})}
+        ${optFee > 0 ? trow('Plus: PlanForge Optimized Fee (20%)', '—', '—', $(optFee), {c3: GOLD}) : ''}
+        ${optFee > 0 ? trow('Net Cost (after fee)', $(typ3.netCost), $(c.stdNetCost), $(c.optNetCost + optFee), {bold:true, bg:'#f0f1f3', borderTop:true, c1:'#B22234', c2:NAVY, c3:NAVY}) : ''}
+        ${trow('Your Savings vs Typical', '—', $(typ3.netCost - c.stdNetCost), $(typ3.netCost - (c.optNetCost + optFee)), {bold:true, bg:LGREEN, labelColor:GREEN, c1:'#aaa', c2:GREEN, c3:GREEN, borderBot:false})}
       </tbody>
     </table>
 
@@ -5036,7 +5035,7 @@ function renderInitialComparison() {
   document.getElementById('optHeroNum').textContent = $(d.optHero);
   document.getElementById('optNetCostDisplay').textContent = $(d.optNetCost);
   // Fee display on Optimized card
-  if (d.fee > 0 && !META.isAnonymous) {
+  if (d.fee > 0) {
     document.getElementById('optNetCostLabel').textContent = 'Net Cost (before fee)';
     document.getElementById('optFeeDisplay').textContent = $(d.fee);
     document.getElementById('optAfterFeeDisplay').textContent = $(d.optNetCost + d.fee);
@@ -5143,7 +5142,7 @@ function renderScenario(idx) {
   document.getElementById('optHeroNum').textContent = $(s.optHero);
   document.getElementById('optNetCostDisplay').textContent = $(s.optNetCost);
   // Fee display on Optimized card
-  if (s.fee > 0 && !META.isAnonymous) {
+  if (s.fee > 0) {
     document.getElementById('optNetCostLabel').textContent = 'Net Cost (before fee)';
     document.getElementById('optFeeDisplay').textContent = $(s.fee);
     document.getElementById('optAfterFeeDisplay').textContent = $(s.optNetCost + s.fee);
@@ -5217,12 +5216,12 @@ function renderLowerSections(s, activeIdx) {
   if (s.stdFicaSavings > 0 || s.optFicaSavings > 0) {
     tbl += tr('Less: '+META.ficaLabel, P(s.typFicaSavings), P(s.stdFicaSavings), P(s.optFicaSavings));
   }
-  tbl += tr(META.isAnonymous ? 'Net Cost' : 'Net Cost (before fee)', $(s.typNetCost), $(s.stdNetCost), $(s.optNetCost), {bold:true, bg:'#f5f6f8', borderTop:true, c1:'#B22234', c2:'var(--navy)', c3:'var(--navy)'});
-  if (s.fee > 0 && !META.isAnonymous) {
+  tbl += tr(s.fee > 0 ? 'Net Cost (before fee)' : 'Net Cost', $(s.typNetCost), $(s.stdNetCost), $(s.optNetCost), {bold:true, bg:'#f5f6f8', borderTop:true, c1:'#B22234', c2:'var(--navy)', c3:'var(--navy)'});
+  if (s.fee > 0) {
     tbl += tr('Plus: PlanForge Fee (20%)', '—', '—', $(s.fee), {c3:'var(--gold)'});
     tbl += tr('Net Cost (after fee)', $(s.typNetCost), $(s.stdNetCost), $(s.optNetCost + s.fee), {bold:true, bg:'#f0f1f3', borderTop:true, c1:'#B22234', c2:'var(--navy)', c3:'var(--navy)'});
   }
-  const savingsFee = META.isAnonymous ? 0 : s.fee;
+  const savingsFee = s.fee;
   tbl += tr('Your Savings vs Typical', '—', $(s.typNetCost - s.stdNetCost), $(s.typNetCost - (s.optNetCost + savingsFee)), {bold:true, bg:'var(--lgreen)', labelColor:'var(--green)', c1:'#aaa', c2:'var(--green)', c3:'var(--green)'});
   tbl += '</tbody>';
   document.getElementById('compTable').innerHTML = tbl;
@@ -5249,8 +5248,8 @@ function renderLowerSections(s, activeIdx) {
     wi += '<div style="font-size:11px;color:#333;margin-top:3px;font-weight:600;">Owner: '+$(sc.optOwnerAlloc)+'</div>';
     wi += '<div style="font-size:9px;color:'+deltaColor+';margin-top:2px;">'+deltaLabel+'</div>';
     wi += '<div style="margin-top:4px;padding-top:4px;border-top:1px solid '+(active?'#c8e6c9':'#e8e8e8')+';"><div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.5px;">Net Cost</div>';
-    wi += '<div style="font-size:16px;font-weight:700;color:var(--navy);margin:2px 0;">'+$(META.isAnonymous ? sc.optNetCost : sc.displayedNetCost)+'</div></div>';
-    if (sc.fee > 0 && !META.isAnonymous) wi += '<div style="font-size:9px;color:#888;">Fee: '+$(sc.fee)+'</div>';
+    wi += '<div style="font-size:16px;font-weight:700;color:var(--navy);margin:2px 0;">'+$(sc.displayedNetCost)+'</div></div>';
+    if (sc.fee > 0) wi += '<div style="font-size:9px;color:#888;">Fee: '+$(sc.fee)+'</div>';
     wi += '<div style="font-size:11px;color:var(--green);font-weight:700;margin-top:3px;">Saves '+$(sc.netCostSavings)+'</div>';
     if (active) wi += '<div style="font-size:9px;color:var(--green);font-weight:700;margin-top:4px;text-transform:uppercase;letter-spacing:.5px;">SELECTED</div>';
     wi += '</div>';
