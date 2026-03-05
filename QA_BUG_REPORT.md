@@ -27,13 +27,21 @@
 | 9 | **Census Mode** | **MEDIUM** | Census silently drops employees with $0 or unparseable pay | 1. Paste census with employee rows having $0 pay or non-numeric pay 2. Check parsed count vs input rows | **Expected:** Warning about dropped employees. **Actual:** Line 3436 `if (pay > 0) employees.push(...)` silently excludes them. User sees "X employees detected" but has no way to know some were dropped, potentially miscounting for compliance testing. | Open | Quick Fix |
 | 10 | **Census Mode** | **MEDIUM** | Two-column census misidentifies $50-$99 values as age instead of salary | 1. Paste 2-column CSV: `50,60000` 2. Observe parsed result | **Expected:** Ambiguity warning or heuristic documentation. **Actual:** Line 3406 treats any value 0-99 as age. A 2-col CSV with `95,60000` interprets $95 as age 95, not a $95 salary. While edge case, the heuristic is undocumented and has no override. | Open | Medium |
 | 11 | **Anonymous Mode** | **MEDIUM** | Anonymous embed regex replacement is fragile | 1. Enter data where JSON.stringify of META produces patterns matching the regex 2. Click "Copy Anonymous HTML" | **Expected:** Clean replacement. **Actual:** Line 5273 uses regex `/const META = \{[\s\S]*?\};\nconst META_ANON/` for find-and-replace. This non-greedy pattern assumes a specific code structure. Changes to code formatting, minification, or unusual data could cause the regex to match incorrectly or fail. | Open | Medium |
-| 12 | **Computation Engine** | **LOW** | Verification engine only covers standard plan, not optimized plan | 1. Run verification suite 2. Check cross-verification table | **Expected:** Both standard AND optimized plan values independently verified. **Actual:** `verifyIndependent()` (line 1696-1807) only computes standard plan metrics. The optimized plan (the more complex, higher-value path) has no independent verification, meaning cross-testing optimization bugs would go undetected. | Open | Complex |
-| 13 | **Input Validation** | **LOW** | Negative NHCE count and negative average pay accepted without warning | 1. Enter -5 for NHCE count 2. Enter -30000 for avg pay 3. Observe computation | **Expected:** Validation error. **Actual:** Computation proceeds with negative values. `nhceCount || 0` prevents crash, but negative counts produce incorrect eligible/total employee counts. No input validation on form fields. | Open | Medium |
-| 14 | **Census Mode** | **LOW** | Census delimiter detection uses only first row | 1. Paste census where header uses commas but data uses tabs 2. Observe parsing | **Expected:** Robust delimiter detection. **Actual:** Line 3314-3317 only checks `lines[0]` for delimiter. If header and data rows use different delimiters (e.g., copy-paste artifacts), all data rows parsed incorrectly. | Open | Quick Fix |
-| 15 | **PDF Generation** | **LOW** | Anonymous PDF filename may still contain recognizable business name patterns | 1. Set anonymous=true 2. Generate PDF 3. Check filename | **Expected:** Anonymized filename. **Actual:** Line 3965 uses `bizDisplayName` for anonymous mode, which in the anonymous branch is the anonymized name, so this is correctly handled. However, the browser download history may still contain the anonymous business name pattern if it's recognizable. | Cosmetic | N/A |
-| 16 | **State Management** | **LOW** | Census cache not invalidated when additional owners change | 1. Load census 2. Add additional owner 3. Check if cross-test uses updated owner list | **Expected:** Fresh computation with new owner. **Actual:** Census cache key (line 686-689) may not include additional owners in its key, potentially serving stale census data for cross-testing. The `debouncedRecalc()` does call `recalc()` which rebuilds, but the cache key should ideally incorporate owner state. | Open | Quick Fix |
-| 17 | **Computation Engine** | **INFO** | Owner age = 0 accepted without warning (infant owner) | 1. Enter owner age = 0 2. Computation proceeds | **Expected:** Validation warning. **Actual:** Cross-testing uses age 0, computing 65 years to NRA. The math is correct but the input is clearly invalid. No age validation exists on any input. | Open | Quick Fix |
-| 18 | **Computation Engine** | **INFO** | Future year (e.g., 2030) silently falls back to 2026 IRS limits | 1. Set tax year to 2030 2. Observe IRS limits used | **Expected:** Warning that limits are estimated/not available. **Actual:** Line 637 `getLimits()` silently returns 2026 limits for any unknown year. User may not realize they're using stale limits for forward projections. | Open | Quick Fix |
+| 12 | **Census Mode** | **HIGH** | Duplicate employee names break auto-departed matching | 1. Paste census with two employees having the same name and pay (e.g., two "John Smith" at $50K) 2. Both have termination dates 3. Only one is auto-marked as departed | **Expected:** Both employees marked as departed. **Actual:** Line 3115-3116 uses `employees.find(e => e.name === cEmp.name && e.pay === cEmp.pay)` — `.find()` returns only the first match. The second duplicate-named employee can never be auto-departed. | Open | Medium |
+| 13 | **State Management** | **HIGH** | Auto-departed indices re-applied on every render, overriding user manual unchecks | 1. Load census with termination dates 2. Employees auto-marked as departed 3. Manually uncheck a departed employee 4. Trigger any recalc (e.g., change a rate) | **Expected:** User's manual uncheck persists. **Actual:** Lines 3109-3117 in `renderDepartureTable()` run on every render with no guard (unlike the `excludedEmployeeIndices` path at line 3089 which checks `.size === 0`). Auto-departed employees are re-added to `departedEmployeeIndices` on every render, overriding user's manual changes. | Open | Quick Fix |
+| 14 | **Additional Owners** | **MEDIUM** | K-1 values zeroed on entity type switch but not restored when switching back | 1. Set entity type to LLC 2. Add owner with K-1 = $100K 3. Switch to S-Corp (K-1 zeroed in DOM) 4. Switch back to LLC | **Expected:** K-1 value restored to $100K. **Actual:** `toggleK1()` (line 3557) zeros the DOM K-1 fields but does NOT update `additionalOwnersList[i].k1`. When switching back, DOM still shows $0. `additionalOwnersList` retains old value but DOM is stale — adding/removing an owner triggers `renderOwners()` which restores the old K-1, creating inconsistent behavior. | Open | Medium |
+| 15 | **Census Mode** | **MEDIUM** | Headers-only CSV leaves stale `parsedCensusEmployees` from previous parse | 1. Load real census (10 employees) 2. Replace with headers-only CSV (e.g., "Name,Age,Pay") 3. Check if old census data still affects calculations | **Expected:** Census cleared, switches to synthetic mode. **Actual:** Line 3322 returns early when `dataRows.length === 0` without setting `parsedCensusEmployees = null`. The old census persists from the prior parse. | Open | Quick Fix |
+| 16 | **Census Mode** | **MEDIUM** | Extra numeric columns misidentified as age when headers absent | 1. Paste headerless CSV: `John,42,25,60000` (where 42=age, 25=dept code) 2. Check parsed result | **Expected:** Only the second column treated as age. **Actual:** Line 3431 picks the first number 15-99 as age from any non-name column. Extra columns with values 15-99 (dept codes, service years) can override the real age. | Open | Medium |
+| 17 | **State Management** | **MEDIUM** | Clearing census textarea doesn't clear departure/exclusion indices | 1. Load census 2. Mark employees as departed/excluded 3. Clear the textarea to <10 chars 4. Paste new census | **Expected:** Clean state for new census. **Actual:** Lines 3290-3292 set `parsedCensusEmployees = null` but don't clear `departedEmployeeIndices`, `excludedEmployeeIndices`, `stdExcludedEmployeeIndices`, `lastRenderedCensus`, or `_lastCensusKey`. When new census is pasted, line 3299 triggers a stale confirmation dialog about "existing markings." | Open | Quick Fix |
+| 18 | **Census Mode** | **MEDIUM** | Space-delimited data silently fails (wrong delimiter default) | 1. Paste space-separated census data 2. All rows fail to parse | **Expected:** Detect space delimiter or show specific error. **Actual:** Lines 3314-3317 only detect tab, comma, pipe. Space-delimited data defaults to tab split, yielding single-column rows where the entire line fails `parseFloat`. Result: "Could not parse" — no hint about delimiter issue. | Open | Quick Fix |
+| 19 | **Computation Engine** | **LOW** | Verification engine only covers standard plan, not optimized plan | 1. Run verification suite 2. Check cross-verification table | **Expected:** Both standard AND optimized plan values independently verified. **Actual:** `verifyIndependent()` (line 1696-1807) only computes standard plan metrics. The optimized plan (the more complex, higher-value path) has no independent verification, meaning cross-testing optimization bugs would go undetected. | Open | Complex |
+| 20 | **Input Validation** | **LOW** | Negative NHCE count and negative average pay accepted without warning | 1. Enter -5 for NHCE count 2. Enter -30000 for avg pay 3. Observe computation | **Expected:** Validation error. **Actual:** Computation proceeds with negative values. `nhceCount || 0` prevents crash, but negative counts produce incorrect eligible/total employee counts. No input validation on form fields. | Open | Medium |
+| 21 | **Census Mode** | **LOW** | Census delimiter detection uses only first row | 1. Paste census where header uses commas but data uses tabs 2. Observe parsing | **Expected:** Robust delimiter detection. **Actual:** Line 3314-3317 only checks `lines[0]` for delimiter. If header and data rows use different delimiters (e.g., copy-paste artifacts), all data rows parsed incorrectly. | Open | Quick Fix |
+| 22 | **PDF Generation** | **LOW** | Anonymous PDF filename may still contain recognizable business name patterns | 1. Set anonymous=true 2. Generate PDF 3. Check filename | **Expected:** Anonymized filename. **Actual:** Line 3965 uses `bizDisplayName` for anonymous mode, which in the anonymous branch is the anonymized name, so this is correctly handled. However, the browser download history may still contain the anonymous business name pattern if it's recognizable. | Cosmetic | N/A |
+| 23 | **State Management** | **LOW** | Census cache not invalidated when additional owners change | 1. Load census 2. Add additional owner 3. Check if cross-test uses updated owner list | **Expected:** Fresh computation with new owner. **Actual:** Census cache key (line 686-689) may not include additional owners in its key, potentially serving stale census data for cross-testing. The `debouncedRecalc()` does call `recalc()` which rebuilds, but the cache key should ideally incorporate owner state. | Open | Quick Fix |
+| 24 | **Additional Owners** | **LOW** | No maximum owner limit enforced | 1. Click "Add Owner" repeatedly 2. Add 100+ owners | **Expected:** Reasonable cap (10-20) with warning. **Actual:** `addOwner()` at line 2528 has no limit. Hundreds of owners degrade cross-testing performance and make UI unwieldy. | Open | Quick Fix |
+| 25 | **Computation Engine** | **INFO** | Owner age = 0 accepted without warning (infant owner) | 1. Enter owner age = 0 2. Computation proceeds | **Expected:** Validation warning. **Actual:** Cross-testing uses age 0, computing 65 years to NRA. The math is correct but the input is clearly invalid. No age validation exists on any input. | Open | Quick Fix |
+| 26 | **Computation Engine** | **INFO** | Future year (e.g., 2030) silently falls back to 2026 IRS limits | 1. Set tax year to 2030 2. Observe IRS limits used | **Expected:** Warning that limits are estimated/not available. **Actual:** Line 637 `getLimits()` silently returns 2026 limits for any unknown year. User may not realize they're using stale limits for forward projections. | Open | Quick Fix |
 
 ---
 
@@ -42,9 +50,9 @@
 | Severity | Count | Description |
 |----------|-------|-------------|
 | **CRITICAL** | 4 | XSS injection vectors (renderOwners, departure table, cross-test detail, participant view static HTML) |
-| **HIGH** | 6 | PDF generation XSS, participant view runtime XSS, anonymous mode data leaks (x2), 0% tax rate bug, SECURE year boundary |
-| **MEDIUM** | 4 | Silent data drops (owners, census), regex fragility, census ambiguity |
-| **LOW** | 5 | Missing verification, negative inputs, delimiter detection, cache |
+| **HIGH** | 8 | PDF generation XSS, participant view runtime XSS, anonymous mode data leaks (x2), 0% tax rate bug, SECURE year boundary, duplicate name matching failure, auto-departed overrides user unchecks |
+| **MEDIUM** | 8 | Silent data drops (owners, census), regex fragility, census ambiguity, K-1 entity switch, stale census on headers-only, extra column misdetection, stale indices on textarea clear, space-delimited failure |
+| **LOW** | 5 | Missing verification, negative inputs, delimiter detection, cache, no owner limit |
 | **INFO** | 2 | Missing input validation warnings |
 
 ---
@@ -112,6 +120,44 @@ Same pattern should be checked for other `|| default` expressions where 0 is a v
 Line 1557: The `secureYear` variable used for `CREDIT_PHASE` indexing should use the clamped value. Move the clamping (line 1248) before line 1557, or use the clamped value directly:
 ```javascript
 const creditPhase = CREDIT_PHASE[Math.max(1, Math.min(secureYear, 5)) - 1] || 0;
+```
+
+### HIGH — Census Duplicate Name Matching (Bug #12)
+
+**Fix Effort: Medium (20 min)**
+
+Line 3115-3116: Replace name+pay matching with index-based matching. Store the original census index on each employee during `renderDepartureTable()` and match by that index instead of `name + pay`:
+```javascript
+// Instead of: employees.find(e => e.name === cEmp.name && e.pay === cEmp.pay)
+// Use census array index stored on the employee object during construction
+```
+
+### HIGH — Auto-Departed Override Bug (Bug #13)
+
+**Fix Effort: Quick Fix (5 min)**
+
+Lines 3109-3117: Add the same guard that the auto-excluded path uses:
+```javascript
+// Add guard matching line 3089 pattern:
+if (isCensusMode && departedEmployeeIndices.size === 0 && parsedCensusEmployees._autoDepartedIndices ...) {
+```
+This ensures auto-detection only runs on first render, not on subsequent recalcs that would override user changes.
+
+### MEDIUM — K-1 Entity Switch (Bug #14), Stale Census (Bug #15), Textarea Cleanup (Bug #17)
+
+**Fix Effort: Quick Fix (20 min total)**
+
+**Bug #14** — `toggleK1()`: Either update `additionalOwnersList[i].k1` when zeroing, or save/restore K-1 values across entity switches.
+
+**Bug #15** — Line 3322: Add `parsedCensusEmployees = null;` before the early return when `dataRows.length === 0`.
+
+**Bug #17** — Lines 3290-3292: Mirror the cleanup from `parseCensusData()` top:
+```javascript
+departedEmployeeIndices = new Set();
+excludedEmployeeIndices = new Set();
+stdExcludedEmployeeIndices = new Set();
+lastRenderedCensus = null;
+_lastCensusKey = null; _cachedCensus = null;
 ```
 
 ### MEDIUM — Silent Owner/Employee Drops (Bugs #8, #9)
