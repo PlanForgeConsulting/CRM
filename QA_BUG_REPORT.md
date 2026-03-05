@@ -5,6 +5,7 @@
 **Tester:** Automated QA (Claude Code)
 **Baseline:** Existing test suite passes 29/29 (1 expected warning)
 **Edge Case Suite:** 59 passed, 4 real bugs surfaced, 6 code-review findings
+**XSS Deep Scan:** 11 innerHTML injection surfaces analyzed, 8 exploitable vectors confirmed
 
 ---
 
@@ -14,7 +15,10 @@
 |---|----------|----------|-------------|--------------------|--------------------|--------|------------|
 | 1 | **Input Validation / XSS** | **CRITICAL** | `renderOwners()` XSS via double-quote injection in owner name | 1. Add additional owner. 2. Enter name: `Test" onmouseover="alert(1)" x="` 3. Observe rendered HTML | **Expected:** Name displayed safely. **Actual:** Double quotes break `value="..."` attribute on line 2543, injecting arbitrary HTML attributes/event handlers. | Open | Quick Fix |
 | 2 | **Input Validation / XSS** | **CRITICAL** | Departure table XSS via census employee name | 1. Paste census with employee name: `<img src=x onerror=alert(1)>` 2. View departure/employee table | **Expected:** Name escaped. **Actual:** Line 3151 inserts `${emp.name}` directly into innerHTML without escaping. Malicious census data executes scripts. | Open | Quick Fix |
-| 3 | **Input Validation / XSS** | **HIGH** | Participant view embeds `META.firstName` and `ao.name` unescaped in innerHTML | 1. Set owner firstName to `<script>alert(1)</script>` 2. Generate participant view 3. Open in browser | **Expected:** Name escaped. **Actual:** Line 4980-4981 inserts `META.firstName` and `ao.name` via innerHTML. The participant HTML is a standalone page shared with clients — XSS persists in the exported artifact. | Open | Quick Fix |
+| 2b | **Input Validation / XSS** | **CRITICAL** | Cross-test detail table XSS via census employee/HCE name | 1. Paste census with HCE name: `<img src=x onerror=alert(1)>` 2. View cross-testing detail panel | **Expected:** Name escaped. **Actual:** Lines 2399-2409 insert `${p.name}` and line 2418-2426 insert `${rg.hce.name}` unescaped into innerHTML via `body.innerHTML = html` at line 2436. | Open | Quick Fix |
+| 2c | **Input Validation / XSS** | **CRITICAL** | Participant view static HTML XSS — **distributable to clients** | 1. Set bizName to `<img src=x onerror=alert(1)>` 2. Generate participant view 3. Open or share the standalone HTML file | **Expected:** Name escaped. **Actual:** Lines 4784, 4799 embed `${c.bizName}` and `${ownerNames}` unescaped directly in the generated HTML string. Since JSON.stringify does NOT escape `<` and `>`, these persist. The participant view is a standalone HTML file shared with clients — XSS executes in **every recipient's browser**. | Open | Quick Fix |
+| 2d | **Input Validation / XSS** | **HIGH** | PDF generation XSS via bizName/owner names in off-screen DOM | 1. Set bizName or owner name to `<img src=x onerror=alert(1)>` 2. Click Generate PDF | **Expected:** Names escaped. **Actual:** Lines 3701, 3711, 3715 embed unescaped user data into HTML string, rendered via `container.innerHTML = html` at line 3961. Scripts execute in the advisor's browser during PDF rendering. | Open | Quick Fix |
+| 3 | **Input Validation / XSS** | **HIGH** | Participant view runtime innerHTML uses `META.firstName` and `ao.name` unescaped | 1. Set owner firstName to `<img src=x onerror=alert(1)>` 2. Generate participant view 3. Interact with rate selector | **Expected:** Name escaped. **Actual:** Lines 4980-4981, 5069-5072, 5175 insert `META.firstName` and `ao.name` via innerHTML in the participant view's JavaScript runtime. `JSON.stringify` does NOT escape angle brackets — `<img src=x onerror=alert(1)>` survives JSON encoding. | Open | Quick Fix |
 | 4 | **Anonymous Mode / Data Leak** | **HIGH** | Anonymous embed `<title>` tag leaks real business name | 1. Enter real business name "Acme Corp" 2. Generate participant view 3. Click "Copy Anonymous HTML" 4. Inspect `<title>` in copied HTML | **Expected:** Title shows anonymized name. **Actual:** Line 4699 uses `${c.bizName || 'Client'}` in `<title>` — real name appears in browser tab title, bookmarks, and share previews even in anonymous mode. | Open | Quick Fix |
 | 5 | **Anonymous Mode / Data Leak** | **HIGH** | Anonymous embed exposes individual owner compensation amounts | 1. Add additional owners with unique compensation 2. Generate participant view 3. Copy Anonymous HTML 4. Search for comp amounts in source | **Expected:** Individual compensation hidden in anonymous mode. **Actual:** Line 4943 `META_ANON` replaces owner names with "Business Owner N" but retains each owner's individual `ao.comp`, allowing reverse identification by compensation amount. | Open | Quick Fix |
 | 6 | **Computation Engine** | **HIGH** | Tax rate = 0% silently overridden to 30% | 1. Set tax rate to 0% 2. Run computation 3. Observe tax savings | **Expected:** $0 tax savings. **Actual:** Line 1137 `const taxRate = input.taxRate \|\| 0.30` uses JS falsy check — `0` is falsy, so 0% tax rate becomes 30%. This affects net cost calculations for tax-exempt entities. | Open | Quick Fix |
@@ -37,8 +41,8 @@
 
 | Severity | Count | Description |
 |----------|-------|-------------|
-| **CRITICAL** | 2 | XSS injection vectors (renderOwners, departure table) |
-| **HIGH** | 4 | Data leaks in anonymous mode, 0% tax rate bug, SECURE year boundary |
+| **CRITICAL** | 4 | XSS injection vectors (renderOwners, departure table, cross-test detail, participant view static HTML) |
+| **HIGH** | 6 | PDF generation XSS, participant view runtime XSS, anonymous mode data leaks (x2), 0% tax rate bug, SECURE year boundary |
 | **MEDIUM** | 4 | Silent data drops (owners, census), regex fragility, census ambiguity |
 | **LOW** | 5 | Missing verification, negative inputs, delimiter detection, cache |
 | **INFO** | 2 | Missing input validation warnings |
@@ -47,11 +51,11 @@
 
 ## Suggested Fixes
 
-### CRITICAL — XSS Injection (Bugs #1, #2, #3)
+### CRITICAL/HIGH — XSS Injection (Bugs #1, #2, #2b, #2c, #2d, #3)
 
-**Fix Effort: Quick Fix (30 min)**
+**Fix Effort: Quick Fix (45 min) — SYSTEMIC ISSUE: Zero HTML escaping exists in the entire 5,357-line file**
 
-Add an HTML escaping utility and use it in all innerHTML/template literal contexts:
+The application has no `escapeHtml()` function, no DOMPurify, and no entity encoding anywhere. Add an HTML escaping utility and apply it to **every** innerHTML/template literal context that interpolates user data:
 
 ```javascript
 function escHtml(str) {
@@ -61,11 +65,20 @@ function escHtml(str) {
 }
 ```
 
-**Bug #1** — Line 2543: Change `value="${ao.name||''}"` to `value="${escHtml(ao.name||'')}"`.
+All affected locations:
 
-**Bug #2** — Line 3151: Change `<td>${emp.name}</td>` to `<td>${escHtml(emp.name)}</td>`.
+| Bug | Line(s) | Fix |
+|-----|---------|-----|
+| #1 | 2543 | `value="${escHtml(ao.name||'')}"` |
+| #2 | 3151 | `<td>${escHtml(emp.name)}</td>` |
+| #2b | 2399-2409, 2418-2426 | `${escHtml(p.name)}`, `${escHtml(rg.hce.name)}` |
+| #2c | 4784, 4799 | `${escHtml(c.bizName)}`, build `ownerNames` with `escHtml()` |
+| #2d | 3701, 3711, 3715 | `${escHtml(bizDisplayName)}`, `escHtml(name)`, `escHtml(ao.name)` |
+| #3 | 4980-4981, 5069-5072, 5175 | Use `escHtml(META.firstName)` and `escHtml(ao.name)` |
 
-**Bug #3** — Line 4980-4981: Use `escHtml(META.firstName)` and `escHtml(ao.name)` in participant view innerHTML assignments.
+**Priority note:** Bug #2c is the highest-impact vector — the participant view is a standalone HTML file distributed to clients, so XSS would execute in every recipient's browser. Also sanitize names at the census parse point (line 3410: `name = row[0] || ''`) as a defense-in-depth measure.
+
+Also consider switching from `innerHTML` to `textContent` wherever the inserted content should not contain markup (e.g., employee name cells in tables).
 
 ### HIGH — Anonymous Mode Data Leaks (Bugs #4, #5)
 
@@ -121,7 +134,7 @@ if (skippedCount > 0) {
 
 | Category | Tests Run | Findings |
 |----------|-----------|----------|
-| Input Validation & XSS | Code audit + 3 template analysis | 3 XSS vectors confirmed |
+| Input Validation & XSS | Deep scan of all 30+ innerHTML sites + template analysis | 8 exploitable XSS vectors confirmed across 6 rendering surfaces (no escaping function exists in entire codebase) |
 | Numeric Boundaries | 20 edge case tests | Tax rate 0% bug, SECURE year boundary bug |
 | Computation Engine | 15 tests (solo owner, 415c, cross-test, FICA) | All core math correct within tolerance |
 | Census Parsing | Code audit of parseCensusData() | Silent drops, delimiter detection, ambiguity |
