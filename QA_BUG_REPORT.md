@@ -23,6 +23,7 @@
 | 5 | **Anonymous Mode / Data Leak** | **HIGH** | Anonymous embed exposes individual owner compensation amounts | 1. Add additional owners with unique compensation 2. Generate participant view 3. Copy Anonymous HTML 4. Search for comp amounts in source | **Expected:** Individual compensation hidden in anonymous mode. **Actual:** Line 4943 `META_ANON` replaces owner names with "Business Owner N" but retains each owner's individual `ao.comp`, allowing reverse identification by compensation amount. | Open | Quick Fix |
 | 6 | **Computation Engine** | **HIGH** | Tax rate = 0% silently overridden to 30% | 1. Set tax rate to 0% 2. Run computation 3. Observe tax savings | **Expected:** $0 tax savings. **Actual:** Line 1137 `const taxRate = input.taxRate \|\| 0.30` uses JS falsy check — `0` is falsy, so 0% tax rate becomes 30%. This affects net cost calculations for tax-exempt entities. | Open | Quick Fix |
 | 7 | **Computation Engine** | **HIGH** | `secureYear = 0` or `secureYear > 5` causes undefined credit phase | 1. (Programmatic) Pass `secureYear: 0` to `independentCompute()` 2. Observe credit calculation | **Expected:** Graceful handling (0 credits or clamped to valid range). **Actual:** `CREDIT_PHASE[0-1]` = `CREDIT_PHASE[-1]` = `undefined`. Downstream: `undefined * amount = NaN`, NaN propagates through secureCredits, tax savings, and net cost. Line 1248 clamps to 1-5 for the output but line 1557 uses the raw `secureYear` for indexing. | Open | Quick Fix |
+| 7b | **Computation Engine** | **HIGH** | Non-integer `secureYear` (e.g., 2.5) causes NaN propagation | 1. (Programmatic) Pass `secureYear: 2.5` to `independentCompute()` 2. Observe SECURE credits and net cost | **Expected:** Rounded to nearest integer. **Actual:** Line 1248 clamps range but does NOT round: `Math.max(1, Math.min(2.5, 5))` = 2.5. `CREDIT_PHASE[2.5 - 1]` = `CREDIT_PHASE[1.5]` = `undefined`. NaN propagates through `secureCredits`, `stdSecureCredits`, `optTaxSavings`, `stdTaxSavings`, `optNetCost`, and `stdNetCost`. | Open | Quick Fix |
 | 8 | **Additional Owners** | **MEDIUM** | `getInputFromForm()` silently drops additional owners with $0 W-2 salary | 1. Add additional owner 2. Enter name and age but leave W-2 at $0 3. Owner has K-1 income entered 4. Run computation | **Expected:** Owner included using K-1 income. **Actual:** Line 2148 `.filter(ao => ao.salary > 0)` checks only the salary field, dropping owners whose compensation is entirely K-1-based. The owner disappears from the computation without any UI warning. | Open | Quick Fix |
 | 9 | **Census Mode** | **MEDIUM** | Census silently drops employees with $0 or unparseable pay | 1. Paste census with employee rows having $0 pay or non-numeric pay 2. Check parsed count vs input rows | **Expected:** Warning about dropped employees. **Actual:** Line 3436 `if (pay > 0) employees.push(...)` silently excludes them. User sees "X employees detected" but has no way to know some were dropped, potentially miscounting for compliance testing. | Open | Quick Fix |
 | 10 | **Census Mode** | **MEDIUM** | Two-column census misidentifies $50-$99 values as age instead of salary | 1. Paste 2-column CSV: `50,60000` 2. Observe parsed result | **Expected:** Ambiguity warning or heuristic documentation. **Actual:** Line 3406 treats any value 0-99 as age. A 2-col CSV with `95,60000` interprets $95 as age 95, not a $95 salary. While edge case, the heuristic is undocumented and has no override. | Open | Medium |
@@ -50,7 +51,7 @@
 | Severity | Count | Description |
 |----------|-------|-------------|
 | **CRITICAL** | 4 | XSS injection vectors (renderOwners, departure table, cross-test detail, participant view static HTML) |
-| **HIGH** | 8 | PDF generation XSS, participant view runtime XSS, anonymous mode data leaks (x2), 0% tax rate bug, SECURE year boundary, duplicate name matching failure, auto-departed overrides user unchecks |
+| **HIGH** | 9 | PDF generation XSS, participant view runtime XSS, anonymous mode data leaks (x2), 0% tax rate bug, SECURE year boundary (x2: out-of-range + non-integer), duplicate name matching failure, auto-departed overrides user unchecks |
 | **MEDIUM** | 8 | Silent data drops (owners, census), regex fragility, census ambiguity, K-1 entity switch, stale census on headers-only, extra column misdetection, stale indices on textarea clear, space-delimited failure |
 | **LOW** | 5 | Missing verification, negative inputs, delimiter detection, cache, no owner limit |
 | **INFO** | 2 | Missing input validation warnings |
@@ -113,13 +114,17 @@ const taxRate = (input.taxRate != null && input.taxRate !== '') ? input.taxRate 
 
 Same pattern should be checked for other `|| default` expressions where 0 is a valid value. Verify line 1701 in `verifyIndependent()` has the same fix.
 
-### HIGH — SECURE Year Boundary (Bug #7)
+### HIGH — SECURE Year Boundary (Bugs #7, #7b)
 
 **Fix Effort: Quick Fix (5 min)**
 
-Line 1557: The `secureYear` variable used for `CREDIT_PHASE` indexing should use the clamped value. Move the clamping (line 1248) before line 1557, or use the clamped value directly:
+Line 1248: Add `Math.round()` to the clamping to handle non-integer values:
 ```javascript
-const creditPhase = CREDIT_PHASE[Math.max(1, Math.min(secureYear, 5)) - 1] || 0;
+const secureYear = Math.max(1, Math.min(Math.round(input.secureYear || 1), 5));
+```
+Line 1557: Also add a fallback for safety:
+```javascript
+const creditPhase = CREDIT_PHASE[secureYear - 1] || 0;
 ```
 
 ### HIGH — Census Duplicate Name Matching (Bug #12)
