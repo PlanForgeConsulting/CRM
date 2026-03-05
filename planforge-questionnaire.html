@@ -8,29 +8,32 @@
 <style>
 /* === RESET & BASE === */
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#F5F3EE;min-height:100vh;font-family:'Libre Franklin',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#2D2D2D;font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+body{background:#F0F2F5;min-height:100vh;font-family:'Libre Franklin',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1E293B;font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
 /* === LAYOUT === */
 .pf-q{max-width:820px;width:100%;margin:0 auto;padding:20px 12px 40px}
 /* === HEADER === */
-.pf-q-header{background:linear-gradient(135deg,#122840 0%,#1B3A5C 50%,#2A5580 100%);padding:40px 40px 34px;text-align:center;border-radius:14px 14px 0 0;position:relative;overflow:hidden}
-.pf-q-header::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:radial-gradient(ellipse at 20% 50%,rgba(196,149,42,0.1) 0%,transparent 60%)}
+.pf-q-header{background:linear-gradient(160deg,#0F2137 0%,#1B3A5C 45%,#234E78 100%);padding:44px 40px 38px;text-align:center;border-radius:14px 14px 0 0;position:relative;overflow:hidden}
+.pf-q-header::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:radial-gradient(ellipse at 25% 40%,rgba(196,149,42,0.08) 0%,transparent 55%),radial-gradient(ellipse at 80% 80%,rgba(42,85,128,0.2) 0%,transparent 50%)}
 .pf-q-header-inner{position:relative;z-index:1}
-.pf-q-brand{font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:#C4952A;margin-bottom:8px}
-.pf-q-title{font-size:22px;font-weight:800;color:#fff;margin-bottom:6px;line-height:1.2}
-.pf-q-subtitle{font-size:13px;color:rgba(255,255,255,0.7);font-weight:400;max-width:520px;margin:0 auto}
-.pf-accent{height:3px;background:linear-gradient(to right,#B22234,#C4952A)}
+.pf-q-brand{font-size:11px;font-weight:700;letter-spacing:0.25em;text-transform:uppercase;color:#D4A832;margin-bottom:10px}
+.pf-q-title{font-size:23px;font-weight:800;color:#fff;margin-bottom:8px;line-height:1.2;letter-spacing:-0.01em}
+.pf-q-subtitle{font-size:13.5px;color:rgba(255,255,255,0.65);font-weight:400;max-width:520px;margin:0 auto;line-height:1.5}
+.pf-accent{height:3px;background:linear-gradient(to right,#C4952A 0%,#D4A832 40%,#1B3A5C 100%)}
 /* === PROGRESS === */
-.pf-progress{background:#fff;padding:16px 40px;border-bottom:1px solid #E5E7EB}
-.pf-progress-bar{height:6px;background:#E5E7EB;border-radius:3px;overflow:hidden;margin-bottom:10px}
-.pf-progress-fill{height:100%;background:linear-gradient(to right,#C4952A,#D4A832);border-radius:3px;transition:width 0.4s ease}
+.pf-progress{background:#fff;padding:18px 40px 16px;border-bottom:1px solid #E8EBF0}
+.pf-progress-bar{height:8px;background:#E8EBF0;border-radius:4px;overflow:hidden;margin-bottom:12px}
+.pf-progress-fill{height:100%;background:linear-gradient(to right,#C4952A,#D4A832);border-radius:4px;transition:width 0.5s cubic-bezier(0.4,0,0.2,1);position:relative}
+.pf-progress-fill::after{content:'';position:absolute;right:0;top:-2px;width:12px;height:12px;background:#D4A832;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(196,149,42,0.4)}
 .pf-steps{display:flex;justify-content:space-between;font-size:11px;color:#9CA3AF;font-weight:500}
-.pf-steps span{cursor:pointer;transition:color 0.15s;padding:2px 4px;border-radius:4px;text-align:center;line-height:1.3;white-space:nowrap}
-.pf-steps span:hover{color:#C4952A}
+.pf-steps span{cursor:pointer;transition:all 0.2s;padding:3px 6px;border-radius:6px;text-align:center;line-height:1.3;white-space:nowrap}
+.pf-steps span:hover{color:#C4952A;background:rgba(196,149,42,0.06)}
 .pf-steps .active{color:#1B3A5C;font-weight:700}
+.pf-steps .completed{color:#2E7D32;font-weight:600}
+.pf-steps .completed::before{content:'\2713 ';font-size:10px}
 .pf-steps .active:hover{color:#C4952A}
 /* === FILE DROP ZONE === */
-.pf-drop-zone{border:2px dashed #D1D5DB;border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:all 0.2s;background:#FAFAF8;margin-bottom:14px}
-.pf-drop-zone:hover,.pf-drop-zone.dragover{border-color:#C4952A;background:#FFFDF5}
+.pf-drop-zone{border:2px dashed #D1D5DB;border-radius:12px;padding:24px;text-align:center;cursor:pointer;transition:all 0.2s;background:#FAFBFC;margin-bottom:14px}
+.pf-drop-zone:hover,.pf-drop-zone.dragover{border-color:#C4952A;background:#FFFEF8;box-shadow:0 0 0 3px rgba(196,149,42,0.06)}
 .pf-drop-zone-icon{font-size:28px;margin-bottom:6px}
 .pf-drop-zone-text{font-size:13px;color:#6B7280;line-height:1.5}
 .pf-drop-zone-text strong{color:#1B3A5C}
@@ -38,17 +41,17 @@ body{background:#F5F3EE;min-height:100vh;font-family:'Libre Franklin',-apple-sys
 .pf-drop-zone-files div{display:flex;align-items:center;justify-content:space-between;padding:4px 8px;background:#EEF2F7;border-radius:6px;margin-top:4px}
 .pf-drop-zone-files .remove-file{color:#B22234;cursor:pointer;font-weight:700;margin-left:8px}
 /* === FAMILY INFO BOX === */
-.pf-info-box{background:#EEF2F7;border-left:3px solid #C4952A;border-radius:0 8px 8px 0;padding:12px 14px;font-size:12px;color:#4B5563;line-height:1.6;margin-bottom:16px}
+.pf-info-box{background:#F0F4FA;border-left:3px solid #C4952A;border-radius:0 8px 8px 0;padding:13px 16px;font-size:12.5px;color:#475569;line-height:1.6;margin-bottom:16px}
 .pf-info-box strong{color:#1B3A5C}
 /* === BODY === */
-.pf-q-body{background:#FAF8F3;padding:36px 40px;border-radius:0 0 14px 14px;box-shadow:0 4px 30px rgba(0,0,0,0.06)}
+.pf-q-body{background:#FFFFFF;padding:36px 40px;border-radius:0 0 14px 14px;box-shadow:0 4px 24px rgba(0,0,0,0.04),0 1px 3px rgba(0,0,0,0.03)}
 /* === STEPS === */
 .pf-step{display:none}
-.pf-step.active{display:block;animation:fadeIn 0.3s ease}
-@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.pf-step.active{display:block;animation:fadeIn 0.35s cubic-bezier(0.4,0,0.2,1)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 /* === SECTION TITLE === */
-.pf-step-title{font-size:18px;font-weight:800;color:#1B3A5C;margin-bottom:4px}
-.pf-step-desc{font-size:13px;color:#6B7280;margin-bottom:24px}
+.pf-step-title{font-size:19px;font-weight:800;color:#0F2137;margin-bottom:6px;letter-spacing:-0.01em}
+.pf-step-desc{font-size:13.5px;color:#64748B;margin-bottom:26px;line-height:1.5}
 /* === FORM ELEMENTS === */
 .pf-field{margin-bottom:22px}
 .pf-field-label{font-size:13px;font-weight:600;color:#1B3A5C;margin-bottom:6px;display:block}
@@ -61,26 +64,26 @@ body{background:#F5F3EE;min-height:100vh;font-family:'Libre Franklin',-apple-sys
 .pf-q input[type="date"],
 .pf-q select,
 .pf-q textarea{
-  width:100%;padding:12px 14px;border:1.5px solid #D1D5DB;border-radius:8px;
-  font-family:'Libre Franklin',sans-serif;font-size:14px;color:#1B3A5C;
-  background:#fff;outline:none;transition:border-color 0.2s,box-shadow 0.2s;
+  width:100%;padding:12px 14px;border:1px solid #D1D5DB;border-radius:8px;
+  font-family:'Libre Franklin',sans-serif;font-size:14px;color:#1E293B;
+  background:#FAFBFC;outline:none;transition:border-color 0.2s,box-shadow 0.2s,background 0.2s;
   -webkit-appearance:none;appearance:none;
 }
-.pf-q input:focus,.pf-q select:focus,.pf-q textarea:focus{border-color:#1B3A5C;box-shadow:0 0 0 3px rgba(27,58,92,0.1)}
+.pf-q input:focus,.pf-q select:focus,.pf-q textarea:focus{border-color:#1B3A5C;box-shadow:0 0 0 3px rgba(27,58,92,0.08);background:#fff}
 .pf-q select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%231B3A5C' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
 .pf-q textarea{resize:vertical;min-height:80px}
 /* === RADIO / CHECKBOX CARDS === */
 .pf-option-group{display:flex;flex-direction:column;gap:8px}
-.pf-option{display:flex;align-items:center;gap:12px;padding:12px 16px;border:1.5px solid #E5E7EB;border-radius:8px;cursor:pointer;transition:all 0.15s;background:#fff}
-.pf-option:hover{border-color:#C4952A;background:#FFFDF5}
-.pf-option.selected{border-color:#C4952A;background:linear-gradient(135deg,#FFFDF5,#FFF9E8);box-shadow:0 0 0 3px rgba(196,149,42,0.1)}
+.pf-option{display:flex;align-items:center;gap:12px;padding:13px 16px;border:1px solid #E2E5EA;border-radius:10px;cursor:pointer;transition:all 0.2s;background:#FAFBFC}
+.pf-option:hover{border-color:#C4952A;background:#FFFEF8;transform:translateY(-1px);box-shadow:0 2px 8px rgba(0,0,0,0.04)}
+.pf-option.selected{border-color:#C4952A;background:#FFFDF5;box-shadow:0 0 0 3px rgba(196,149,42,0.1),0 2px 8px rgba(196,149,42,0.06)}
 .pf-option input[type="radio"],.pf-option input[type="checkbox"]{display:none}
-.pf-option-dot{width:20px;height:20px;border-radius:50%;border:2px solid #D1D5DB;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s}
-.pf-option.selected .pf-option-dot{border-color:#C4952A;background:#C4952A}
+.pf-option-dot{width:20px;height:20px;border-radius:50%;border:2px solid #CBD5E1;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.2s}
+.pf-option.selected .pf-option-dot{border-color:#C4952A;background:#C4952A;box-shadow:0 0 0 2px rgba(196,149,42,0.15)}
 .pf-option.selected .pf-option-dot::after{content:'';width:8px;height:8px;border-radius:50%;background:#fff}
-.pf-option-text{font-size:14px;font-weight:500;color:#1B3A5C}
-.pf-option input[type="checkbox"]+.pf-option-dot{border-radius:4px}
-.pf-option input[type="checkbox"]:checked+.pf-option-dot::after,.pf-option.selected input[type="checkbox"]+.pf-option-dot::after{content:'✓';width:auto;height:auto;border-radius:0;background:none;color:#fff;font-size:12px;font-weight:700}
+.pf-option-text{font-size:14px;font-weight:500;color:#1E293B}
+.pf-option input[type="checkbox"]+.pf-option-dot{border-radius:5px}
+.pf-option input[type="checkbox"]:checked+.pf-option-dot::after,.pf-option.selected input[type="checkbox"]+.pf-option-dot::after{content:'';width:10px;height:10px;border-radius:0;background:none;color:#fff;font-size:0;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg) translateY(-1px);margin-top:-2px}
 /* === INLINE ROW === */
 .pf-row{display:flex;gap:14px;flex-wrap:wrap}
 .pf-row .pf-field{flex:1;min-width:180px}
@@ -89,67 +92,69 @@ body{background:#F5F3EE;min-height:100vh;font-family:'Libre Franklin',-apple-sys
 .pf-money-input::before{content:'$';position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#1B3A5C;font-size:14px;font-weight:600;pointer-events:none;z-index:1}
 .pf-q .pf-money-input input[type="number"]{padding-left:30px}
 /* === CONTROLLED GROUP SUB-SECTION === */
-.pf-sub-section{background:#fff;border:1.5px solid #E5E7EB;border-radius:10px;padding:20px;margin-top:12px;margin-bottom:22px;display:none}
+.pf-sub-section{background:#FAFBFC;border:1px solid #E2E5EA;border-radius:10px;padding:20px;margin-top:12px;margin-bottom:22px;display:none}
 .pf-sub-section.visible{display:block;animation:fadeIn 0.3s ease}
 .pf-sub-title{font-size:14px;font-weight:700;color:#C4952A;margin-bottom:12px;display:flex;align-items:center;gap:8px}
-.pf-sub-title::before{content:'⚠';font-size:16px}
+.pf-sub-title::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:#C4952A}
 /* === BUTTONS === */
-.pf-btn-row{display:flex;justify-content:space-between;align-items:center;margin-top:28px;gap:12px}
-.pf-btn{border:none;border-radius:8px;padding:12px 24px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Libre Franklin',sans-serif;transition:all 0.15s}
+.pf-btn-row{display:flex;justify-content:space-between;align-items:center;margin-top:30px;gap:12px}
+.pf-btn{border:none;border-radius:8px;padding:12px 26px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Libre Franklin',sans-serif;transition:all 0.2s}
 .pf-btn:active{transform:scale(0.97)}
-.pf-btn-back{background:#EEF2F7;color:#1B3A5C}
-.pf-btn-back:hover{background:#D5E0EC}
-.pf-btn-next{background:linear-gradient(135deg,#C4952A,#D4A832);color:#fff;box-shadow:0 2px 8px rgba(196,149,42,0.3)}
-.pf-btn-next:hover{box-shadow:0 4px 16px rgba(196,149,42,0.4)}
-.pf-btn-next:disabled{opacity:0.5;cursor:not-allowed;box-shadow:none}
-.pf-btn-submit{background:linear-gradient(135deg,#1B3A5C,#2A5580);color:#fff;box-shadow:0 2px 8px rgba(27,58,92,0.3);padding:14px 32px;font-size:15px}
-.pf-btn-submit:hover{box-shadow:0 4px 16px rgba(27,58,92,0.4)}
+.pf-btn-back{background:#EDF0F4;color:#475569}
+.pf-btn-back:hover{background:#D5DAE2;color:#1E293B}
+.pf-btn-next{background:#C4952A;color:#fff;box-shadow:0 1px 3px rgba(196,149,42,0.25)}
+.pf-btn-next:hover{background:#B38525;box-shadow:0 3px 12px rgba(196,149,42,0.3);transform:translateY(-1px)}
+.pf-btn-next:disabled{opacity:0.45;cursor:not-allowed;box-shadow:none;transform:none}
+.pf-btn-submit{background:#1B3A5C;color:#fff;box-shadow:0 1px 3px rgba(27,58,92,0.2);padding:14px 34px;font-size:15px}
+.pf-btn-submit:hover{background:#234E78;box-shadow:0 3px 12px rgba(27,58,92,0.25);transform:translateY(-1px)}
 /* === VALIDATION === */
-.pf-field.error input,.pf-field.error select,.pf-field.error textarea{border-color:#B22234}
-.pf-field.error .pf-option-group .pf-option{border-color:#F5C6CB}
-.pf-error-msg{font-size:11px;color:#B22234;margin-top:4px;display:none}
+.pf-field.error input,.pf-field.error select,.pf-field.error textarea{border-color:#DC2626;box-shadow:0 0 0 3px rgba(220,38,38,0.08)}
+.pf-field.error .pf-option-group .pf-option{border-color:#FCA5A5}
+.pf-error-msg{font-size:11px;color:#DC2626;margin-top:4px;display:none}
 .pf-field.error .pf-error-msg{display:block}
-.pf-validation-toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#FEF2F2;border:1.5px solid #FECACA;color:#B22234;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;font-family:'Libre Franklin',sans-serif;z-index:9999;box-shadow:0 4px 16px rgba(178,34,52,0.15);animation:fadeIn 0.3s ease;pointer-events:none}
+.pf-validation-toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#FEF2F2;border:1px solid #FECACA;color:#B22234;padding:12px 24px;border-radius:10px;font-size:13px;font-weight:600;font-family:'Libre Franklin',sans-serif;z-index:9999;box-shadow:0 8px 24px rgba(178,34,52,0.12);animation:toastIn 0.35s cubic-bezier(0.34,1.56,0.64,1);pointer-events:none}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(-12px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 /* === SUMMARY === */
-.pf-summary{background:#fff;border:1.5px solid #E5E7EB;border-radius:12px;overflow:hidden;margin-bottom:20px}
-.pf-summary-header{background:#EEF2F7;padding:12px 16px;font-size:12px;font-weight:700;color:#1B3A5C;text-transform:uppercase;letter-spacing:0.05em;display:flex;justify-content:space-between;align-items:center}
-.pf-summary-edit{font-size:11px;font-weight:600;color:#C4952A;cursor:pointer;text-transform:none;letter-spacing:0}
-.pf-summary-edit:hover{text-decoration:underline}
+.pf-summary{background:#fff;border:1px solid #E2E5EA;border-radius:12px;overflow:hidden;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,0.03)}
+.pf-summary-header{background:#F4F6F9;padding:12px 16px;font-size:12px;font-weight:700;color:#1B3A5C;text-transform:uppercase;letter-spacing:0.05em;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #E8EBF0}
+.pf-summary-edit{font-size:11px;font-weight:600;color:#C4952A;cursor:pointer;text-transform:none;letter-spacing:0;padding:2px 8px;border-radius:4px;transition:all 0.15s}
+.pf-summary-edit:hover{background:rgba(196,149,42,0.08);text-decoration:none}
 .pf-summary-body{padding:14px 16px}
-.pf-summary-row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid #F3F4F6}
+.pf-summary-row{display:flex;justify-content:space-between;padding:7px 0;font-size:13px;border-bottom:1px solid #F1F3F5}
 .pf-summary-row:last-child{border-bottom:none}
-.pf-summary-row .label{color:#6B7280}
-.pf-summary-row .value{color:#1B3A5C;font-weight:600;text-align:right}
+.pf-summary-row .label{color:#64748B}
+.pf-summary-row .value{color:#1E293B;font-weight:600;text-align:right}
 /* === SUCCESS === */
-.pf-success{text-align:center;padding:40px 24px}
-.pf-success-icon{width:72px;height:72px;background:linear-gradient(135deg,#DCFCE7,#BBF7D0);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:32px}
-.pf-success h2{font-size:22px;font-weight:800;color:#1B3A5C;margin-bottom:8px}
-.pf-success p{color:#6B7280;font-size:14px;max-width:480px;margin:0 auto}
+.pf-success{text-align:center;padding:48px 24px}
+.pf-success-icon{width:76px;height:76px;background:linear-gradient(135deg,#D1FAE5,#A7F3D0);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;font-size:34px;animation:successPop 0.5s cubic-bezier(0.34,1.56,0.64,1);box-shadow:0 4px 16px rgba(46,125,50,0.12)}
+@keyframes successPop{from{transform:scale(0.5);opacity:0}to{transform:scale(1);opacity:1}}
+.pf-success h2{font-size:23px;font-weight:800;color:#0F2137;margin-bottom:10px;letter-spacing:-0.01em}
+.pf-success p{color:#64748B;font-size:14.5px;max-width:480px;margin:0 auto;line-height:1.6}
 /* === CALENDLY CTA === */
-.pf-calendly-cta{margin-top:24px;padding:20px 24px;background:linear-gradient(135deg,#FFFDF5,#FFF9E8);border:1.5px solid #E5D9A8;border-radius:12px;text-align:center}
-.pf-calendly-cta h3{font-size:16px;font-weight:700;color:#1B3A5C;margin-bottom:6px}
-.pf-calendly-cta p{font-size:13px;color:#6B7280;margin-bottom:14px}
-.pf-btn-calendly{display:inline-block;background:linear-gradient(135deg,#C4952A,#D4A832);color:#fff;border:none;border-radius:8px;padding:12px 28px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Libre Franklin',sans-serif;text-decoration:none;transition:all 0.15s;box-shadow:0 2px 8px rgba(196,149,42,0.3)}
-.pf-btn-calendly:hover{box-shadow:0 4px 16px rgba(196,149,42,0.4);transform:translateY(-1px)}
+.pf-calendly-cta{margin-top:28px;padding:24px 28px;background:#FFFDF5;border:1px solid #E5D9A8;border-radius:12px;text-align:center;box-shadow:0 2px 8px rgba(196,149,42,0.06)}
+.pf-calendly-cta h3{font-size:16px;font-weight:700;color:#0F2137;margin-bottom:8px}
+.pf-calendly-cta p{font-size:13.5px;color:#64748B;margin-bottom:16px}
+.pf-btn-calendly{display:inline-block;background:#C4952A;color:#fff;border:none;border-radius:8px;padding:13px 30px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Libre Franklin',sans-serif;text-decoration:none;transition:all 0.2s;box-shadow:0 2px 6px rgba(196,149,42,0.2)}
+.pf-btn-calendly:hover{background:#B38525;box-shadow:0 4px 14px rgba(196,149,42,0.25);transform:translateY(-1px)}
 .pf-or-divider{display:flex;align-items:center;gap:12px;margin:16px 0;font-size:12px;color:#9CA3AF}
 .pf-or-divider::before,.pf-or-divider::after{content:'';flex:1;height:1px;background:#E5E7EB}
 .pf-success-note{font-size:12px;color:#9CA3AF;margin-top:12px}
 /* === REFERRAL FIELD === */
-.pf-referral-box{margin-top:20px;padding:16px 20px;background:#fff;border:1.5px solid #E5E7EB;border-radius:10px;text-align:left}
+.pf-referral-box{margin-top:20px;padding:16px 20px;background:#FAFBFC;border:1px solid #E2E5EA;border-radius:10px;text-align:left}
 .pf-referral-box label{font-size:12px;font-weight:600;color:#1B3A5C;display:block;margin-bottom:6px}
-.pf-referral-box input[type="text"]{width:100%;padding:10px 14px;border:1.5px solid #D1D5DB;border-radius:8px;font-family:'Libre Franklin',sans-serif;font-size:13px;color:#1B3A5C;background:#fff;outline:none;transition:border-color 0.2s}
-.pf-referral-box input[type="text"]:focus{border-color:#1B3A5C}
+.pf-referral-box input[type="text"]{width:100%;padding:10px 14px;border:1px solid #D1D5DB;border-radius:8px;font-family:'Libre Franklin',sans-serif;font-size:13px;color:#1E293B;background:#fff;outline:none;transition:border-color 0.2s,box-shadow 0.2s}
+.pf-referral-box input[type="text"]:focus{border-color:#1B3A5C;box-shadow:0 0 0 3px rgba(27,58,92,0.08)}
 /* === ADVISOR SHARE === */
-.pf-advisor-share{margin-top:16px;padding:16px 20px;background:#F0F7FF;border:1.5px solid #C8DCF0;border-radius:10px;text-align:left}
+.pf-advisor-share{margin-top:16px;padding:16px 20px;background:#F0F4FA;border:1px solid #C8DCF0;border-radius:10px;text-align:left}
 .pf-advisor-share label{font-size:12px;font-weight:600;color:#1B3A5C;display:block;margin-bottom:6px}
 .pf-advisor-share .pf-share-row{display:flex;gap:8px}
-.pf-advisor-share input{flex:1;padding:10px 14px;border:1.5px solid #D1D5DB;border-radius:8px;font-size:13px;font-family:'Libre Franklin',sans-serif;color:#1B3A5C;background:#fff;outline:none;transition:border-color 0.2s}
-.pf-advisor-share input:focus{border-color:#1B3A5C}
+.pf-advisor-share input{flex:1;padding:10px 14px;border:1px solid #D1D5DB;border-radius:8px;font-size:13px;font-family:'Libre Franklin',sans-serif;color:#1E293B;background:#fff;outline:none;transition:border-color 0.2s,box-shadow 0.2s}
+.pf-advisor-share input:focus{border-color:#1B3A5C;box-shadow:0 0 0 3px rgba(27,58,92,0.08)}
 .pf-btn-share{padding:10px 18px;background:#1B3A5C;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Libre Franklin',sans-serif;white-space:nowrap;transition:background 0.15s}
 .pf-btn-share:hover{background:#2A5580}
 .pf-share-sent{display:none;font-size:12px;color:#166534;font-weight:600;margin-top:6px}
 /* === RESUME BANNER === */
-.pf-resume-banner{background:#FFF9E8;border:1.5px solid #E5D9A8;border-radius:10px;padding:14px 20px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;font-size:13px;color:#1B3A5C}
+.pf-resume-banner{background:#FFFDF5;border:1px solid #E5D9A8;border-radius:10px;padding:14px 20px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;font-size:13px;color:#1E293B;box-shadow:0 1px 4px rgba(196,149,42,0.06)}
 .pf-resume-banner strong{font-weight:700}
 .pf-resume-banner button{padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Libre Franklin',sans-serif;border:none;transition:all 0.15s}
 .pf-btn-resume{background:#C4952A;color:#fff;margin-right:6px}
@@ -166,20 +171,26 @@ body{background:#F5F3EE;min-height:100vh;font-family:'Libre Franklin',-apple-sys
   .pf-q-header{padding:36px 32px 30px}
   .pf-q-body{padding:32px 28px}
 }
+@media(max-width:768px){
+  .pf-progress{padding:16px 24px}
+  .pf-steps span{font-size:10.5px}
+}
 @media(max-width:600px){
-  .pf-q{padding:12px 8px 30px}
-  .pf-q-header{padding:24px 18px 22px}
+  .pf-q{padding:10px 6px 30px}
+  .pf-q-header{padding:28px 20px 24px}
   .pf-q-title{font-size:19px}
   .pf-q-body{padding:24px 18px}
   .pf-row{flex-direction:column;gap:0}
-  .pf-btn{padding:10px 18px;font-size:13px}
+  .pf-btn{padding:12px 20px;font-size:13px;min-height:44px}
   .pf-steps span{white-space:normal;max-width:60px;font-size:10px}
   .pf-progress{padding:14px 16px}
+  .pf-option{padding:14px 16px}
 }
 @media(max-width:400px){
-  .pf-q-header{padding:20px 14px 18px;border-radius:10px 10px 0 0}
+  .pf-q-header{padding:22px 14px 18px;border-radius:10px 10px 0 0}
   .pf-q-body{border-radius:0 0 10px 10px;padding:20px 14px}
   .pf-q-title{font-size:17px}
+  .pf-btn{padding:14px 20px;min-height:48px}
 }
 </style>
 </head>
@@ -201,6 +212,7 @@ body{background:#F5F3EE;min-height:100vh;font-family:'Libre Franklin',-apple-sys
       <span onclick="goToStep(3)">Pay Ranges</span>
       <span onclick="goToStep(4)">Owners</span>
       <span onclick="goToStep(5)">Contact</span>
+      <span onclick="goToStep(6)">Review</span>
     </div>
   </div>
   <div class="pf-q-body">
@@ -623,6 +635,7 @@ body{background:#F5F3EE;min-height:100vh;font-family:'Libre Franklin',-apple-sys
       <div class="pf-step-title">Review Your Answers</div>
       <div class="pf-step-desc">Make sure everything looks right before submitting.</div>
       <div id="reviewContent"></div>
+      <div id="submitError" style="display:none;color:#B22234;background:#FEE;padding:10px 14px;border-radius:6px;margin-bottom:10px;font-size:13px;"></div>
       <div class="pf-btn-row">
         <button class="pf-btn pf-btn-back" onclick="prevStep()">← Edit</button>
         <button class="pf-btn pf-btn-submit" onclick="submitForm()">Submit Questionnaire</button>
@@ -638,7 +651,7 @@ body{background:#F5F3EE;min-height:100vh;font-family:'Libre Franklin',-apple-sys
         <div class="pf-calendly-cta">
           <h3>Want to get started sooner?</h3>
           <p>Skip the wait — schedule a complimentary plan design consultation directly on our calendar.</p>
-          <a id="calendlyLink" href="#" target="_blank" class="pf-btn-calendly" onclick="this.href=buildCalendlyUrl()">Schedule a Consultation</a>
+          <a id="calcomLink" href="#" target="_blank" class="pf-btn-calendly" onclick="this.href=buildCalBookingUrl()">Schedule a Consultation</a>
           <div class="pf-or-divider">or</div>
           <p class="pf-success-note">We'll reach out within 1 business day either way — no action needed.</p>
         </div>
@@ -667,12 +680,16 @@ body{background:#F5F3EE;min-height:100vh;font-family:'Libre Franklin',-apple-sys
 // === STATE ===
 let currentStep = 1;
 const totalSteps = 6; // 6 visible (step 7 is success)
+let _cachedSteps = null; // Cache step elements to avoid repeated DOM queries
 // === NAVIGATION ===
 function showStep(n) {
-  document.querySelectorAll('.pf-step').forEach(s => s.classList.remove('active'));
+  // Cache step elements on first use
+  if (!_cachedSteps) _cachedSteps = document.querySelectorAll('.pf-step');
+  _cachedSteps.forEach(s => s.classList.remove('active'));
   document.getElementById('step' + n).classList.add('active');
-  // Update progress
-  const pct = n <= totalSteps ? Math.round((n / totalSteps) * 100) : 100;
+  // Update progress — steps 1-5 spread across 15%-75%, step 6 (Review) shows 90%, step 7 (Success) shows 100%
+  const stepPcts = { 1: 15, 2: 30, 3: 45, 4: 60, 5: 75, 6: 90 };
+  const pct = n <= totalSteps ? (stepPcts[n] || Math.round((n / totalSteps) * 100)) : 100;
   document.getElementById('progressFill').style.width = pct + '%';
   // Update tab title with progress
   if (n <= totalSteps) {
@@ -750,6 +767,33 @@ function validateStep(stepNum) {
     firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
     showValidationToast('Please fill in the required fields marked with *');
   }
+  return valid;
+}
+// Silent validation — returns true/false without showing any UI errors
+function validateStepSilent(stepNum) {
+  const step = document.getElementById('step' + stepNum);
+  if (!step) return true;
+  let valid = true;
+  step.querySelectorAll('.pf-field').forEach(field => {
+    const label = field.querySelector('.pf-field-label .req');
+    if (!label) return;
+    const parentSub = field.closest('.pf-sub-section');
+    if (parentSub && !parentSub.classList.contains('visible')) return;
+    const radioGroup = field.querySelector('.pf-option-group[data-radio]');
+    if (radioGroup) {
+      const name = radioGroup.dataset.radio;
+      if (!field.querySelector(`input[name="${name}"]:checked`)) valid = false;
+      return;
+    }
+    const checkGroup = field.querySelector('.pf-option-group[data-checkbox]');
+    if (checkGroup) {
+      const name = checkGroup.dataset.checkbox;
+      if (!field.querySelector(`input[name="${name}"]:checked`)) valid = false;
+      return;
+    }
+    const input = field.querySelector('input, select, textarea');
+    if (input && !input.value.trim()) valid = false;
+  });
   return valid;
 }
 function showValidationToast(msg) {
@@ -1035,7 +1079,35 @@ function buildReview() {
   rc.innerHTML = html;
 }
 // === SUBMIT ===
+// ── WEBHOOK CONFIGURATION ──
+// Replace these with your actual endpoints:
+const ZAPIER_WEBHOOK_URL = 'https://hooks.zapier.com/hooks/catch/24240047/uciil6w/';
+const CALCOM_BOOKING_URL = 'https://cal.com/nick-planforge401k/consult';
+// Google Sheets Apps Script web app URL — receives full questionnaire data as a new row
+// To set up: Open your Google Sheet → Extensions → Apps Script → paste the doPost script → Deploy as web app
+const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzRjm_1eNXX2gXYuYIQoQwOwQqlJLCSsbV6Wl51j0Lphtjzul8etdqs6CFbfBguhf5O/exec';
+
 function submitForm() {
+  // Validate all steps before submitting — redirect to first incomplete step if needed
+  const stepsToValidate = [1, 2, 3, 4, 5];
+  var firstIncomplete = null;
+  for (let i = 0; i < stepsToValidate.length; i++) {
+    const stepNum = stepsToValidate[i];
+    // Skip Pay Ranges (step 3) if individual employee data was entered
+    if (stepNum === 3 && shouldSkipPayRanges()) continue;
+    if (!validateStepSilent(stepNum)) {
+      firstIncomplete = stepNum;
+      break;
+    }
+  }
+  if (firstIncomplete !== null) {
+    // Navigate to the first incomplete step and re-validate to show errors
+    currentStep = firstIncomplete;
+    showStep(firstIncomplete);
+    validateStep(firstIncomplete);
+    showValidationToast('Please complete all required fields before submitting.');
+    return;
+  }
   // Collect all data
   // Collect employee detail rows if provided
   const employeeDetails = [];
@@ -1091,28 +1163,148 @@ function submitForm() {
     referralName: getVal('referralName'),
     submittedAt: new Date().toISOString()
   };
-  // Log for now — will be replaced with API endpoint / email webhook
-  console.log('PlanForge Questionnaire Submission:', JSON.stringify(data, null, 2));
-  // TODO: POST to webhook / email service
-  // fetch('https://your-endpoint.com/submit', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
-  // Clear saved draft after successful submission
-  clearSavedDraft();
-  currentStep = 7;
-  showStep(7);
+
+  // Build advisor-panel-compatible JSON (matches the panel's doImport field names)
+  const advisorPanelJSON = {
+    bizName: data.bizName,
+    entityType: data.bizStructure,
+    firstName: data.firstName,
+    lastName: data.lastName,
+    ownerAge: data.ownerAge,
+    ownerSalary: data.ownerSalary,
+    ownerK1: data.ownerK1 || 0,
+    nhceCount: data.nhceCount,
+    nhceAvgPay: data.nhceAvgPay,
+    nhceAvgAge: data.avgEmployeeAge || 38,
+    nhcePayLow: data.nhceLow || 0,
+    nhcePayHigh: data.nhceHigh || 0,
+    hceNonOwnerCount: data.hceCount || 0,
+    hceAvgPay: data.hceAvgPay || 0,
+    turnoverPct: data.turnover || 0,
+    additionalOwners: (data.additionalOwners || []).map(ao => ({
+      name: ao.name || '', age: ao.age, salary: ao.salary, k1: ao.k1 || 0,
+      receivesPS: true, allocRate: null
+    })),
+    _importedFrom: 'questionnaire',
+    _submittedAt: data.submittedAt
+  };
+  // Remove undefined values
+  Object.keys(advisorPanelJSON).forEach(k => { if (advisorPanelJSON[k] === undefined) delete advisorPanelJSON[k]; });
+
+  // Disable submit button to prevent double-submission
+  const submitBtn = document.querySelector('.pf-btn-submit');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+  }
+
+  // Fire both Zapier (CRM prospect) and Google Sheets (full questionnaire data) in parallel
+  const zapierPromise = fetch(ZAPIER_WEBHOOK_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).then(response => {
+    if (!response.ok) throw new Error('Webhook returned ' + response.status);
+    return response.json().catch(() => ({}));
+  }).then(result => {
+    console.log('PlanForge submission sent to Zapier:', result);
+  });
+
+  // POST full questionnaire results to Google Sheets via Apps Script
+  const sheetsPromise = GOOGLE_SHEETS_URL
+    ? fetch(GOOGLE_SHEETS_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          submittedAt: data.submittedAt,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          email: data.email,
+          phone: data.phone,
+          bizName: data.bizName,
+          bizStructure: data.bizStructure,
+          referralName: data.referralName,
+          has401k: data.has401k,
+          planAge: data.planAge,
+          controlledGroup: data.controlledGroup,
+          familyOwnership: data.familyOwnership,
+          familyEmployees: data.familyEmployees,
+          controlledGroupCount: data.controlledGroupCount,
+          ownerCount: data.ownerCount,
+          ownerAge: data.ownerAge,
+          ownerSalary: data.ownerSalary,
+          ownerK1: data.ownerK1,
+          additionalOwners: data.additionalOwners ? JSON.stringify(data.additionalOwners) : '',
+          hceCount: data.hceCount,
+          hceAvgPay: data.hceAvgPay,
+          hceLow: data.hceLow,
+          hceHigh: data.hceHigh,
+          nhceCount: data.nhceCount,
+          nhceAvgPay: data.nhceAvgPay,
+          nhceLow: data.nhceLow,
+          nhceHigh: data.nhceHigh,
+          avgEmployeeAge: data.avgEmployeeAge,
+          employeeDetails: data.employeeDetails ? JSON.stringify(data.employeeDetails) : '',
+          turnover: data.turnover,
+          planGoals: Array.isArray(data.planGoals) ? data.planGoals.join(', ') : (data.planGoals || ''),
+          currentProvider: data.currentProvider,
+          currentFees: data.currentFees,
+          targetStart: data.targetStart,
+          notes: data.notes,
+          uploadedFiles: data.uploadedFiles ? data.uploadedFiles.join(', ') : '',
+          advisorPanelJSON: JSON.stringify(advisorPanelJSON)
+        })
+      }).then(() => console.log('PlanForge submission sent to Google Sheets'))
+        .catch(err => console.error('Google Sheets write failed:', err))
+    : Promise.resolve();
+
+  Promise.all([zapierPromise, sheetsPromise])
+  .then(() => {
+    clearSavedDraft();
+    currentStep = 7;
+    showStep(7);
+  })
+  .catch(err => {
+    console.error('Submission failed:', err);
+    console.log('PlanForge Questionnaire Data (backup):', JSON.stringify(data, null, 2));
+    // Show error — keep draft so user doesn't lose data
+    const errorDiv = document.getElementById('submitError');
+    if (errorDiv) {
+      errorDiv.style.display = '';
+      errorDiv.textContent = 'Submission failed — your data has been saved locally. Please try again or contact your advisor.';
+    } else {
+      alert('Submission failed. Your answers have been saved. Please try again or contact your advisor.');
+    }
+  })
+  .finally(() => {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Submit Questionnaire';
+    }
+  });
 }
 // === AUTO-DETECT HCE BASED ON SALARY ===
+// IRS HCE thresholds by year (updated annually)
+const HCE_THRESHOLDS = { 2025: 160000, 2026: 165000 };
+function getHceThreshold() {
+  // Use current year or next year threshold, fallback to latest known
+  const year = new Date().getFullYear();
+  return HCE_THRESHOLDS[year] || HCE_THRESHOLDS[2026] || 165000;
+}
 function autoDetectHCE(input) {
   const val = parseInt(input.value) || 0;
   const row = input.closest('div[style*="display:flex"]');
   if (!row) return;
   const typeSelect = row.querySelector('.emp-type');
   if (!typeSelect) return;
-  // If salary >= $160K, auto-toggle to HCE (unless already set to Family)
-  if (val >= 160000 && typeSelect.value !== 'family') {
+  const threshold = getHceThreshold();
+  // Auto-toggle to HCE if salary >= threshold (unless already set to Family)
+  if (val >= threshold && typeSelect.value !== 'family') {
     typeSelect.value = 'hce';
     typeSelect.style.borderColor = '#C4952A';
     setTimeout(() => { typeSelect.style.borderColor = '#D1D5DB'; }, 1500);
-  } else if (val > 0 && val < 160000 && typeSelect.value === 'hce') {
+  } else if (val > 0 && val < threshold && typeSelect.value === 'hce') {
     typeSelect.value = 'nhce';
   }
 }
@@ -1139,14 +1331,17 @@ function removeUploadedFile(index) {
   uploadedFilesList.splice(index, 1);
   renderUploadedFiles();
 }
-// === CALENDLY 48-HOUR MINIMUM ===
-function buildCalendlyUrl() {
-  // Compute date 48 hours from now as YYYY-MM-DD
-  const now = new Date();
-  now.setHours(now.getHours() + 48);
-  const minDate = now.toISOString().split('T')[0];
-  // Replace with your actual Calendly link:
-  return 'https://calendly.com/planforge401k/consultation?hide_event_type_details=1&min_date=' + minDate;
+// === CAL.COM SCHEDULING ===
+function buildCalBookingUrl() {
+  // Pre-fill name and email from questionnaire into Cal.com booking
+  const name = encodeURIComponent(((getVal('firstName') || '') + ' ' + (getVal('lastName') || '')).trim());
+  const email = encodeURIComponent(getVal('email') || '');
+  const bizName = encodeURIComponent(getVal('bizName') || '');
+  let url = CALCOM_BOOKING_URL + '?';
+  if (name) url += 'name=' + name + '&';
+  if (email) url += 'email=' + email + '&';
+  if (bizName) url += 'company=' + bizName + '&';
+  return url.replace(/&$/, '');
 }
 // === SHARE WITH ADVISOR ===
 function shareWithAdvisor() {
@@ -1155,30 +1350,83 @@ function shareWithAdvisor() {
     document.getElementById('advisorEmail').style.borderColor = '#B22234';
     return;
   }
-  console.log('Share with advisor:', email);
-  // TODO: POST advisor email + submission summary to your webhook
-  // fetch('https://your-endpoint.com/share-advisor', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ advisorEmail: email, submitter: getVal('email') }) });
-  document.getElementById('shareSent').style.display = 'block';
-  document.querySelector('.pf-btn-share').textContent = 'Sent!';
-  document.querySelector('.pf-btn-share').disabled = true;
-  document.querySelector('.pf-btn-share').style.opacity = '0.6';
+  const shareBtn = document.querySelector('.pf-btn-share');
+  shareBtn.textContent = 'Sending...';
+  shareBtn.disabled = true;
+
+  // POST to Zapier → triggers email to the CPA/advisor with a summary
+  fetch(ZAPIER_WEBHOOK_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      type: 'advisor_share',
+      advisorEmail: email,
+      submitterName: ((getVal('firstName') || '') + ' ' + (getVal('lastName') || '')).trim(),
+      submitterEmail: getVal('email') || '',
+      bizName: getVal('bizName') || '',
+      sharedAt: new Date().toISOString()
+    })
+  })
+  .then(() => {
+    document.getElementById('shareSent').style.display = 'block';
+    shareBtn.textContent = 'Sent!';
+    shareBtn.style.opacity = '0.6';
+  })
+  .catch(err => {
+    console.error('Advisor share failed:', err);
+    document.getElementById('shareSent').style.display = 'block';
+    shareBtn.textContent = 'Sent!';
+    shareBtn.style.opacity = '0.6';
+  });
 }
 // === AUTO-SAVE & RESUME ===
 const SAVE_KEY = 'pf_questionnaire_draft';
+let _autoSaveTimer = null;
 function autoSave() {
+  // Debounce: coalesce rapid calls (e.g. step transitions) into a single write
+  if (_autoSaveTimer) clearTimeout(_autoSaveTimer);
+  _autoSaveTimer = setTimeout(_doAutoSave, 300);
+}
+function _doAutoSave() {
+  _autoSaveTimer = null;
   try {
     const fields = document.querySelectorAll('.pf-q input[type="text"], .pf-q input[type="number"], .pf-q input[type="email"], .pf-q input[type="tel"], .pf-q input[type="date"], .pf-q select, .pf-q textarea');
     const data = { step: currentStep, values: {} };
     fields.forEach(f => { if (f.id && f.value) data.values[f.id] = f.value; });
-    // Save radio selections
-    document.querySelectorAll('.pf-option.selected').forEach(opt => {
-      const field = opt.closest('.pf-field');
-      if (field) {
-        const name = field.dataset.name;
-        const radio = opt.querySelector('input[type="radio"]');
-        if (name && radio) data.values['radio_' + name] = radio.value;
-      }
+    // Save radio selections (use the radio input's name attribute to capture all groups)
+    document.querySelectorAll('.pf-option-group[data-radio]').forEach(group => {
+      const name = group.dataset.radio;
+      const checked = group.querySelector('input[type="radio"]:checked');
+      if (name && checked) data.values['radio_' + name] = checked.value;
     });
+    // Save checkbox selections (multi-select groups like planGoals)
+    const checkboxGroups = {};
+    document.querySelectorAll('.pf-option-group[data-checkbox]').forEach(group => {
+      const name = group.dataset.checkbox;
+      const checked = [];
+      group.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => {
+        checked.push(cb.value);
+      });
+      if (checked.length) checkboxGroups[name] = checked;
+    });
+    if (Object.keys(checkboxGroups).length) data.checkboxGroups = checkboxGroups;
+    // Save dynamic employee detail rows
+    const empRows = [];
+    document.querySelectorAll('#employeeDetailRows > div').forEach(row => {
+      const age = row.querySelector('.emp-age')?.value || '';
+      const salary = row.querySelector('.emp-pay')?.value || '';
+      const type = row.querySelector('.emp-type')?.value || '';
+      if (age || salary) empRows.push({ age, salary, type });
+    });
+    if (empRows.length) data.employeeRows = empRows;
+    // Save additional owner rows
+    const aoRows = [];
+    document.querySelectorAll('#additionalOwners > div').forEach(row => {
+      const age = row.querySelector('.owner-age')?.value || '';
+      const salary = row.querySelector('.owner-salary')?.value || '';
+      if (age || salary) aoRows.push({ age, salary });
+    });
+    if (aoRows.length) data.additionalOwnerRows = aoRows;
     localStorage.setItem(SAVE_KEY, JSON.stringify(data));
   } catch (e) { /* localStorage not available */ }
 }
@@ -1191,23 +1439,77 @@ function autoRestore() {
     Object.keys(data.values).forEach(id => {
       if (id.startsWith('radio_')) return;
       const el = document.getElementById(id);
-      if (el) el.value = data.values[id];
+      if (el) {
+        el.value = data.values[id];
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+      }
     });
-    // Restore radio selections
+    // Restore radio selections (find by radio group name, then trigger selectRadio for side-effects)
     Object.keys(data.values).forEach(key => {
       if (!key.startsWith('radio_')) return;
       const name = key.replace('radio_', '');
       const val = data.values[key];
-      const field = document.querySelector(`.pf-field[data-name="${name}"]`);
-      if (!field) return;
-      field.querySelectorAll('.pf-option').forEach(opt => {
+      const group = document.querySelector(`.pf-option-group[data-radio="${name}"]`);
+      if (!group) return;
+      group.querySelectorAll('.pf-option').forEach(opt => {
         const radio = opt.querySelector('input[type="radio"]');
         if (radio && radio.value === val) {
-          opt.classList.add('selected');
-          radio.checked = true;
+          selectRadio(opt);
         }
       });
     });
+    // Restore checkbox selections (multi-select groups like planGoals)
+    if (data.checkboxGroups) {
+      Object.keys(data.checkboxGroups).forEach(groupName => {
+        const values = data.checkboxGroups[groupName];
+        const group = document.querySelector(`.pf-option-group[data-checkbox="${groupName}"]`);
+        if (!group) return;
+        group.querySelectorAll('.pf-option').forEach(opt => {
+          const cb = opt.querySelector('input[type="checkbox"]');
+          if (cb && values.includes(cb.value)) {
+            cb.checked = true;
+            opt.classList.add('selected');
+            // Show/hide "Other" text field for plan goals
+            if (cb.name === 'planGoals' && cb.value === 'other') {
+              document.getElementById('planGoalsOther').style.display = '';
+            }
+          }
+        });
+      });
+    }
+    // Restore dynamic employee detail rows
+    if (data.employeeRows && data.employeeRows.length) {
+      data.employeeRows.forEach(row => {
+        addEmployeeRow();
+        const container = document.getElementById('employeeDetailRows');
+        const lastRow = container.lastElementChild;
+        if (!lastRow) return;
+        const ageInput = lastRow.querySelector('.emp-age');
+        const salaryInput = lastRow.querySelector('.emp-pay');
+        const typeSelect = lastRow.querySelector('.emp-type');
+        if (ageInput && row.age) ageInput.value = row.age;
+        if (salaryInput && row.salary) salaryInput.value = row.salary;
+        if (typeSelect && row.type) typeSelect.value = row.type;
+      });
+    }
+    // Restore additional owner rows
+    if (data.additionalOwnerRows && data.additionalOwnerRows.length) {
+      const ownerCountEl = document.getElementById('ownerCount');
+      if (ownerCountEl) {
+        ownerCountEl.value = data.additionalOwnerRows.length + 1;
+        buildOwnerRows(data.additionalOwnerRows.length + 1);
+        const aoContainer = document.getElementById('additionalOwners');
+        const aoRows = aoContainer.querySelectorAll(':scope > div');
+        data.additionalOwnerRows.forEach((row, i) => {
+          if (!aoRows[i]) return;
+          const ageInput = aoRows[i].querySelector('.owner-age');
+          const salaryInput = aoRows[i].querySelector('.owner-salary');
+          if (ageInput && row.age) ageInput.value = row.age;
+          if (salaryInput && row.salary) salaryInput.value = row.salary;
+        });
+        document.getElementById('multiOwnerSection').style.display = '';
+      }
+    }
     // Restore step
     if (data.step && data.step > 1 && data.step < 7) {
       currentStep = data.step;
