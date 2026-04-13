@@ -3495,9 +3495,10 @@ function parseCensusData(raw) {
       pay = payValues.length > 0 ? Math.max(...payValues.filter(n => n >= 100)) || 0 : 0;
     }
 
-    // Only include employees with compensation > 0
-    // Hours < 1000 flag: if hours data is available and < 1000, mark for exclusion consideration
-    if (pay > 0) {
+    // Include all employees even without salary. Employees with $0 comp
+    // appear in the census table so the advisor can fill in salary manually.
+    // Employees without salary are classified as NHCE by default.
+    if (name || pay > 0) {
       const emp = { name, age, pay, type: pay >= hceThreshold ? 'HCE' : 'NHCE', startDate: startDate || null, termDate: termDate || null };
       if (hours != null) emp.hours = hours;
       employees.push(emp);
