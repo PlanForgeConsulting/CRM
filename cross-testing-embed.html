@@ -3554,8 +3554,11 @@ function parseCensusData(raw) {
     if (emp.startDate && emp.startDate >= eligCutoff) {
       autoExcludedCensusIndices.add(idx);
     }
-    // Auto-exclude: employees with < 1,000 hours (when hours data available)
-    if (emp.hours != null && emp.hours < 1000) {
+    // Flag employees under the plan's hours threshold (if hours data available)
+    // The threshold comes from the plan rules (psEligMonths / ps_hours_restriction),
+    // NOT hardcoded. Default: no auto-exclusion. The advisor sets the rules.
+    const psHoursReq = parseInt(document.getElementById('psEligMonths')?.dataset?.hoursReq || '0') || 0;
+    if (emp.hours != null && psHoursReq > 0 && emp.hours < psHoursReq) {
       autoExcludedCensusIndices.add(idx);
       autoUnder1000hrs++;
     }
@@ -5473,6 +5476,20 @@ window.addEventListener('message', function(event) {
     case 'LOAD_PLAN_DATA': {
       // payload matches the advisor panel JSON format (same as doImport)
       try {
+        // Apply plan eligibility rules before census parsing
+        // so the engine knows what hours threshold to use
+        if (payload.planEligibility || payload.planData) {
+          const pd = payload.planData || {};
+          const pe = payload.planEligibility || {};
+          // Set hours requirement from plan rules (not hardcoded)
+          const psHoursReq = pe.psHoursRestriction || pd.psHoursRequirement || 'none';
+          const hoursThreshold = psHoursReq === '1000' ? 1000 : psHoursReq === '500' ? 500 : 0;
+          const psEligEl = document.getElementById('psEligMonths');
+          if (psEligEl) psEligEl.dataset.hoursReq = String(hoursThreshold);
+          // Set eligibility months
+          if (pd.deferralEligMonths != null) document.getElementById('deferralEligMonths').value = pd.deferralEligMonths;
+          if (pd.psEligMonths != null) document.getElementById('psEligMonths').value = pd.psEligMonths;
+        }
         document.getElementById('importArea').value = JSON.stringify(payload.planData || payload);
         if (payload.censusText) {
           document.getElementById('importCensusArea').value = payload.censusText;
