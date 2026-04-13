@@ -3328,13 +3328,22 @@ function parseCensusData(raw) {
   else if (lines[0].includes('|')) delimiter = '|';
 
   const rows = lines.map(l => l.split(delimiter).map(c => c.trim()));
-  const firstRowIsHeader = rows[0].some(c => /^(name|age|dob|birth|pay|salary|comp|employee|type|start|hire|term|termination|end|separation|status)/i.test(c));
+  const firstRowIsHeader = rows[0].some(c => /^(name|last|first|age|dob|birth|pay|salary|comp|employee|type|start|hire|term|termination|end|separation|status|hours|gross|plan|w2|box|pre.?tax|roth|safe|match|profit|rehire)/i.test(c));
   const dataRows = firstRowIsHeader ? rows.slice(1) : rows;
   if (dataRows.length === 0) { detected.style.display = 'none'; return; }
 
-  // Detect start/termination date columns from headers
+  // Detect column indices from headers (EF census format support)
   let startDateColIdx = -1;
   let termDateColIdx = -1;
+  let rehireDateColIdx = -1;
+  let hoursColIdx = -1;
+  let grossCompColIdx = -1;
+  let planCompColIdx = -1;
+  let w2Box3ColIdx = -1;
+  let nameColIdx = -1;
+  let lastNameColIdx = -1;
+  let firstNameColIdx = -1;
+  let dobColIdx = -1;
   if (firstRowIsHeader) {
     rows[0].forEach((header, idx) => {
       const h = header.toLowerCase().trim();
@@ -3344,9 +3353,20 @@ function parseCensusData(raw) {
       if (/^(term|termination|end|separation)\s*(date)?$|^(term|termination|end|separation)[_\s]date$|^date\s*(of\s*)?(term|termination|end|separation)$|^terminated?$/i.test(h)) {
         termDateColIdx = idx;
       }
+      if (/^rehire\s*(date)?$|^date\s*(of\s*)?rehire$/i.test(h)) rehireDateColIdx = idx;
+      if (/^hours(\s+worked)?$/i.test(h)) hoursColIdx = idx;
+      if (/^gross\s*comp/i.test(h)) grossCompColIdx = idx;
+      if (/^plan\s*comp/i.test(h)) planCompColIdx = idx;
+      if (/^w2\s*box\s*3|^w-?2\s*box\s*3/i.test(h)) w2Box3ColIdx = idx;
+      if (/^(last\s*name|last)$/i.test(h)) lastNameColIdx = idx;
+      if (/^(first\s*name|first)$/i.test(h)) firstNameColIdx = idx;
+      if (/^(name|employee)$/i.test(h)) nameColIdx = idx;
+      if (/^(dob|date\s*of\s*birth|birth\s*date|birthdate)$/i.test(h)) dobColIdx = idx;
     });
   }
   const hasHeaderBasedDates = (startDateColIdx >= 0 || termDateColIdx >= 0);
+  const hasEFColumns = (grossCompColIdx >= 0 || planCompColIdx >= 0 || hoursColIdx >= 0);
+  const hasNameSplit = (lastNameColIdx >= 0 && firstNameColIdx >= 0);
 
   const numCols = dataRows[0].length;
   const hceThreshold = getLimits(parseInt(val('taxYear') || 2026)).hceThreshold;
@@ -3407,10 +3427,43 @@ function parseCensusData(raw) {
   for (const row of dataRows) {
     if (row.length === 0 || row.every(c => !c)) continue;
     let name = '', age = fallbackAge, pay = 0, startDate = null, termDate = null;
-    if (numCols === 1) {
+    let hours = null;
+
+    // ── EF-format parsing (header-detected columns) ──
+    if (hasEFColumns || hasNameSplit) {
+      // Name: use Last Name + First Name columns, or single Name column
+      if (hasNameSplit) {
+        const ln = (row[lastNameColIdx] || '').trim();
+        const fn = (row[firstNameColIdx] || '').trim();
+        name = fn ? `${fn} ${ln}` : ln;
+      } else if (nameColIdx >= 0) {
+        name = (row[nameColIdx] || '').trim();
+      } else {
+        name = (row[0] || '').trim();
+      }
+
+      // DOB → age
+      if (dobColIdx >= 0) {
+        const dobAge = dobToAge(row[dobColIdx]);
+        if (dobAge) age = dobAge;
+      }
+
+      // Compensation: Plan Comp > Gross Comp > W2 Box 3 (priority for cross-testing)
+      if (planCompColIdx >= 0) pay = parseFloat((row[planCompColIdx] || '').replace(/[$,]/g, '')) || 0;
+      if (!pay && grossCompColIdx >= 0) pay = parseFloat((row[grossCompColIdx] || '').replace(/[$,]/g, '')) || 0;
+      if (!pay && w2Box3ColIdx >= 0) pay = parseFloat((row[w2Box3ColIdx] || '').replace(/[$,]/g, '')) || 0;
+
+      // Hours
+      if (hoursColIdx >= 0) hours = parseFloat((row[hoursColIdx] || '').replace(/[,]/g, '')) || null;
+
+      // Dates
+      if (startDateColIdx >= 0 && row[startDateColIdx]) startDate = parseDate(row[startDateColIdx]);
+      if (termDateColIdx >= 0 && row[termDateColIdx]) termDate = parseDate(row[termDateColIdx]);
+
+    // ── Legacy parsing (positional / auto-detect) ──
+    } else if (numCols === 1) {
       pay = parseFloat(row[0].replace(/[$,]/g, '')) || 0;
     } else if (numCols === 2) {
-      // Check if first col is a DOB
       const dobAge = dobToAge(row[0]);
       const firstNum = parseFloat(row[0].replace(/[$,]/g, ''));
       if (dobAge) { age = dobAge; pay = parseFloat(row[1].replace(/[$,]/g, '')) || 0; }
@@ -3419,17 +3472,15 @@ function parseCensusData(raw) {
       else { name = row[0]; pay = parseFloat(row[1].replace(/[$,]/g, '')) || 0; }
     } else {
       name = row[0] || '';
-      // Extract start/term dates from known columns
       if (hasHeaderBasedDates) {
         if (startDateColIdx >= 0 && row[startDateColIdx]) startDate = parseDate(row[startDateColIdx]);
         if (termDateColIdx >= 0 && row[termDateColIdx]) termDate = parseDate(row[termDateColIdx]);
       }
-      // Check each non-name column for DOB before treating as number
       let foundAge = null;
       const payValues = [];
       for (let i = 1; i < row.length; i++) {
-        // Skip columns already identified as date columns
         if (hasHeaderBasedDates && (i === startDateColIdx || i === termDateColIdx)) continue;
+        if (i === rehireDateColIdx) continue;
         const cell = row[i].trim();
         const dobAge = dobToAge(cell);
         if (dobAge && !foundAge) { foundAge = dobAge; continue; }
@@ -3438,13 +3489,19 @@ function parseCensusData(raw) {
       }
       if (foundAge) age = foundAge;
       else {
-        // Original logic: look for age-like number (15-99) among numeric columns
         const ageVal = payValues.find(n => n > 15 && n < 100);
         if (ageVal) { age = ageVal; payValues.splice(payValues.indexOf(ageVal), 1); }
       }
       pay = payValues.length > 0 ? Math.max(...payValues.filter(n => n >= 100)) || 0 : 0;
     }
-    if (pay > 0) employees.push({ name, age, pay, type: pay >= hceThreshold ? 'HCE' : 'NHCE', startDate: startDate || null, termDate: termDate || null });
+
+    // Only include employees with compensation > 0
+    // Hours < 1000 flag: if hours data is available and < 1000, mark for exclusion consideration
+    if (pay > 0) {
+      const emp = { name, age, pay, type: pay >= hceThreshold ? 'HCE' : 'NHCE', startDate: startDate || null, termDate: termDate || null };
+      if (hours != null) emp.hours = hours;
+      employees.push(emp);
+    }
   }
 
   if (employees.length === 0) {
@@ -3462,12 +3519,15 @@ function parseCensusData(raw) {
   const hasRealAges = employees.some(e => e.age !== fallbackAge);
   const hasStartDates = employees.some(e => e.startDate);
   const hasTermDates = employees.some(e => e.termDate);
+  const hasHours = employees.some(e => e.hours != null);
   parsedCensusCapabilities = {
     hasNames: employees.some(e => e.name && e.name.length > 0),
     hasRealAges,
     hasStartDates,
     hasTermDates,
+    hasHours,
     hasPay: employees.some(e => e.pay > 0),
+    isEFFormat: hasEFColumns,
     employeeCount: employees.length
   };
 
@@ -3484,6 +3544,7 @@ function parseCensusData(raw) {
   // Cutoff: employee must have been hired at least psEligMonths before plan year end
   const eligCutoff = new Date(planYear, 12 - psEligMonths, 1);
 
+  let autoUnder1000hrs = 0;
   employees.forEach((emp, idx) => {
     if (emp.termDate) {
       autoDepartedCensusIndices.add(idx);
@@ -3492,6 +3553,11 @@ function parseCensusData(raw) {
     // Auto-exclude: hired too late in plan year to meet PS eligibility
     if (emp.startDate && emp.startDate >= eligCutoff) {
       autoExcludedCensusIndices.add(idx);
+    }
+    // Auto-exclude: employees with < 1,000 hours (when hours data available)
+    if (emp.hours != null && emp.hours < 1000) {
+      autoExcludedCensusIndices.add(idx);
+      autoUnder1000hrs++;
     }
   });
   // Store for reconciliation after departure table renders
@@ -3521,14 +3587,16 @@ function parseCensusData(raw) {
 
   // Build detection message with data source info
   const sourceInfo = [];
-  sourceInfo.push(`pay: census`);
+  if (hasEFColumns) sourceInfo.push('format: EF census');
+  sourceInfo.push(`pay: ${grossCompColIdx >= 0 ? 'gross comp' : planCompColIdx >= 0 ? 'plan comp' : 'census'}`);
   sourceInfo.push(`ages: ${hasRealAges ? 'census DOBs' : 'questionnaire avg'}`);
   if (hasTermDates) sourceInfo.push(`departures: census (${autoDepCount} termed)`);
   if (hasStartDates) sourceInfo.push('hire dates: census');
+  if (hasHours) sourceInfo.push(`hours: census${autoUnder1000hrs > 0 ? ` (${autoUnder1000hrs} under 1,000)` : ''}`);
 
   detected.style.display = '';
   detected.className = 'census-detected auto';
-  detected.innerHTML = `<strong>✓ Real census loaded (${employees.length} employees):</strong> ${nhces.length} NHCEs (avg ${fmt(avgNhcePay)}, age ${avgNhceAge}), ${hces.length} HCEs${hasTermDates ? ` | ${autoDepCount} departed` : ''}. <strong>Cross-testing will use actual per-employee age/pay data.</strong><div style="font-size:10px;color:var(--gray);margin-top:3px;">Data sources: ${sourceInfo.join(' · ')}</div>`;
+  detected.innerHTML = `<strong>✓ Real census loaded (${employees.length} employees):</strong> ${nhces.length} NHCEs (avg ${fmt(avgNhcePay)}, age ${avgNhceAge}), ${hces.length} HCEs${hasTermDates ? ` | ${autoDepCount} departed` : ''}${autoUnder1000hrs > 0 ? ` | ${autoUnder1000hrs} under 1K hrs` : ''}. <strong>Cross-testing will use actual per-employee age/pay data.</strong><div style="font-size:10px;color:var(--gray);margin-top:3px;">Data sources: ${sourceInfo.join(' · ')}</div>`;
 
   recalcForfeitures(); recalc();
 }
