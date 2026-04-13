@@ -5468,22 +5468,33 @@ window.addEventListener('message', function(event) {
 
   switch (type) {
     case 'LOAD_PLAN_DATA': {
-      // payload: { planData, planRules, censusText }
-      // planRules is the full plan_rules JSONB from the portal database.
-      // The engine does NOT auto-interpret these rules into exclusions.
-      // Nick reviews the plan rules and sets the engine parameters
-      // (excludable employees, eligibility months, etc.) accordingly.
+      // payload: { planData, planRules, eligibility, censusText }
+      //
+      // eligibility.excludedIndices = census row indices that don't
+      //   meet the plan's requirements (hours < threshold, age < min, etc.)
+      // eligibility.thresholds = the plan-specific thresholds used
+      //
+      // These are applied as DEFAULTS. Nick can override any exclusion
+      // via the departure/exclusion checkboxes in the engine.
       try {
-        // Store plan rules for display (if provided)
         if (payload.planRules) {
           window._loadedPlanRules = payload.planRules;
         }
-        document.getElementById('importArea').value = JSON.stringify(payload.planData || payload);
+        if (payload.eligibility) {
+          window._loadedEligibility = payload.eligibility;
+        }
+
+        // Build the import data, including pre-computed excluded indices
+        const importData = payload.planData || payload;
+        if (payload.eligibility?.excludedIndices?.length > 0) {
+          importData.excludedIndices = payload.eligibility.excludedIndices;
+        }
+
+        document.getElementById('importArea').value = JSON.stringify(importData);
         if (payload.censusText) {
           document.getElementById('importCensusArea').value = payload.censusText;
         }
         doImport();
-        // Send results back
         sendResultsToParent();
       } catch (e) {
         window.parent.postMessage({ type: 'CROSS_TEST_ERROR', error: e.message }, '*');
