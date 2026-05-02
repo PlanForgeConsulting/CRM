@@ -279,7 +279,7 @@ body{background:#F5F3EE;min-height:100vh;font-family:'Libre Franklin',-apple-sys
         <p style="font-size:12px;color:#6B7280;margin-bottom:14px">Family members (siblings, parents, grandparents) with ownership may also create a controlled group. This impacts tax credit eligibility — owners and their controlled group are not eligible for SECURE Act credits.</p>
         <div class="pf-field">
           <label class="pf-field-label">How many related businesses?</label>
-          <input type="number" id="controlledGroupCount" min="1" max="10" value="1" style="max-width:120px">
+          <input type="number" inputmode="numeric"id="controlledGroupCount" min="1" max="10" value="1" style="max-width:120px">
         </div>
         <div class="pf-field">
           <label class="pf-field-label">Are any family members (siblings, parents, grandparents) involved in ownership?</label>
@@ -380,7 +380,7 @@ body{background:#F5F3EE;min-height:100vh;font-family:'Libre Franklin',-apple-sys
         <label class="pf-field-label">Approximate current annual plan fees (if known)</label>
         <span class="pf-field-hint">Total admin + recordkeeping + advisory fees — a rough estimate is fine</span>
         <div class="pf-money-input">
-          <input type="number" id="currentFees" min="0" step="500" placeholder="e.g. 8000">
+          <input type="number" inputmode="numeric"id="currentFees" min="0" step="500" placeholder="e.g. 8000">
         </div>
       </div>
       <div class="pf-btn-row">
@@ -420,23 +420,23 @@ body{background:#F5F3EE;min-height:100vh;font-family:'Libre Franklin',-apple-sys
       <div class="pf-row">
         <div class="pf-field" data-name="ownerCount">
           <label class="pf-field-label">Number of active owners (5%+ ownership)<span class="req">*</span></label>
-          <input type="number" id="ownerCount" min="1" max="20" placeholder="e.g. 2">
+          <input type="number" inputmode="numeric"id="ownerCount" min="1" max="20" placeholder="e.g. 2">
         </div>
         <div class="pf-field" data-name="hceCount">
           <label class="pf-field-label">Number of HCEs (excluding owners)<span class="req">*</span></label>
           <span class="pf-field-hint">Employees earning $160K+ (2025/2026)</span>
-          <input type="number" id="hceCount" min="0" max="100" placeholder="e.g. 1">
+          <input type="number" inputmode="numeric"id="hceCount" min="0" max="100" placeholder="e.g. 1">
         </div>
       </div>
       <div class="pf-field" data-name="nhceCount">
         <label class="pf-field-label">Number of NHCEs (Non-Highly Compensated Employees)<span class="req">*</span></label>
         <span class="pf-field-hint">All other eligible employees</span>
-        <input type="number" id="nhceCount" min="0" max="500" placeholder="e.g. 15">
+        <input type="number" inputmode="numeric"id="nhceCount" min="0" max="500" placeholder="e.g. 15">
       </div>
       <div class="pf-field" data-name="avgEmployeeAge">
         <label class="pf-field-label">Approximate average employee age</label>
         <span class="pf-field-hint">Helps estimate cross-testing benefit factors — a rough estimate is fine</span>
-        <input type="number" id="avgEmployeeAge" min="18" max="80" placeholder="e.g. 35">
+        <input type="number" inputmode="numeric"id="avgEmployeeAge" min="18" max="80" placeholder="e.g. 35">
       </div>
       <div class="pf-field">
         <label class="pf-field-label">Would you like to enter specific employee details for a more accurate illustration?</label>
@@ -484,7 +484,7 @@ body{background:#F5F3EE;min-height:100vh;font-family:'Libre Franklin',-apple-sys
       <div class="pf-field" id="hcePaySection">
         <label class="pf-field-label">Average annual salary for HCEs (excluding owners)<span class="req">*</span></label>
         <div class="pf-money-input">
-          <input type="number" id="hceAvgPay" min="0" step="1000" placeholder="e.g. 185000">
+          <input type="number" inputmode="numeric"id="hceAvgPay" min="0" step="1000" placeholder="e.g. 185000">
         </div>
       </div>
       <div class="pf-field">
@@ -492,18 +492,18 @@ body{background:#F5F3EE;min-height:100vh;font-family:'Libre Franklin',-apple-sys
         <div class="pf-row" style="margin-bottom:0">
           <div class="pf-field" style="margin-bottom:0">
             <span class="pf-field-hint">Low end</span>
-            <div class="pf-money-input"><input type="number" id="hceLow" min="0" step="1000" placeholder="160000"></div>
+            <div class="pf-money-input"><input type="number" inputmode="numeric"id="hceLow" min="0" step="1000" placeholder="160000"></div>
           </div>
           <div class="pf-field" style="margin-bottom:0">
             <span class="pf-field-hint">High end</span>
-            <div class="pf-money-input"><input type="number" id="hceHigh" min="0" step="1000" placeholder="250000"></div>
+            <div class="pf-money-input"><input type="number" inputmode="numeric"id="hceHigh" min="0" step="1000" placeholder="250000"></div>
           </div>
         </div>
       </div>
       <div class="pf-field">
         <label class="pf-field-label">Average annual salary for NHCEs<span class="req">*</span></label>
         <div class="pf-money-input">
-          <input type="number" id="nhceAvgPay" min="0" step="1000" placeholder="e.g. 55000">
+          <input type="number" inputmode="numeric"id="nhceAvgPay" min="0" step="1000" placeholder="e.g. 55000">
         </div>
       </div>
       <div class="pf-field">
@@ -511,11 +511,11 @@ body{background:#F5F3EE;min-height:100vh;font-family:'Libre Franklin',-apple-sys
         <div class="pf-row" style="margin-bottom:0">
           <div class="pf-field" style="margin-bottom:0">
             <span class="pf-field-hint">Low end</span>
-            <div class="pf-money-input"><input type="number" id="nhceLow" min="0" step="1000" placeholder="30000"></div>
+            <div class="pf-money-input"><input type="number" inputmode="numeric"id="nhceLow" min="0" step="1000" placeholder="30000"></div>
           </div>
           <div class="pf-field" style="margin-bottom:0">
             <span class="pf-field-hint">High end</span>
-            <div class="pf-money-input"><input type="number" id="nhceHigh" min="0" step="1000" placeholder="90000"></div>
+            <div class="pf-money-input"><input type="number" inputmode="numeric"id="nhceHigh" min="0" step="1000" placeholder="90000"></div>
           </div>
         </div>
       </div>
@@ -531,7 +531,7 @@ body{background:#F5F3EE;min-height:100vh;font-family:'Libre Franklin',-apple-sys
       <div class="pf-row">
         <div class="pf-field" data-name="ownerAge">
           <label class="pf-field-label">Owner 1 age<span class="req">*</span></label>
-          <input type="number" id="ownerAge" min="18" max="80" placeholder="e.g. 52">
+          <input type="number" inputmode="numeric"id="ownerAge" min="18" max="80" placeholder="e.g. 52">
         </div>
         <div class="pf-field" style="flex:2">
         </div>
@@ -541,7 +541,7 @@ body{background:#F5F3EE;min-height:100vh;font-family:'Libre Franklin',-apple-sys
           <label class="pf-field-label">Owner 1 salary<span class="req">*</span></label>
           <span class="pf-field-hint" id="ownerPayHint">W-2 salary for S-Corp or C-Corp owners</span>
           <div class="pf-money-input">
-            <input type="number" id="ownerSalary" min="0" step="1000" placeholder="e.g. 275000">
+            <input type="number" inputmode="numeric"id="ownerSalary" min="0" step="1000" placeholder="e.g. 275000">
           </div>
         </div>
       </div>
@@ -550,7 +550,7 @@ body{background:#F5F3EE;min-height:100vh;font-family:'Libre Franklin',-apple-sys
           <label class="pf-field-label">Expected K-1 per owner</label>
           <span class="pf-field-hint">For LLC members — guaranteed payments or distributive share</span>
           <div class="pf-money-input">
-            <input type="number" id="ownerK1" min="0" step="1000" placeholder="e.g. 300000">
+            <input type="number" inputmode="numeric"id="ownerK1" min="0" step="1000" placeholder="e.g. 300000">
           </div>
         </div>
       </div>
@@ -602,7 +602,7 @@ body{background:#F5F3EE;min-height:100vh;font-family:'Libre Franklin',-apple-sys
       <div class="pf-row">
         <div class="pf-field" data-name="email">
           <label class="pf-field-label">Email<span class="req">*</span></label>
-          <input type="email" id="email" placeholder="john@business.com">
+          <input type="email" inputmode="email" autocomplete="email"id="email" placeholder="john@business.com">
         </div>
         <div class="pf-field" data-name="phone">
           <label class="pf-field-label">Phone Number</label>
@@ -646,7 +646,7 @@ body{background:#F5F3EE;min-height:100vh;font-family:'Libre Franklin',-apple-sys
         <div class="pf-advisor-share">
           <label>Share with my CPA (optional)</label>
           <div class="pf-share-row">
-            <input type="email" id="advisorEmail" placeholder="cpa@example.com">
+            <input type="email" inputmode="email" autocomplete="email"id="advisorEmail" placeholder="cpa@example.com">
             <button class="pf-btn-share" onclick="shareWithAdvisor()">Send Copy</button>
           </div>
           <div class="pf-share-sent" id="shareSent">Sent! Your CPA will receive a summary.</div>
@@ -879,11 +879,11 @@ function buildOwnerRows(count) {
     div.innerHTML = `
       <div style="flex:1;min-width:100px">
         <label style="font-size:11px;color:#6B7280;display:block;margin-bottom:4px">Owner ${i} Age</label>
-        <input type="number" class="owner-age" min="18" max="80" placeholder="Age" style="width:100%;padding:8px 10px;border:1.5px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:inherit">
+        <input type="number" inputmode="numeric"class="owner-age" min="18" max="80" placeholder="Age" style="width:100%;padding:8px 10px;border:1.5px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:inherit">
       </div>
       <div style="flex:2;min-width:150px">
         <label style="font-size:11px;color:#6B7280;display:block;margin-bottom:4px">Owner ${i} ${payLabel}</label>
-        <div class="pf-money-input"><input type="number" class="owner-salary" min="0" step="1000" placeholder="${payPlaceholder}" style="width:100%;padding:8px 10px 8px 32px;border:1.5px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:inherit"></div>
+        <div class="pf-money-input"><input type="number" inputmode="numeric"class="owner-salary" min="0" step="1000" placeholder="${payPlaceholder}" style="width:100%;padding:8px 10px 8px 32px;border:1.5px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:inherit"></div>
       </div>`;
     container.appendChild(div);
   }
@@ -904,11 +904,11 @@ function addEmployeeRow() {
     <div style="width:32px;font-size:12px;font-weight:600;color:#6B7280;padding-bottom:10px">${employeeRowCount}.</div>
     <div style="flex:1;min-width:80px">
       ${employeeRowCount === 1 ? '<label style="font-size:11px;color:#6B7280;display:block;margin-bottom:4px">Age</label>' : ''}
-      <input type="number" class="emp-age" min="18" max="80" placeholder="Age" style="width:100%;padding:8px 10px;border:1.5px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:inherit">
+      <input type="number" inputmode="numeric"class="emp-age" min="18" max="80" placeholder="Age" style="width:100%;padding:8px 10px;border:1.5px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:inherit">
     </div>
     <div style="flex:2;min-width:140px">
       ${employeeRowCount === 1 ? '<label style="font-size:11px;color:#6B7280;display:block;margin-bottom:4px">Annual Pay</label>' : ''}
-      <div class="pf-money-input"><input type="number" class="emp-pay" min="0" step="1000" placeholder="Salary" oninput="autoDetectHCE(this)" style="width:100%;padding:8px 10px 8px 32px;border:1.5px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:inherit"></div>
+      <div class="pf-money-input"><input type="number" inputmode="numeric"class="emp-pay" min="0" step="1000" placeholder="Salary" oninput="autoDetectHCE(this)" style="width:100%;padding:8px 10px 8px 32px;border:1.5px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:inherit"></div>
     </div>
     <div style="flex:1;min-width:80px">
       ${employeeRowCount === 1 ? '<label style="font-size:11px;color:#6B7280;display:block;margin-bottom:4px">Type</label>' : ''}
