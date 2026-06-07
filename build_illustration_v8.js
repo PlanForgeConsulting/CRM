@@ -53,7 +53,9 @@ const C = {
 // ── IRS Limits by Year ────────────────────────────────────────────
 const IRS_LIMITS = {
   2025: { additions415c: 70000, compCap401a17: 350000, hceThreshold: 160000 },
-  2026: { additions415c: 72000, compCap401a17: 360000, hceThreshold: 165000 },
+  // 2026 HCE per IRS Notice 2025-67 = 160000 (UNCHANGED from 2025; NOT 165000).
+  // Canonical in the portal: planforge-participant-portal/src/lib/irs-limits-2026.mjs.
+  2026: { additions415c: 72000, compCap401a17: 360000, hceThreshold: 160000 },
   // Add future years as IRS announces
 };
 
