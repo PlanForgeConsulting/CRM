@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * PlanForge Retirement Plan Illustration — V8 (Parameterized)
+ * PlanForge Profit Share Illustration — V8 (Parameterized)
  * ============================================================
  * Accepts ANY client data via the unified pipeline schema.
  * Preserves ALL V7 layout, typography, and visual design.
@@ -21,33 +21,51 @@ const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
 
-// ── Fonts ──────────────────────────────────────────────────────────
+// ── Fonts — cross-platform detection ──────────────────────────────
+function findFontDir() {
+  const candidates = [
+    '/usr/share/fonts/truetype/lato',           // Linux (Debian/Ubuntu)
+    '/usr/share/fonts/lato',                     // Linux (Fedora/RHEL)
+    '/Library/Fonts',                            // macOS system
+    path.join(process.env.HOME || '', 'Library/Fonts'), // macOS user
+    'C:\\Windows\\Fonts',                        // Windows
+    path.join(__dirname, 'fonts'),               // Local fonts/ directory
+  ];
+  for (const dir of candidates) {
+    const testPath = path.join(dir, 'Lato-Regular.ttf');
+    try { if (fs.existsSync(testPath)) return dir; } catch (e) { /* skip */ }
+  }
+  return candidates[0]; // Fallback to Linux default
+}
+const FONT_DIR = findFontDir();
 const FONTS = {
-  regular:  '/usr/share/fonts/truetype/lato/Lato-Regular.ttf',
-  bold:     '/usr/share/fonts/truetype/lato/Lato-Bold.ttf',
-  light:    '/usr/share/fonts/truetype/lato/Lato-Light.ttf',
-  medium:   '/usr/share/fonts/truetype/lato/Lato-Medium.ttf',
-  semibold: '/usr/share/fonts/truetype/lato/Lato-Semibold.ttf',
-  black:    '/usr/share/fonts/truetype/lato/Lato-Black.ttf',
-  heavy:    '/usr/share/fonts/truetype/lato/Lato-Heavy.ttf',
-  italic:   '/usr/share/fonts/truetype/lato/Lato-Italic.ttf',
+  regular:  path.join(FONT_DIR, 'Lato-Regular.ttf'),
+  bold:     path.join(FONT_DIR, 'Lato-Bold.ttf'),
+  light:    path.join(FONT_DIR, 'Lato-Light.ttf'),
+  medium:   path.join(FONT_DIR, 'Lato-Medium.ttf'),
+  semibold: path.join(FONT_DIR, 'Lato-Semibold.ttf'),
+  black:    path.join(FONT_DIR, 'Lato-Black.ttf'),
+  heavy:    path.join(FONT_DIR, 'Lato-Heavy.ttf'),
+  italic:   path.join(FONT_DIR, 'Lato-Italic.ttf'),
 };
 
 // ── Brand Colors ──────────────────────────────────────────────────
 const C = {
   navy:       '#1B3A5C',
+  navyDark:   '#0F2137',
   gold:       '#C4952A',
+  goldLight:  '#D4A832',
   red:        '#B22234',
-  darkGray:   '#333333',
-  medGray:    '#666666',
-  lightGray:  '#F5F5F5',
-  borderGray: '#E0E0E0',
+  darkGray:   '#1E293B',
+  medGray:    '#64748B',
+  lightGray:  '#F4F6F9',
+  borderGray: '#DDE2E8',
   green:      '#2E7D32',
   greenBg:    '#E8F5E9',
   goldBg:     '#FFF8E1',
   goldBorder: '#FFD54F',
   white:      '#FFFFFF',
-  lightNavy:  '#AABBCC',
+  lightNavy:  '#94A3B8',
 };
 
 // ── IRS Limits by Year ────────────────────────────────────────────
@@ -69,9 +87,16 @@ function getLimits(year) {
 // ═══════════════════════════════════════════════════════════════════
 
 function computePlanData(input) {
+  if (!input || typeof input !== 'object') {
+    throw new Error('computePlanData requires an input object');
+  }
+
   const year = parseInt(input.year || new Date().getFullYear());
+  if (year < 2020 || year > 2100) {
+    throw new Error(`Invalid plan year: ${year}. Expected 2020-2100.`);
+  }
   const limits = getLimits(year);
-  const taxRate = input.taxRate || 0.30;
+  const taxRate = Math.max(0, Math.min(input.taxRate || 0.30, 1.0)); // Clamp 0-100%
 
   // ── Owner info ──
   const ownerName   = (input.firstName || '') + ' ' + (input.lastName || '');
@@ -91,25 +116,37 @@ function computePlanData(input) {
   const nhceAvgPay = input.nhceAvgPay || 50000;
   const nhceTotalComp = nhceCount * nhceAvgPay;
   const eligible = nhceCount + 1 + additionalOwners.length; // NHCEs + primary owner + additional
+  // SECURE 2.0 employer size: ALL W-2 employees >$5K prior year (including excluded)
+  const totalEmployeesForSize = (input.totalNhceCount || nhceCount) + 1 + additionalOwners.length;
 
   // Owner total comp includes additional owners
   const ownersTotalComp = ownerComp + additionalOwners.reduce((s, ao) => s + ao.comp, 0);
   const totalComp = nhceTotalComp + ownersTotalComp;
 
-  // ── Forfeitures ──
-  const forfeitures = input.forfeitures || 0;
+  // ── Forfeitures (plan-specific) ──
+  const forfeitures = input.forfeitures || 0;           // optimized plan forfeitures (actual PS alloc)
+  const forfeituresStd = input.forfeituresStd || forfeitures; // standard plan forfeitures (stdRate × pay)
+  // Estimated forfeitures (informational only — not in net cost)
+  // Use pre-computed values if provided, otherwise compute from turnover %
+  const turnoverPct = input.turnoverPct || 0;
+  const turnoverDecimal = turnoverPct / 100;
 
   // ── SECURE Year ──
   const secureYear = Math.max(1, Math.min(input.secureYear || 1, 5));
   const CREDIT_PHASE = [1.0, 1.0, 0.75, 0.50, 0.25];
-  // SECURE credits: $250 per NHCE, max $5K, times phase
-  const secureBase = Math.min(nhceCount * 250, 5000) * (nhceCount <= 50 ? 1 : 0); // simplified
-  // More realistic: up to $5K base + additional for small employers
-  // Using the same logic as v7: flat value passed from advisor panel, or estimate
-  const secureCredits = input.secureCredits || Math.round(nhceCount * 1000 * CREDIT_PHASE[secureYear - 1]);
+  // SECURE 2.0 credits: up to $1,000 per eligible NHCE (≤$100K comp), times phase
+  // Employer size adjustment: full credit ≤50 employees, reduces 2% per employee
+  // over 50, reaches zero at 100 employees
+  const nhcesOver100k = input.nhceOver100k || 0;
+  const nhceCreditEligible = Math.max(0, nhceCount - nhcesOver100k);
+  const employerSizeFactor = totalEmployeesForSize <= 50 ? 1.0
+    : totalEmployeesForSize >= 100 ? 0
+    : 1.0 - 0.02 * (totalEmployeesForSize - 50);
+  const secureCredits = input.secureCredits ||
+    Math.round(nhceCreditEligible * 1000 * CREDIT_PHASE[secureYear - 1] * employerSizeFactor);
 
   // ══════════════════════════════════════════════════════════════════
-  //  STANDARD PLAN — 3% flat (same rate as safe harbor)
+  //  STANDARD PLAN — flat rate for all participants
   // ══════════════════════════════════════════════════════════════════
   const stdRate = input.stdRate || 3.0;
   const stdTotalPS = Math.round(totalComp * stdRate / 100);
@@ -120,9 +157,12 @@ function computePlanData(input) {
   const stdOwnersRetained = stdOwnerAlloc + stdAdditionalAllocs.reduce((s, a) => s + a, 0);
   const stdEmpPS = stdTotalPS - stdOwnersRetained;
 
+  // §404(a)(3): employer PS deduction capped at 25% of total covered compensation
   // IRC §280C: Must reduce deduction by credit amount
-  const stdTaxSavings = Math.round((stdTotalPS - secureCredits) * taxRate);
-  const stdNetCost = stdTotalPS - stdOwnersRetained - stdTaxSavings - secureCredits - forfeitures;
+  const deductionLimit404 = Math.round(totalComp * 0.25);
+  const stdDeductiblePS = Math.min(stdTotalPS, deductionLimit404);
+  const stdTaxSavings = Math.round((stdDeductiblePS - secureCredits) * taxRate);
+  const stdNetCost = stdTotalPS - stdOwnersRetained - stdTaxSavings - secureCredits - forfeituresStd;
   const stdTotalTaxSavings = stdTaxSavings + secureCredits;
 
   // ══════════════════════════════════════════════════════════════════
@@ -149,13 +189,23 @@ function computePlanData(input) {
   });
 
   const optOwnersRetained = optOwnerAlloc + optAdditionalAllocs.reduce((s, a) => s + a, 0);
-  const optEmpPS = Math.round(nhceTotalComp * optNhceRate / 100);
+  // Support flat-dollar per employee (e.g., $1,000/employee) or percentage rate
+  const nhceFlatAmt = input.nhceFlatAmt || 0;
+  const optEmpPS = nhceFlatAmt > 0
+    ? nhceCount * nhceFlatAmt
+    : Math.round(nhceTotalComp * optNhceRate / 100);
   const optTotalPS = optOwnersRetained + optEmpPS;
 
-  // IRC §280C
-  const optTaxSavings = Math.round((optTotalPS - secureCredits) * taxRate);
+  // §404(a)(3) + IRC §280C
+  const optDeductiblePS = Math.min(optTotalPS, deductionLimit404);
+  const optTaxSavings = Math.round((optDeductiblePS - secureCredits) * taxRate);
   const optNetCost = optTotalPS - optOwnersRetained - optTaxSavings - secureCredits - forfeitures;
   const optTotalTaxSavings = optTaxSavings + secureCredits;
+
+  // Estimated forfeitures — neither PlanForge plan is safe harbor, full NHCE PS is forfeitable
+  // Use pre-computed values from advisor panel if provided (field names: estForfeitures* or estimatedForfeitures/stdEstimatedForfeitures)
+  const estForfeituresStd = input.estForfeituresStd || input.stdEstimatedForfeitures || Math.round(turnoverDecimal * nhceTotalComp * stdRate / 100);
+  const estForfeitures = input.estForfeitures || input.estimatedForfeitures || Math.round(turnoverDecimal * (nhceFlatAmt > 0 ? nhceCount * nhceFlatAmt : nhceTotalComp * optNhceRate / 100));
 
   // ══════════════════════════════════════════════════════════════════
   //  TYPICAL STRATEGY — baselines (no SECURE, no forfeitures, 100% vested)
@@ -165,12 +215,18 @@ function computePlanData(input) {
   const typOwnersRetained = Math.round(ownersTotalComp * 0.03);
   const typTaxSavings = Math.round(typTotalPS * taxRate);
   const typNetCost = typTotalPS - typOwnersRetained - typTaxSavings;
+  // Typical plan IS safe harbor — first 3% vested, only excess is forfeitable
+  // At 3%, nothing is forfeitable (entire contribution = safe harbor minimum)
+  const typEstForfeitures = 0; // 3% rate = 3% floor → 0% forfeitable
 
   // 5% safe harbor (baseline for Optimized — same employee rate)
   const typ5TotalPS = Math.round(totalComp * 0.05);
   const typ5OwnersRetained = Math.round(ownersTotalComp * 0.05);
   const typ5TaxSavings = Math.round(typ5TotalPS * taxRate);
   const typ5NetCost = typ5TotalPS - typ5OwnersRetained - typ5TaxSavings;
+  // At 5% safe harbor, 2% above the 3% floor is forfeitable
+  const typ5ForfeitableRate = Math.max(0, 0.05 - 0.03); // 2%
+  const typ5EstForfeitures = Math.round((turnoverPct / 100) * nhceTotalComp * typ5ForfeitableRate);
 
   // Savings vs baselines
   const stdSavings = typNetCost - stdNetCost;
@@ -189,18 +245,22 @@ function computePlanData(input) {
     const nhcePS = Math.round(nhceTotalComp * nhceRate / 100);
     let ownerRate, ownerAllocation;
     if (nhceRate >= 5.0) {
-      ownerAllocation = optOwnerAlloc;
-      ownerRate = optOwnerRate;
+      // At 5%+ cross-testing is available — use provided owner allocation or cap
+      ownerAllocation = input.optOwnerAlloc || Math.min(limits.additions415c, ownerComp);
+      ownerRate = ownerComp > 0 ? (ownerAllocation / ownerComp * 100) : 0;
     } else {
-      ownerRate = nhceRate * 3; // 3x gateway
+      ownerRate = nhceRate * 3; // 3x gateway cap below 5%
       ownerAllocation = Math.min(Math.round(ownerComp * ownerRate / 100), limits.additions415c);
     }
+    const flatOwnerAlloc = Math.round(ownerComp * nhceRate / 100);
     const addlAllocs = additionalOwners.map(ao => Math.round(ao.comp * nhceRate / 100));
     const ownersRet = ownerAllocation + addlAllocs.reduce((s, a) => s + a, 0);
     const total = ownersRet + nhcePS;
-    const taxSav = Math.round((total - secureCredits) * taxRate);
+    const deductible = Math.min(total, deductionLimit404);
+    const taxSav = Math.round((deductible - secureCredits) * taxRate);
     const net = total - ownersRet - taxSav - secureCredits - forfeitures;
-    return { nhceRate, ownerAllocation, ownersRet, nhcePS, total, taxSav, net, ownerRate };
+    const xtDelta = ownerAllocation - flatOwnerAlloc;
+    return { nhceRate, ownerAllocation, flatOwnerAlloc, xtDelta, ownersRet, nhcePS, total, taxSav, net, ownerRate };
   }
 
   function calcTypicalAtRate(rate) {
@@ -224,7 +284,7 @@ function computePlanData(input) {
     eligible,
     nhceCount,
     taxRate,
-    forfeitures,
+    forfeitures, forfeituresStd, estForfeitures, estForfeituresStd,
     additionalOwners,
 
     // Comp totals
@@ -238,13 +298,13 @@ function computePlanData(input) {
     stdNetCost,
 
     // Optimized
-    optNhceRate, optOwnerAlloc, optOwnerRate, optOwnersRetained, optEmpPS,
+    optNhceRate, nhceFlatAmt, optOwnerAlloc, optOwnerRate, optOwnersRetained, optEmpPS,
     optTotalPS, optTaxSavings, optSecureCredits: secureCredits, optTotalTaxSavings,
     optNetCost,
 
     // Typical baselines
-    typTotalPS, typOwnersRetained, typTaxSavings, typNetCost,
-    typ5TotalPS, typ5OwnersRetained, typ5TaxSavings, typ5NetCost,
+    typTotalPS, typOwnersRetained, typTaxSavings, typNetCost, typEstForfeitures,
+    typ5TotalPS, typ5OwnersRetained, typ5TaxSavings, typ5NetCost, typ5EstForfeitures,
 
     // Comparisons
     stdSavings, optSavings, stdSavPct, optSavPct,
@@ -265,6 +325,7 @@ function computePlanData(input) {
 // ═══════════════════════════════════════════════════════════════════
 
 function generate(input, outputPath) {
+  if (!input) throw new Error('generate() requires input data');
   const D = computePlanData(input);
 
   // Determine output path
@@ -277,17 +338,18 @@ function generate(input, outputPath) {
     if (n < 0) return `-$${Math.abs(Math.round(n)).toLocaleString('en-US')}`;
     return `$${Math.round(n).toLocaleString('en-US')}`;
   };
-  const fmtPct = (n) => `${n.toFixed(1)}%`;
+  const fmtPct = (n) => `${parseFloat(n.toFixed(2))}%`;
 
+  // Page dimensions (US Letter in points: 8.5" × 11" at 72 DPI)
   const W = 612, H = 792;
-  const M = 40;
-  const CW = W - 2 * M;
+  const M = 40;            // Page margin (left + right)
+  const CW = W - 2 * M;   // Content width
 
   const doc = new PDFDocument({
     size: 'letter',
     margins: { top: 0, bottom: 0, left: 0, right: 0 },
     info: {
-      Title: `PlanForge Retirement Plan Illustration — ${D.company} ${D.year}`,
+      Title: `PlanForge Profit Share Illustration — ${D.company} ${D.year}`,
       Author: 'PlanForge Consulting',
     },
   });
@@ -295,18 +357,13 @@ function generate(input, outputPath) {
   const stream = fs.createWriteStream(outputPath);
   doc.pipe(stream);
 
-  // Register fonts
+  // Register fonts (single pass — no duplicates)
   Object.entries(FONTS).forEach(([key, fontPath]) => {
     const name = key === 'regular' ? 'Lato' : `Lato-${key.charAt(0).toUpperCase() + key.slice(1)}`;
-    try { doc.registerFont(name, fontPath); } catch(e) {}
+    try { doc.registerFont(name, fontPath); } catch(e) {
+      console.warn(`Font not found: ${fontPath} — falling back to Helvetica`);
+    }
   });
-  doc.registerFont('Lato-Bold', FONTS.bold);
-  doc.registerFont('Lato-Light', FONTS.light);
-  doc.registerFont('Lato-Medium', FONTS.medium);
-  doc.registerFont('Lato-Semibold', FONTS.semibold);
-  doc.registerFont('Lato-Black', FONTS.black);
-  doc.registerFont('Lato-Heavy', FONTS.heavy);
-  doc.registerFont('Lato-Italic', FONTS.italic);
 
   // ── Helpers (identical to V7) ──
   function rr(x, y, w, h, r, opts = {}) {
@@ -338,32 +395,36 @@ function generate(input, outputPath) {
 
     // ── HEADER BAR ──
     const headerH = 68;
-    doc.rect(0, 0, W, headerH).fill(C.navy);
-    doc.rect(0, headerH, W, 4).fill(C.gold);
+    // Gradient effect: darker navy at top, lighter at bottom
+    doc.rect(0, 0, W, headerH * 0.5).fill(C.navyDark);
+    doc.rect(0, headerH * 0.5, W, headerH * 0.5).fill(C.navy);
+    // Subtle gold accent stripe
+    doc.rect(0, headerH, W, 3).fill(C.gold);
+    doc.rect(0, headerH + 3, W, 1).fill(C.goldLight);
 
-    doc.font('Lato-Bold').fontSize(11).fillColor(C.gold);
+    doc.font('Lato-Bold').fontSize(10.5).fillColor(C.gold);
     doc.text('PLANFORGE CONSULTING', M, 14, { lineBreak: false });
     doc.font('Lato-Bold').fontSize(22).fillColor(C.white);
-    doc.text('Retirement Plan Illustration', M, 32, { lineBreak: false });
+    doc.text('Profit Share Illustration', M, 32, { lineBreak: false });
 
     rightText(D.company, M, 18, CW, 'Lato-Bold', 16, C.white);
-    rightText(`${D.year} Plan Year`, M, 40, CW, 'Lato', 11, C.white);
+    rightText(`${D.year} Plan Year`, M, 40, CW, 'Lato', 11, '#94A3B8');
 
     // ── OWNER INFO STRIP ──
-    const stripY = headerH + 4 + 10;
-    rr(M, stripY, CW, 44, 4, { fill: C.lightGray, stroke: C.borderGray, lineWidth: 0.8 });
-    doc.rect(M, stripY, 4, 44).fill(C.gold);
+    const stripY = headerH + 4 + 12;
+    rr(M, stripY, CW, 44, 5, { fill: '#F8F9FB', stroke: C.borderGray, lineWidth: 0.6 });
+    doc.rect(M, stripY + 4, 3, 36).fill(C.gold);
 
     doc.font('Lato-Semibold').fontSize(11).fillColor(C.darkGray);
     doc.text(`Owner: ${D.owner} (age ${D.ownerAge})`, M + 14, stripY + 8, { lineBreak: false });
-    doc.font('Lato').fontSize(10);
+    doc.font('Lato').fontSize(10).fillColor(C.medGray);
     doc.text(`${D.eligible} eligible employees  |  ${D.nhceCount} non-owner employees`, M + 14, stripY + 24, { lineBreak: false });
     doc.font('Lato-Semibold').fontSize(11).fillColor(C.darkGray);
     doc.text(`Compensation: $${D.ownerComp.toLocaleString()}`, CW / 2 + M, stripY + 8, { lineBreak: false });
 
     // ── VOLUNTARY NOTE ──
     const volY = stripY + 50;
-    rr(M, volY, CW, 22, 4, { fill: '#F0F4FA' });
+    rr(M, volY, CW, 22, 5, { fill: '#EFF4FA', stroke: '#BDD0E8', lineWidth: 0.4 });
     centerText('All employer contributions shown are voluntary and discretionary — there is no required contribution under this strategy.',
       M, volY + 5, CW, 'Lato-Italic', 8.5, C.navy);
 
@@ -372,10 +433,11 @@ function generate(input, outputPath) {
     const cardH = 388;
 
     // ── STANDARD CARD (left) ──
-    rr(leftX, cardTop, colW, cardH, 6, { fill: C.white, stroke: C.borderGray, lineWidth: 1.2 });
+    rr(leftX, cardTop, colW, cardH, 6, { fill: C.white, stroke: C.borderGray, lineWidth: 0.8 });
     doc.save();
     doc.roundedRect(leftX, cardTop, colW, 38, 6).clip();
-    doc.rect(leftX, cardTop, colW, 38).fill(C.navy);
+    doc.rect(leftX, cardTop, colW, 20).fill(C.navyDark);
+    doc.rect(leftX, cardTop + 20, colW, 18).fill(C.navy);
     doc.restore();
     doc.rect(leftX, cardTop + 26, colW, 12).fill(C.navy);
     centerText('PLANFORGE STANDARD', leftX, cardTop + 11, colW, 'Lato-Bold', 13, C.white);
@@ -399,8 +461,9 @@ function generate(input, outputPath) {
       ["Owner's Retained Share", `(${fmt(D.stdOwnersRetained)})`, C.navy],
       ['Tax Deductions (30%)', `(${fmt(D.stdTaxSavings)})`, C.darkGray],
       ['SECURE 2.0 Credits', `(${fmt(D.stdSecureCredits)})`, C.green],
-      [D.forfeitures > 0 ? 'Forfeitures (actual)' : 'Forfeitures', D.forfeitures > 0 ? `(${fmt(D.forfeitures)})` : '$0', C.darkGray],
+      [D.forfeituresStd > 0 ? 'Forfeitures (actual)' : 'Forfeitures', D.forfeituresStd > 0 ? `(${fmt(D.forfeituresStd)})` : '$0', C.darkGray],
     ];
+    if (D.estForfeituresStd > 0) stdItems.push(['Est. Forfeitures*', fmt(D.estForfeituresStd), C.medGray]);
     for (const [label, val, valColor] of stdItems) {
       doc.font('Lato').fontSize(9).fillColor(C.darkGray);
       doc.text(label, lx, cy, { lineBreak: false });
@@ -424,10 +487,11 @@ function generate(input, outputPath) {
     centerText(`${D.stdSavPct}% less than a typical plan`, leftX, cy, colW, 'Lato-Semibold', 9.5, C.green);
 
     // ── OPTIMIZED CARD (right) ──
-    rr(rightX, cardTop, colW, cardH, 6, { fill: C.white, stroke: C.gold, lineWidth: 1.8 });
+    rr(rightX, cardTop, colW, cardH, 6, { fill: '#FFFEF8', stroke: C.gold, lineWidth: 1.5 });
     doc.save();
     doc.roundedRect(rightX, cardTop, colW, 38, 6).clip();
-    doc.rect(rightX, cardTop, colW, 38).fill(C.gold);
+    doc.rect(rightX, cardTop, colW, 20).fill('#A57B1B');
+    doc.rect(rightX, cardTop + 20, colW, 18).fill(C.gold);
     doc.restore();
     doc.rect(rightX, cardTop + 26, colW, 12).fill(C.gold);
     centerText('PLANFORGE OPTIMIZED', rightX, cardTop + 11, colW, 'Lato-Bold', 13, C.white);
@@ -452,6 +516,7 @@ function generate(input, outputPath) {
       ['SECURE 2.0 Credits', `(${fmt(D.optSecureCredits)})`, C.green],
       [D.forfeitures > 0 ? 'Forfeitures (actual)' : 'Forfeitures', D.forfeitures > 0 ? `(${fmt(D.forfeitures)})` : '$0', C.darkGray],
     ];
+    if (D.estForfeitures > 0) optItems.push(['Est. Forfeitures*', fmt(D.estForfeitures), C.medGray]);
     for (const [label, val, valColor] of optItems) {
       doc.font('Lato').fontSize(9).fillColor(C.darkGray);
       doc.text(label, lx2, cy, { lineBreak: false });
@@ -479,19 +544,21 @@ function generate(input, outputPath) {
     // ── UPGRADE CALLOUT BANNER ──
     const bannerY = cardTop + cardH + 14;
     const bannerH = 48;
-    rr(M, bannerY, CW, bannerH, 6, { fill: C.navy });
+    rr(M, bannerY, CW, bannerH, 6, { fill: C.navyDark });
+    // Thin gold accent at top of banner
+    doc.rect(M + CW * 0.2, bannerY, CW * 0.6, 1.5).fill(C.gold);
 
     if (D.optNetCost <= D.stdNetCost) {
-      centerText('LOWER COST + MORE RETIREMENT SAVINGS', M, bannerY + 9, CW, 'Lato-Semibold', 10, C.lightNavy);
+      centerText('LOWER COST + MORE RETIREMENT SAVINGS', M, bannerY + 10, CW, 'Lato-Semibold', 10, C.lightNavy);
       centerText(`Save ${fmt(Math.abs(D.upgradeCostDiff))} more AND get +${fmt(D.upgradeAllocDiff)} in owner retirement`, M, bannerY + 27, CW, 'Lato-Bold', 14, C.gold);
     } else {
-      centerText(`FOR JUST ${fmt(D.upgradeCostDiff)} MORE IN NET COST`, M, bannerY + 9, CW, 'Lato-Semibold', 10, C.lightNavy);
+      centerText(`FOR JUST ${fmt(D.upgradeCostDiff)} MORE IN NET COST`, M, bannerY + 10, CW, 'Lato-Semibold', 10, C.lightNavy);
       centerText(`Owners get +${fmt(D.upgradeAllocDiff)} more in retirement savings`, M, bannerY + 27, CW, 'Lato-Bold', 16, C.gold);
     }
 
     // ── IRS COMPLIANCE BADGE ──
     const compY = bannerY + bannerH + 10;
-    rr(M, compY, CW * 0.60, 26, 4, { fill: C.greenBg });
+    rr(M, compY, CW * 0.62, 26, 5, { fill: '#E8F5E9', stroke: '#A5D6A7', lineWidth: 0.5 });
     const circX = M + 16, circY = compY + 13;
     doc.circle(circX, circY, 8).fill(C.green);
     doc.save();
@@ -511,6 +578,7 @@ function generate(input, outputPath) {
     doc.text('The Optimized plan goes further — cross-testing allows ownership to receive significantly higher allocations while employees still receive a competitive contribution.', M, noteY + 52, { width: CW, lineGap: 1.5 });
 
     // ── FOOTER ──
+    doc.moveTo(M, H - 34).lineTo(M + CW, H - 34).lineWidth(0.5).stroke(C.borderGray);
     doc.font('Lato-Italic').fontSize(7.5).fillColor(C.medGray);
     doc.text('PlanForge Consulting  |  Illustration Only, Not Tax or Legal Advice', M, H - 26, { lineBreak: false });
     rightText('Page 1 of 2', M, H - 26, CW, 'Lato-Italic', 7.5, C.medGray);
@@ -522,21 +590,33 @@ function generate(input, outputPath) {
   // ═══════════════════════════════════════════════════════════════════
   function drawPage2() {
     const headerH = 54;
-    doc.rect(0, 0, W, headerH).fill(C.navy);
-    doc.rect(0, headerH, W, 4).fill(C.gold);
+    doc.rect(0, 0, W, headerH * 0.5).fill(C.navyDark);
+    doc.rect(0, headerH * 0.5, W, headerH * 0.5).fill(C.navy);
+    doc.rect(0, headerH, W, 3).fill(C.gold);
+    doc.rect(0, headerH + 3, W, 1).fill(C.goldLight);
 
     doc.font('Lato-Bold').fontSize(10).fillColor(C.gold);
     doc.text('PLANFORGE CONSULTING', M, 8, { lineBreak: false });
     doc.font('Lato-Bold').fontSize(17).fillColor(C.white);
     doc.text(`${D.company} — Plan Details`, M, 26, { lineBreak: false });
-    rightText(`${D.year} Plan Year`, M, 22, CW, 'Lato', 10, C.white);
+    rightText(`${D.year} Plan Year`, M, 22, CW, 'Lato', 10, '#94A3B8');
 
     let cy = headerH + 4 + 14;
 
+    // ── Section heading helper ──
+    function sectionHead(label, y) {
+      doc.font('Lato-Bold').fontSize(11).fillColor(C.navy);
+      const tw = doc.widthOfString(label);
+      doc.text(label, M + 10, y, { lineBreak: false });
+      // Gold dot before label
+      doc.circle(M + 4, y + 5.5, 3).fill(C.gold);
+      // Underline: gold accent then navy fade
+      doc.moveTo(M, y + 15).lineTo(M + 8, y + 15).lineWidth(2).stroke(C.gold);
+      doc.moveTo(M + 8, y + 15).lineTo(M + 10 + tw, y + 15).lineWidth(1).stroke(C.navy);
+    }
+
     // ── HOW IT WORKS ──
-    doc.font('Lato-Bold').fontSize(11).fillColor(C.navy);
-    doc.text('HOW IT WORKS', M, cy, { lineBreak: false });
-    doc.moveTo(M, cy + 14).lineTo(M + doc.widthOfString('HOW IT WORKS'), cy + 14).lineWidth(1.5).stroke(C.navy);
+    sectionHead('HOW IT WORKS', cy);
     cy += 20;
 
     doc.font('Lato-Bold').fontSize(9.5).fillColor(C.darkGray);
@@ -554,9 +634,7 @@ function generate(input, outputPath) {
     cy += 34;
 
     // ── FINANCIAL IMPACT COMPARISON ──
-    doc.font('Lato-Bold').fontSize(11).fillColor(C.navy);
-    doc.text('FINANCIAL IMPACT COMPARISON', M, cy, { lineBreak: false });
-    doc.moveTo(M, cy + 14).lineTo(M + doc.widthOfString('FINANCIAL IMPACT COMPARISON'), cy + 14).lineWidth(1.5).stroke(C.navy);
+    sectionHead('FINANCIAL IMPACT COMPARISON', cy);
     cy += 20;
 
     const tc1 = M + 8;
@@ -565,13 +643,13 @@ function generate(input, outputPath) {
     const tc4 = M + CW * 0.78;
     const tcW = CW * 0.20;
 
-    rr(M, cy - 4, CW, 20, 3, { fill: C.navy });
-    centerText('TYPICAL', tc2, cy, tcW, 'Lato-Bold', 8, C.white);
+    rr(M, cy - 4, CW, 20, 4, { fill: C.navyDark });
+    centerText('TYPICAL', tc2, cy, tcW, 'Lato-Bold', 8, '#94A3B8');
     centerText('STANDARD', tc3, cy, tcW, 'Lato-Bold', 8, C.white);
-    centerText('OPTIMIZED', tc4, cy, tcW, 'Lato-Bold', 8, C.white);
+    centerText('OPTIMIZED', tc4, cy, tcW, 'Lato-Bold', 8, C.gold);
 
     cy += 20;
-    rr(M, cy - 3, CW, 16, 0, { fill: '#FAFAFA' });
+    rr(M, cy - 3, CW, 16, 0, { fill: C.lightGray });
     centerText(`${D.stdRate}% Safe Harbor`, tc2, cy - 1, tcW, 'Lato-Italic', 7, C.medGray);
     centerText(`${D.stdRate}% Flat PS`, tc3, cy - 1, tcW, 'Lato-Italic', 7, C.medGray);
     centerText('Cross-Tested', tc4, cy - 1, tcW, 'Lato-Italic', 7, C.medGray);
@@ -583,9 +661,13 @@ function generate(input, outputPath) {
       ["Less: Owner's Retained", `(${fmt(D.typOwnersRetained)})`, `(${fmt(D.stdOwnersRetained)})`, `(${fmt(D.optOwnersRetained)})`],
       ['Less: Tax Deductions (30%)', `(${fmt(D.typTaxSavings)})`, `(${fmt(D.stdTaxSavings)})`, `(${fmt(D.optTaxSavings)})`],
       ['Less: SECURE 2.0 Credits', '$0', `(${fmt(D.stdSecureCredits)})`, `(${fmt(D.optSecureCredits)})`],
-      ['Less: Forfeitures', '$0', D.forfeitures > 0 ? `(${fmt(D.forfeitures)})` : '$0', D.forfeitures > 0 ? `(${fmt(D.forfeitures)})` : '$0'],
-      ['Net Cost', fmt(D.typNetCost), fmt(D.stdNetCost), fmt(D.optNetCost)],
+      ['Less: Forfeitures (actual)', '$0', D.forfeituresStd > 0 ? `(${fmt(D.forfeituresStd)})` : '$0', D.forfeitures > 0 ? `(${fmt(D.forfeitures)})` : '$0'],
     ];
+    // Insert estimated forfeitures row before Net Cost if any plan has estimates
+    if (D.estForfeitures > 0 || D.estForfeituresStd > 0 || D.typEstForfeitures > 0) {
+      vsRows.push(['Est. Forfeitures*', D.typEstForfeitures > 0 ? fmt(D.typEstForfeitures) : '$0', D.estForfeituresStd > 0 ? fmt(D.estForfeituresStd) : '$0', D.estForfeitures > 0 ? fmt(D.estForfeitures) : '$0']);
+    }
+    vsRows.push(['Net Cost', fmt(D.typNetCost), fmt(D.stdNetCost), fmt(D.optNetCost)]);
 
     vsRows.forEach(([label, tv, sv, ov], i) => {
       const isNetCost = label === 'Net Cost';
@@ -614,15 +696,13 @@ function generate(input, outputPath) {
 
     // ── OWNER'S RETIREMENT SNAPSHOT ──
     cy += 32;
-    doc.font('Lato-Bold').fontSize(11).fillColor(C.navy);
-    doc.text("OWNER'S RETIREMENT SNAPSHOT", M, cy, { lineBreak: false });
-    doc.moveTo(M, cy + 14).lineTo(M + doc.widthOfString("OWNER'S RETIREMENT SNAPSHOT"), cy + 14).lineWidth(1.5).stroke(C.navy);
+    sectionHead("OWNER'S RETIREMENT SNAPSHOT", cy);
     cy += 22;
 
     const snapCards = [
-      { label: 'Typical', sub: `${D.stdRate}% Safe Harbor`, amount: D.typOwnersRetained, color: C.red, bgColor: '#FFF0F0', borderColor: '#FFCCCC' },
-      { label: 'Standard', sub: `${D.stdRate}% Flat PS`, amount: D.stdOwnersRetained, color: C.navy, bgColor: '#F0F4FA', borderColor: '#C0D0E8' },
-      { label: 'Optimized', sub: 'Cross-Tested', amount: D.optOwnersRetained, color: C.gold, bgColor: C.goldBg, borderColor: C.goldBorder },
+      { label: 'Typical', sub: `${D.stdRate}% Safe Harbor`, amount: D.typOwnersRetained, color: C.red, bgColor: '#FEF2F2', borderColor: '#FECACA' },
+      { label: 'Standard', sub: `${D.stdRate}% Flat PS`, amount: D.stdOwnersRetained, color: C.navy, bgColor: '#EFF4FA', borderColor: '#BDD0E8' },
+      { label: 'Optimized', sub: 'Cross-Tested', amount: D.optOwnersRetained, color: C.gold, bgColor: '#FFF9E8', borderColor: C.goldBorder },
     ];
 
     const snapW = (CW - 2 * 14) / 3;
@@ -648,23 +728,32 @@ function generate(input, outputPath) {
     cy += snapH + 8;
     // Use gender-neutral language since we don't know the owner's pronouns
     const pronoun = 'their';
-    rr(M, cy, CW, 22, 4, { fill: C.goldBg, stroke: C.goldBorder, lineWidth: 0.8 });
+    rr(M, cy, CW, 22, 5, { fill: '#FFF9E8', stroke: C.goldBorder, lineWidth: 0.6 });
     const snapNote = `With PlanForge Optimized, ${D.ownerFirst} receives ${fmt(D.optOwnersRetained)} — that's ${fmt(D.optOwnersRetained - D.typOwnersRetained)} more than a typical plan, deposited directly into ${pronoun} retirement account.`;
     doc.font('Lato-Semibold').fontSize(8).fillColor(C.darkGray);
     doc.text(snapNote, M + 10, cy + 6, { width: CW - 20, lineBreak: true });
 
     // ── RATE SENSITIVITY ──
     cy += 30;
-    doc.font('Lato-Bold').fontSize(11).fillColor(C.navy);
-    doc.text('WHAT IF WE ADJUST THE EMPLOYEE RATE?', M, cy, { lineBreak: false });
-    doc.moveTo(M, cy + 14).lineTo(M + doc.widthOfString('WHAT IF WE ADJUST THE EMPLOYEE RATE?'), cy + 14).lineWidth(1.5).stroke(C.navy);
+    sectionHead('WHAT IF WE ADJUST THE EMPLOYEE RATE?', cy);
     cy += 22;
 
     doc.font('Lato').fontSize(8.5).fillColor(C.medGray);
     doc.text('Changing the employee rate adjusts the owner\'s allocation and net cost. Below 5%, the gateway test caps the owner at 3x the employee rate.', M, cy, { width: CW, lineGap: 1.5 });
     cy += 20;
 
-    const rates = [1.0, 2.0, 3.0, 4.0, 5.0];
+    // Build 5 rates at 0.25% increments centered on the current stdRate
+    const rateCenter = D.stdRate || 3.0;
+    const rateStep = 0.25;
+    const rates = [];
+    for (let ri = -2; ri <= 2; ri++) {
+      const r = Math.round((rateCenter + ri * rateStep) * 100) / 100;
+      if (r >= rateStep) rates.push(r);
+    }
+    while (rates.length < 5) {
+      const next = Math.round((rates[rates.length - 1] + rateStep) * 100) / 100;
+      rates.push(next);
+    }
     const boxW = (CW - 4 * 10) / 5;
 
     rates.forEach((rate, i) => {
@@ -673,51 +762,68 @@ function generate(input, outputPath) {
       const typ = D.calcTypicalAtRate(rate);
       const savings = typ.net - calc.net;
       const fee = Math.round(savings * D.FEE_PCT);
-      const isCurrent = rate === D.optNhceRate;
+      const isCurrent = Math.abs(rate - D.optNhceRate) < 0.13;
       const boxH = 88;
 
       if (isCurrent) {
-        rr(bx, cy, boxW, boxH, 4, { fill: C.goldBg, stroke: C.gold, lineWidth: 1.5 });
+        rr(bx, cy, boxW, boxH, 5, { fill: '#FFF9E8', stroke: C.gold, lineWidth: 1.5 });
+        // Gold header strip inside current box
+        rr(bx + 1, cy + 1, boxW - 2, 18, 4, { fill: C.gold });
+        centerText(`${fmtPct(rate)} NHCE`, bx, cy + 4, boxW, 'Lato-Bold', 9, C.white);
       } else {
-        rr(bx, cy, boxW, boxH, 4, { fill: C.lightGray, stroke: C.borderGray });
+        rr(bx, cy, boxW, boxH, 5, { fill: '#F8F9FB', stroke: C.borderGray, lineWidth: 0.6 });
+        centerText(`${fmtPct(rate)} NHCE`, bx, cy + 5, boxW, 'Lato-Bold', 9, C.darkGray);
       }
+      centerText(`Owner: ${fmt(calc.ownerAllocation)}`, bx, cy + 20, boxW, 'Lato', 7.5, C.medGray);
 
-      centerText(`${fmtPct(rate)} NHCE`, bx, cy + 5, boxW, 'Lato-Bold', 9, C.darkGray);
-      centerText(`Owner: ${fmt(calc.ownerAllocation)}`, bx, cy + 18, boxW, 'Lato', 7.5, C.medGray);
-
-      const netY = cy + 33;
+      const netY = cy + 34;
       centerText('Net Cost', bx, netY, boxW, 'Lato', 7, C.medGray);
       centerText(fmt(calc.net), bx, netY + 10, boxW, 'Lato-Bold', 11, isCurrent ? C.gold : C.darkGray);
       centerText(`Optimized Fee: ${fmt(fee)}`, bx, netY + 24, boxW, 'Lato', 6.5, C.medGray);
-      centerText(`Saves ${fmt(savings - fee)}`, bx, netY + 34, boxW, 'Lato-Bold', 7, C.green);
+      centerText(`Saves ${fmt(savings - fee)}`, bx, netY + 34, boxW, 'Lato-Bold', 7.5, C.green);
 
       if (isCurrent) {
         const labelY = cy + boxH + 4;
-        const barW = 30;
-        doc.moveTo(bx + (boxW - barW) / 2, labelY).lineTo(bx + (boxW + barW) / 2, labelY).lineWidth(2).stroke(C.gold);
-        centerText('CURRENT', bx, labelY + 4, boxW, 'Lato-Bold', 7.5, C.gold);
+        rr(bx + (boxW - 40) / 2, labelY, 40, 12, 6, { fill: C.gold });
+        centerText('CURRENT', bx, labelY + 2, boxW, 'Lato-Bold', 7, C.white);
       }
     });
 
     // ── FORFEITURE BENEFIT ──
     cy += 110;
-    doc.font('Lato-Bold').fontSize(11).fillColor(C.navy);
-    doc.text('FORFEITURE BENEFIT', M, cy, { lineBreak: false });
-    doc.moveTo(M, cy + 14).lineTo(M + doc.widthOfString('FORFEITURE BENEFIT'), cy + 14).lineWidth(1.5).stroke(C.navy);
+    sectionHead('FORFEITURE BENEFIT', cy);
     cy += 20;
 
-    rr(M, cy, CW, 30, 4, { fill: C.lightGray });
-    doc.rect(M, cy, 4, 30).fill(C.gold);
+    const hasForfeitures = D.forfeitures > 0 || D.forfeituresStd > 0;
+    const hasEstForfeitures = D.estForfeitures > 0 || D.estForfeituresStd > 0;
+    const forfBoxH = (hasForfeitures && hasEstForfeitures) ? 50 : 30;
+
+    rr(M, cy, CW, forfBoxH, 5, { fill: '#F8F9FB', stroke: C.borderGray, lineWidth: 0.5 });
+    doc.rect(M, cy + 4, 3, forfBoxH - 8).fill(C.gold);
     doc.font('Lato').fontSize(8.5).fillColor(C.darkGray);
 
-    if (D.forfeitures > 0) {
-      doc.text('Employees who leave before fully vested forfeit their unvested balance, reducing future costs.', M + 14, cy + 4, { lineBreak: false });
-      doc.text('Actual forfeitures from departed employees:', M + 14, cy + 17, { lineBreak: false });
-      doc.font('Lato-Bold').fontSize(9.5).fillColor(C.gold);
-      doc.text(fmt(D.forfeitures), M + 226, cy + 16, { lineBreak: false });
-      doc.font('Lato').fontSize(8).fillColor(C.medGray);
-      doc.text('(already included in Net Cost)', M + 280, cy + 17, { lineBreak: false });
-    } else {
+    if (hasForfeitures) {
+      doc.text('Actual forfeitures from departed employees (reduces Net Cost):', M + 14, cy + 4, { lineBreak: false });
+      doc.font('Lato').fontSize(8.5).fillColor(C.darkGray);
+      doc.text('Standard:', M + 14, cy + 17, { lineBreak: false });
+      doc.font('Lato-Bold').fontSize(9.5).fillColor(C.navy);
+      doc.text(fmt(D.forfeituresStd), M + 75, cy + 16, { lineBreak: false });
+      doc.font('Lato').fontSize(8.5).fillColor(C.darkGray);
+      doc.text('Optimized:', M + 145, cy + 17, { lineBreak: false });
+      doc.font('Lato-Bold').fontSize(9.5).fillColor(C.green);
+      doc.text(fmt(D.forfeitures), M + 200, cy + 16, { lineBreak: false });
+    }
+    if (hasEstForfeitures) {
+      const estY = hasForfeitures ? cy + 30 : cy + 4;
+      doc.font('Lato').fontSize(8.5).fillColor(C.darkGray);
+      doc.text('Estimated annual forfeitures from turnover (informational only):', M + 14, estY, { lineBreak: false });
+      doc.font('Lato-Semibold').fontSize(9).fillColor(C.gold);
+      doc.text(`Standard: ${fmt(D.estForfeituresStd)}`, M + 14, estY + 13, { lineBreak: false });
+      doc.text(`Optimized: ${fmt(D.estForfeitures)}`, M + 145, estY + 13, { lineBreak: false });
+      doc.font('Lato-Italic').fontSize(7).fillColor(C.medGray);
+      doc.text('*Not included in Net Cost', M + 280, estY + 14, { lineBreak: false });
+    }
+    if (!hasForfeitures && !hasEstForfeitures) {
       doc.text('Employees who leave before fully vested forfeit their unvested balance, reducing future plan costs.', M + 14, cy + 4, { lineBreak: false });
       doc.text('Forfeiture estimates will be available after the first plan year based on actual turnover.', M + 14, cy + 17, { lineBreak: false });
     }
@@ -728,7 +834,7 @@ function generate(input, outputPath) {
     const discLines = [
       'This illustration is based on current census data and IRS limits for the plan year shown. Actual results may vary based on final compensation, employee changes, and plan amendments.',
       'This is not tax or legal advice. Consult your tax advisor and ERISA counsel. All contributions are voluntary and discretionary. SECURE 2.0 credits subject to eligibility requirements.',
-      `Forfeitures reflect ${D.forfeitures > 0 ? 'actual departed employees' : 'estimated turnover'}. "Typical Strategy" assumes a ${D.stdRate}% safe harbor with immediate vesting, no forfeitures, no SECURE credits. Tax rate: ${Math.round(D.taxRate * 100)}%.`,
+      `${hasForfeitures ? 'Actual forfeitures from departed employees\u2019 unvested profit sharing are included in Net Cost — amounts differ between plans due to different allocations.' : ''} ${hasEstForfeitures ? '*Estimated forfeitures are based on selected turnover rate and are shown for informational purposes only — not included in Net Cost. Standard plan first 3% is safe harbor (immediately vested).' : ''} "Typical Strategy" assumes a ${D.stdRate}% safe harbor with immediate vesting, no forfeitures, no SECURE credits. Tax rate: ${Math.round(D.taxRate * 100)}%.`,
       "Owner's retained share is not a business expense — it goes directly into the owner's retirement account and is deducted from net cost.",
     ];
     discLines.forEach((line, i) => {
@@ -736,6 +842,7 @@ function generate(input, outputPath) {
     });
 
     // ── FOOTER ──
+    doc.moveTo(M, H - 30).lineTo(M + CW, H - 30).lineWidth(0.5).stroke(C.borderGray);
     doc.font('Lato-Italic').fontSize(7.5).fillColor(C.medGray);
     doc.text('PlanForge Consulting  |  Illustration Only, Not Tax or Legal Advice', M, H - 22, { lineBreak: false });
     rightText('Page 2 of 2', M, H - 22, CW, 'Lato-Italic', 7.5, C.medGray);
@@ -793,10 +900,17 @@ if (require.main === module) {
     process.exit(1);
   }
 
-  const input = JSON.parse(fs.readFileSync(inputFile, 'utf-8'));
+  let input;
+  try {
+    input = JSON.parse(fs.readFileSync(inputFile, 'utf-8'));
+  } catch (err) {
+    console.error(`Error reading ${inputFile}: ${err.message}`);
+    process.exit(1);
+  }
+
   generate(input, outputFile)
     .then(() => process.exit(0))
-    .catch(err => { console.error(err); process.exit(1); });
+    .catch(err => { console.error('PDF generation failed:', err.message || err); process.exit(1); });
 }
 
 
