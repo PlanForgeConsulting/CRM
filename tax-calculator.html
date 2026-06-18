@@ -1,0 +1,792 @@
+<!-- PlanForge Business Owner Tax Savings Calculator - WordPress Embed Version -->
+<!-- Paste this entire block into a Custom HTML block in WordPress -->
+<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+#pf-tax,#pf-tax *{box-sizing:border-box!important;margin:0!important;padding:0!important;-webkit-tap-highlight-color:transparent;line-height:normal!important;letter-spacing:normal!important;text-transform:none!important;border:none!important;float:none!important;text-indent:0!important}
+#pf-tax{font-family:'Libre Franklin',-apple-system,BlinkMacSystemFont,sans-serif!important;background:#FAF8F3!important;color:#2D2D2D!important;max-width:480px!important;margin:0 auto!important;border-radius:12px!important;overflow:hidden!important;box-shadow:0 0 40px rgba(0,0,0,0.08)!important}
+#pf-tax .pft-header{background:linear-gradient(135deg,#122840 0%,#1B3A5C 50%,#2A5580 100%)!important;padding:28px 20px 24px!important;text-align:center!important;position:relative!important;overflow:hidden!important}
+#pf-tax .pft-header::before{content:''!important;position:absolute!important;top:0!important;left:0!important;right:0!important;bottom:0!important;background:radial-gradient(ellipse at 20% 50%,rgba(196,149,42,0.1) 0%,transparent 60%)!important}
+#pf-tax .pft-header-inner{position:relative!important;z-index:1!important}
+#pf-tax .pft-brand{font-size:11px!important;font-weight:700!important;letter-spacing:0.2em!important;text-transform:uppercase!important;color:#C4952A!important;margin-bottom:8px!important;display:block!important}
+#pf-tax .pft-title{font-size:20px!important;font-weight:800!important;color:#fff!important;margin:0 0 6px!important;padding:0!important;line-height:1.2!important;border:none!important;background:none!important;text-align:center!important}
+#pf-tax .pft-sub{font-size:13px!important;color:rgba(255,255,255,0.7)!important;font-weight:400!important;margin:0!important;padding:0!important}
+#pf-tax .pft-accent{height:3px!important;background:linear-gradient(to right,#B22234,#C4952A)!important;border:none!important}
+#pf-tax .pft-inputs{padding:24px 20px 16px!important}
+#pf-tax .pft-slider-group{margin-bottom:22px!important}
+#pf-tax .pft-slider-header{display:flex!important;justify-content:space-between!important;align-items:baseline!important;margin-bottom:8px!important}
+#pf-tax .pft-slider-label{font-size:13px!important;font-weight:600!important;color:#1B3A5C!important;letter-spacing:0.02em!important;text-transform:uppercase!important}
+#pf-tax .pft-slider-value{font-size:22px!important;font-weight:700!important;color:#1B3A5C!important}
+#pf-tax input[type="range"]{width:100%!important;height:8px!important;border-radius:4px!important;-webkit-appearance:none!important;appearance:none!important;outline:none!important;cursor:pointer!important;background:#E5E7EB!important;margin:4px 0!important;padding:0!important}
+#pf-tax input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none!important;height:28px!important;width:28px!important;border-radius:50%!important;background:#1B3A5C!important;border:3px solid #fff!important;box-shadow:0 2px 8px rgba(0,0,0,0.25)!important;cursor:pointer!important;margin-top:-10px!important}
+#pf-tax input[type="range"]::-moz-range-thumb{height:28px!important;width:28px!important;border-radius:50%!important;background:#1B3A5C!important;border:3px solid #fff!important;box-shadow:0 2px 8px rgba(0,0,0,0.25)!important;cursor:pointer!important}
+#pf-tax .pft-range{display:flex!important;justify-content:space-between!important;margin-top:4px!important;font-size:11px!important;color:#6B7280!important}
+#pf-tax .pft-section-label{font-size:13px!important;font-weight:600!important;color:#1B3A5C!important;letter-spacing:0.02em!important;text-transform:uppercase!important;margin-bottom:8px!important;display:block!important}
+#pf-tax .pft-age-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important;margin-bottom:22px!important}
+#pf-tax .pft-age-btn{padding:10px 8px!important;border-radius:6px!important;font-size:12px!important;font-weight:600!important;text-align:center!important;background:#fff!important;color:#2D2D2D!important;cursor:pointer!important;transition:background 0.2s,color 0.2s!important;border:1px solid #E5E7EB!important;font-family:'Libre Franklin',sans-serif!important}
+#pf-tax .pft-age-btn.active{background:#1B3A5C!important;color:#fff!important;border-color:#1B3A5C!important}
+#pf-tax .pft-toggle-group{display:flex!important;align-items:center!important;justify-content:space-between!important;margin-bottom:22px!important}
+#pf-tax .pft-toggle-label{font-size:13px!important;font-weight:600!important;color:#1B3A5C!important}
+#pf-tax .pft-switch{display:inline-flex!important;border:1px solid #E5E7EB!important;border-radius:20px!important;overflow:hidden!important}
+#pf-tax .pft-switch-opt{padding:6px 14px!important;font-size:12px!important;font-weight:600!important;background:#fff!important;color:#6B7280!important;border:none!important;cursor:pointer!important;transition:all 0.2s!important;font-family:'Libre Franklin',sans-serif!important}
+#pf-tax .pft-switch-opt.active{background:#1B3A5C!important;color:#fff!important}
+#pf-tax .pft-results{padding:20px 20px 16px!important}
+#pf-tax .pft-tabs{display:flex!important;background:#E5E7EB!important;border-radius:8px!important;padding:3px!important;margin-bottom:16px!important;gap:3px!important}
+#pf-tax .pft-tab{flex:1!important;padding:8px 4px!important;border-radius:6px!important;font-size:12px!important;font-weight:600!important;background:transparent!important;color:#6B7280!important;cursor:pointer!important;border:none!important;font-family:'Libre Franklin',sans-serif!important;text-align:center!important;transition:all 0.2s!important}
+#pf-tax .pft-tab.active{background:#fff!important;color:#1B3A5C!important;box-shadow:0 1px 3px rgba(0,0,0,0.1)!important}
+#pf-tax .pft-waterfall{display:flex!important;gap:8px!important;margin-bottom:16px!important;overflow-x:auto!important;-webkit-overflow-scrolling:touch!important;scroll-snap-type:x mandatory!important;padding-bottom:4px!important}
+#pf-tax .pft-col{background:#fff!important;border-radius:10px!important;padding:14px 10px!important;border:1px solid #E5E7EB!important;text-align:center!important;min-width:180px!important;scroll-snap-align:start!important;flex:1!important}
+#pf-tax .pft-col-best{border:2px solid #C4952A!important;position:relative!important;padding-top:24px!important}
+#pf-tax .pft-col-best::before{content:'BEST VALUE'!important;position:absolute!important;top:-1px!important;left:50%!important;transform:translateX(-50%)!important;background:#C4952A!important;color:#fff!important;font-size:8px!important;font-weight:700!important;padding:2px 8px!important;border-radius:0 0 4px 4px!important;letter-spacing:0.1em!important;text-transform:uppercase!important}
+#pf-tax .pft-col-header{font-size:11px!important;font-weight:700!important;color:#1B3A5C!important;text-transform:uppercase!important;letter-spacing:0.05em!important;margin-bottom:2px!important}
+#pf-tax .pft-col-sub{font-size:10px!important;color:#6B7280!important;margin-bottom:10px!important}
+#pf-tax .pft-row{padding:5px 0!important;border-bottom:1px solid #F3F4F6!important}
+#pf-tax .pft-row:last-child{border-bottom:none!important}
+#pf-tax .pft-row-label{font-size:9px!important;color:#6B7280!important;text-transform:uppercase!important;letter-spacing:0.03em!important;margin-bottom:2px!important}
+#pf-tax .pft-row-val{font-size:15px!important;font-weight:700!important;color:#2D2D2D!important}
+#pf-tax .pft-row-sub{font-size:8px!important;color:#9CA3AF!important;font-style:italic!important}
+#pf-tax .pft-row-net{background:linear-gradient(135deg,#122840,#1B3A5C)!important;border-radius:6px!important;margin-top:8px!important;padding:8px 6px!important;border-bottom:none!important}
+#pf-tax .pft-row-net .pft-row-label{color:rgba(255,255,255,0.7)!important}
+#pf-tax .pft-row-net .pft-row-val{color:#fff!important}
+#pf-tax .pft-row-net.pft-net-positive{background:linear-gradient(135deg,#064e3b,#166534)!important}
+#pf-tax .pft-comparison{display:flex!important;flex-direction:column!important;gap:8px!important;margin-bottom:16px!important}
+#pf-tax .pft-savings-badge{background:linear-gradient(135deg,#C4952A,#D4A843)!important;color:#fff!important;border-radius:8px!important;padding:10px 14px!important;font-size:13px!important;font-weight:700!important;text-align:center!important}
+#pf-tax .pft-savings-badge span{display:block!important;font-size:11px!important;font-weight:400!important;opacity:0.85!important;margin-bottom:2px!important}
+#pf-tax .pft-summary{display:flex!important;gap:8px!important;margin-bottom:16px!important;overflow-x:auto!important;-webkit-overflow-scrolling:touch!important;padding-bottom:4px!important}
+#pf-tax .pft-summary-col{background:#fff!important;border-radius:8px!important;padding:12px 10px!important;border:1px solid #E5E7EB!important;min-width:160px!important;flex:1!important;text-align:center!important}
+#pf-tax .pft-summary-title{font-size:9px!important;font-weight:700!important;color:#1B3A5C!important;text-transform:uppercase!important;letter-spacing:0.05em!important;margin-bottom:8px!important}
+#pf-tax .pft-summary-row{margin-bottom:6px!important}
+#pf-tax .pft-summary-row:last-child{margin-bottom:0!important}
+#pf-tax .pft-summary-lbl{font-size:9px!important;color:#6B7280!important;text-transform:uppercase!important}
+#pf-tax .pft-summary-val{font-size:14px!important;font-weight:700!important;color:#2D2D2D!important}
+#pf-tax .pft-summary-val.pft-green{color:#166534!important}
+#pf-tax .pft-summary-val.pft-gold{color:#C4952A!important}
+#pf-tax .pft-toggle-btn{width:100%!important;background:none!important;border:1px solid #E5E7EB!important;border-radius:8px!important;padding:12px 16px!important;display:flex!important;justify-content:space-between!important;align-items:center!important;cursor:pointer!important;margin-bottom:12px!important;font-family:'Libre Franklin',sans-serif!important}
+#pf-tax .pft-toggle-btn span:first-child{font-size:13px!important;font-weight:600!important;color:#1B3A5C!important}
+#pf-tax .pft-arrow{font-size:18px!important;color:#1B3A5C!important;transition:transform 0.2s!important}
+#pf-tax .pft-arrow.open{transform:rotate(180deg)!important}
+#pf-tax .pft-math{background:#fff!important;border:1px solid #E5E7EB!important;border-radius:10px!important;padding:18px!important;margin-bottom:16px!important;display:none!important}
+#pf-tax .pft-math.open{display:block!important}
+#pf-tax .pft-math-section{margin-bottom:14px!important}
+#pf-tax .pft-math-section:last-child{margin-bottom:0!important}
+#pf-tax .pft-math-title{font-size:11px!important;font-weight:700!important;color:#1B3A5C!important;text-transform:uppercase!important;letter-spacing:0.08em!important;margin-bottom:8px!important}
+#pf-tax .pft-math-text{font-size:12px!important;color:#2D2D2D!important;line-height:1.6!important}
+#pf-tax .pft-math-text strong{font-weight:700!important}
+#pf-tax .pft-math-divider{height:1px!important;background:#E5E7EB!important;margin:14px 0!important;border:none!important}
+#pf-tax .pft-forfeiture{margin:0 20px 16px!important;background:#fff!important;border-radius:10px!important;padding:18px 16px!important;border:1px solid #E5E7EB!important}
+#pf-tax .pft-forfeiture-title{font-size:13px!important;font-weight:700!important;color:#1B3A5C!important;text-transform:uppercase!important;letter-spacing:0.05em!important;margin-bottom:6px!important;text-align:center!important}
+#pf-tax .pft-forfeiture-sub{font-size:11px!important;color:#6B7280!important;line-height:1.5!important;margin-bottom:12px!important;text-align:center!important}
+#pf-tax .pft-forfeiture-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important}
+#pf-tax .pft-forfeiture-item{background:#FAF8F3!important;border-radius:6px!important;padding:10px 8px!important;text-align:center!important}
+#pf-tax .pft-forfeiture-item.pft-forfeiture-total{grid-column:1 / -1!important;background:linear-gradient(135deg,#122840,#1B3A5C)!important}
+#pf-tax .pft-forfeiture-yr{font-size:9px!important;font-weight:700!important;color:#6B7280!important;text-transform:uppercase!important;letter-spacing:0.05em!important;margin-bottom:2px!important}
+#pf-tax .pft-forfeiture-amt{font-size:18px!important;font-weight:800!important;color:#1B3A5C!important}
+#pf-tax .pft-forfeiture-total .pft-forfeiture-yr{color:rgba(255,255,255,0.7)!important}
+#pf-tax .pft-forfeiture-total .pft-forfeiture-amt{color:#fff!important;font-size:22px!important}
+#pf-tax .pft-cta-section{padding:8px 20px 20px!important}
+#pf-tax .pft-qualify{text-align:center!important;padding:16px 0!important}
+#pf-tax .pft-qualify-text{font-size:15px!important;font-weight:600!important;color:#1B3A5C!important;margin-bottom:14px!important;line-height:1.4!important}
+#pf-tax .pft-qualify-btns{display:flex!important;gap:10px!important;justify-content:center!important}
+#pf-tax .pft-pill-btn{padding:10px 20px!important;border-radius:24px!important;font-size:13px!important;font-weight:600!important;cursor:pointer!important;transition:all 0.2s!important;font-family:'Libre Franklin',sans-serif!important;border:none!important}
+#pf-tax .pft-pill-yes{background:linear-gradient(135deg,#122840,#1B3A5C)!important;color:#fff!important}
+#pf-tax .pft-pill-yes:hover{box-shadow:0 4px 12px rgba(18,40,64,0.3)!important;transform:translateY(-1px)!important}
+#pf-tax .pft-pill-no{background:#fff!important;color:#1B3A5C!important;border:1px solid #E5E7EB!important}
+#pf-tax .pft-pill-no:hover{background:#F3F4F6!important}
+#pf-tax .pft-form-wrap{max-width:340px!important;margin:0 auto!important;padding:16px 0!important}
+#pf-tax .pft-form-wrap input[type="text"],#pf-tax .pft-form-wrap input[type="email"],#pf-tax .pft-form-wrap input[type="tel"]{width:100%!important;padding:12px 16px!important;border:1px solid #E5E7EB!important;border-radius:8px!important;font-size:14px!important;font-family:'Libre Franklin',sans-serif!important;margin-bottom:10px!important;background:#fff!important;color:#2D2D2D!important;outline:none!important;-webkit-appearance:none!important;appearance:none!important}
+#pf-tax .pft-form-wrap input:focus{border-color:#1B3A5C!important;box-shadow:0 0 0 2px rgba(27,58,92,0.15)!important}
+#pf-tax .pft-cta-btn{display:block!important;width:100%!important;background:linear-gradient(135deg,#122840,#1B3A5C)!important;color:#fff!important;text-decoration:none!important;font-family:'Libre Franklin',sans-serif!important;font-size:15px!important;font-weight:700!important;padding:14px 24px!important;border-radius:8px!important;letter-spacing:0.03em!important;border:none!important;cursor:pointer!important;transition:transform 0.15s,box-shadow 0.15s!important;text-align:center!important;margin-top:4px!important}
+#pf-tax .pft-cta-btn:hover{transform:translateY(-1px)!important;box-shadow:0 4px 16px rgba(18,40,64,0.3)!important;color:#fff!important}
+#pf-tax .pft-cta-secondary{background:transparent!important;border:2px solid #C4952A!important;color:#C4952A!important;margin-top:10px!important}
+#pf-tax .pft-cta-secondary:hover{background:#C4952A!important;color:#fff!important}
+#pf-tax .pft-confirm{text-align:center!important;padding:16px 0!important}
+#pf-tax .pft-confirm-msg{font-size:14px!important;color:#2D2D2D!important;line-height:1.5!important;margin-bottom:16px!important}
+#pf-tax .pft-confirm-msg strong{font-weight:700!important;color:#166534!important}
+#pf-tax .pft-cta-line{width:40px!important;height:2px!important;background:#C4952A!important;margin:12px auto 16px!important;border-radius:1px!important;border:none!important}
+#pf-tax .pft-footer{text-align:center!important;padding:16px 0 20px!important}
+#pf-tax .pft-motto{font-size:15px!important;font-weight:700!important;color:#1B3A5C!important;margin-bottom:16px!important}
+#pf-tax .pft-info{font-size:12px!important;color:#6B7280!important;margin-bottom:2px!important}
+@media(min-width:768px){
+#pf-tax{max-width:1100px!important}
+#pf-tax .pft-header{padding:36px 40px 32px!important}
+#pf-tax .pft-brand{font-size:12px!important}
+#pf-tax .pft-title{font-size:26px!important}
+#pf-tax .pft-sub{font-size:15px!important}
+#pf-tax .pft-main{display:grid!important;grid-template-columns:320px 1fr!important;gap:0!important;align-items:start!important}
+#pf-tax .pft-inputs{padding:32px 28px!important}
+#pf-tax .pft-results{padding:32px 28px!important}
+#pf-tax .pft-slider-value{font-size:26px!important}
+#pf-tax .pft-waterfall{overflow-x:visible!important}
+#pf-tax .pft-col{min-width:auto!important}
+#pf-tax .pft-summary{overflow-x:visible!important}
+#pf-tax .pft-summary-col{min-width:auto!important}
+#pf-tax .pft-math{display:block!important}
+#pf-tax .pft-toggle-btn{display:none!important}
+#pf-tax .pft-forfeiture{margin:0 28px 16px!important}
+#pf-tax .pft-cta-section{padding:8px 28px 20px!important}
+}
+</style>
+
+<div id="pf-tax">
+<div class="pft-header"><div class="pft-header-inner">
+<span class="pft-brand">PlanForge Consulting</span>
+<div class="pft-title">Business Owner Tax Savings Calculator</div>
+<p class="pft-sub">Pay Your Team, Not the IRS.</p>
+</div></div>
+<div class="pft-accent"></div>
+<div class="pft-main">
+<div class="pft-inputs">
+
+<div class="pft-slider-group"><div class="pft-slider-header"><span class="pft-slider-label">W-2 Employees</span><span class="pft-slider-value" id="empDisplay">25</span></div><input type="range" id="empSlider" min="10" max="75" value="25"><div class="pft-range"><span>10</span><span>75</span></div></div>
+
+<div class="pft-slider-group"><div class="pft-slider-header"><span class="pft-slider-label">Owner W-2 Salary</span><span class="pft-slider-value" id="ownerDisplay">$150,000</span></div><input type="range" id="ownerSlider" min="50000" max="350000" step="10000" value="150000"><div class="pft-range"><span>$50K</span><span>$350K+</span></div></div>
+
+<div class="pft-slider-group"><div class="pft-slider-header"><span class="pft-slider-label">Avg Employee Salary</span><span class="pft-slider-value" id="avgDisplay">$75,000</span></div><input type="range" id="avgSlider" min="35000" max="150000" step="5000" value="75000"><div class="pft-range"><span>$35K</span><span>$150K</span></div></div>
+
+<span class="pft-section-label">Owner Age</span>
+<div class="pft-age-grid">
+<button class="pft-age-btn" data-age="35under">35 &amp; Under</button>
+<button class="pft-age-btn" data-age="36to45">36 to 45</button>
+<button class="pft-age-btn active" data-age="46to55">46 to 55</button>
+<button class="pft-age-btn" data-age="55plus">55+</button>
+</div>
+
+<div class="pft-toggle-group">
+<span class="pft-toggle-label">Employees Younger Than Owner</span>
+<div class="pft-switch" id="youngerToggle">
+<button class="pft-switch-opt active" data-val="yes">Yes</button>
+<button class="pft-switch-opt" data-val="no">No</button>
+</div>
+</div>
+
+<div class="pft-toggle-group">
+<span class="pft-toggle-label">Cross-Testing</span>
+<div class="pft-switch" id="crossToggle">
+<button class="pft-switch-opt" data-val="on">On</button>
+<button class="pft-switch-opt active" data-val="off">Off</button>
+</div>
+</div>
+
+<div class="pft-slider-group"><div class="pft-slider-header"><span class="pft-slider-label">Employee Turnover</span><span class="pft-slider-value" id="turnDisplay">20%</span></div><input type="range" id="turnSlider" min="10" max="50" value="20"><div class="pft-range"><span>10%</span><span>50%</span></div></div>
+
+</div>
+<div class="pft-results">
+
+<div class="pft-tabs">
+<button class="pft-tab active" data-view="annual">Annual (Year 1)</button>
+<button class="pft-tab" data-view="3year">3-Year</button>
+<button class="pft-tab" data-view="5year">5-Year</button>
+</div>
+
+<div class="pft-waterfall">
+<div class="pft-col" id="colTypical">
+<div class="pft-col-header">Typical Strategy</div>
+<div class="pft-col-sub">No PlanForge</div>
+<div class="pft-row"><div class="pft-row-label">Estimated Profit Share Expense</div><div class="pft-row-val" id="typ_expense">$0</div></div>
+<div class="pft-row"><div class="pft-row-label">Less: Owners' Retained Share</div><div class="pft-row-val" id="typ_owner">$0</div></div>
+<div class="pft-row"><div class="pft-row-label">Less: Tax Credits</div><div class="pft-row-val" id="typ_credits">$0</div></div>
+<div class="pft-row"><div class="pft-row-label">Less: Tax Savings from Deduction</div><div class="pft-row-val" id="typ_tax">$0</div><div class="pft-row-sub">(Assumes 30% Tax Rate)</div></div>
+<div class="pft-row pft-row-net" id="typ_net_row"><div class="pft-row-label">Estimated Cost to Business</div><div class="pft-row-val" id="typ_net">$0</div></div>
+</div>
+<div class="pft-col" id="colStandard">
+<div class="pft-col-header">PlanForge Standard</div>
+<div class="pft-col-sub">With Credits</div>
+<div class="pft-row"><div class="pft-row-label">Estimated Profit Share Expense</div><div class="pft-row-val" id="std_expense">$0</div></div>
+<div class="pft-row"><div class="pft-row-label">Less: Owners' Retained Share</div><div class="pft-row-val" id="std_owner">$0</div></div>
+<div class="pft-row"><div class="pft-row-label">Less: Tax Credits</div><div class="pft-row-val" id="std_credits">$0</div></div>
+<div class="pft-row"><div class="pft-row-label">Less: Tax Savings from Deduction</div><div class="pft-row-val" id="std_tax">$0</div><div class="pft-row-sub">(Assumes 30% Tax Rate)</div></div>
+<div class="pft-row pft-row-net" id="std_net_row"><div class="pft-row-label">Estimated Cost to Business</div><div class="pft-row-val" id="std_net">$0</div></div>
+</div>
+<div class="pft-col pft-col-best" id="colOptimized">
+<div class="pft-col-header">PlanForge Optimized</div>
+<div class="pft-col-sub">Credits + Cross-Testing</div>
+<div class="pft-row"><div class="pft-row-label">Estimated Profit Share Expense</div><div class="pft-row-val" id="opt_expense">$0</div></div>
+<div class="pft-row"><div class="pft-row-label">Less: Owners' Retained Share</div><div class="pft-row-val" id="opt_owner">$0</div></div>
+<div class="pft-row"><div class="pft-row-label">Less: Tax Credits</div><div class="pft-row-val" id="opt_credits">$0</div></div>
+<div class="pft-row"><div class="pft-row-label">Less: Tax Savings from Deduction</div><div class="pft-row-val" id="opt_tax">$0</div><div class="pft-row-sub">(Assumes 30% Tax Rate)</div></div>
+<div class="pft-row pft-row-net" id="opt_net_row"><div class="pft-row-label">Estimated Cost to Business</div><div class="pft-row-val" id="opt_net">$0</div></div>
+</div>
+</div>
+
+<div class="pft-comparison">
+<div class="pft-savings-badge"><span>PlanForge Standard vs Typical</span><span id="savingsStd">+$0</span></div>
+<div class="pft-savings-badge"><span>PlanForge Optimized vs Typical</span><span id="savingsOpt">+$0</span></div>
+</div>
+
+<div class="pft-summary">
+<div class="pft-summary-col">
+<div class="pft-summary-title">Typical</div>
+<div class="pft-summary-row"><div class="pft-summary-lbl">Estimated Expense</div><div class="pft-summary-val" id="sum_typ_expense">$0</div></div>
+<div class="pft-summary-row"><div class="pft-summary-lbl">Estimated Net Cost</div><div class="pft-summary-val" id="sum_typ_net">$0</div></div>
+<div class="pft-summary-row"><div class="pft-summary-lbl">Total Tax Benefit</div><div class="pft-summary-val pft-gold" id="sum_typ_benefit">$0</div></div>
+</div>
+<div class="pft-summary-col">
+<div class="pft-summary-title">PF Standard</div>
+<div class="pft-summary-row"><div class="pft-summary-lbl">Estimated Expense</div><div class="pft-summary-val" id="sum_std_expense">$0</div></div>
+<div class="pft-summary-row"><div class="pft-summary-lbl">Estimated Net Cost</div><div class="pft-summary-val" id="sum_std_net">$0</div></div>
+<div class="pft-summary-row"><div class="pft-summary-lbl">Savings vs Typical</div><div class="pft-summary-val pft-green" id="sum_std_savings">$0</div></div>
+<div class="pft-summary-row"><div class="pft-summary-lbl">Total Tax Benefit</div><div class="pft-summary-val pft-gold" id="sum_std_benefit">$0</div></div>
+</div>
+<div class="pft-summary-col">
+<div class="pft-summary-title">PF Optimized</div>
+<div class="pft-summary-row"><div class="pft-summary-lbl">Estimated Expense</div><div class="pft-summary-val" id="sum_opt_expense">$0</div></div>
+<div class="pft-summary-row"><div class="pft-summary-lbl">Estimated Net Cost</div><div class="pft-summary-val" id="sum_opt_net">$0</div></div>
+<div class="pft-summary-row"><div class="pft-summary-lbl">Savings vs Typical</div><div class="pft-summary-val pft-green" id="sum_opt_savings">$0</div></div>
+<div class="pft-summary-row"><div class="pft-summary-lbl">Total Tax Benefit</div><div class="pft-summary-val pft-gold" id="sum_opt_benefit">$0</div></div>
+</div>
+</div>
+
+<button class="pft-toggle-btn" id="mathToggleBtn"><span>See the Math</span><span class="pft-arrow" id="mathArrow">&#9660;</span></button>
+<div class="pft-math" id="mathDetail">
+<div class="pft-math-section"><div class="pft-math-title">Typical Strategy</div><div class="pft-math-text" id="mathTypical"></div></div>
+<div class="pft-math-divider"></div>
+<div class="pft-math-section"><div class="pft-math-title">PlanForge Standard</div><div class="pft-math-text" id="mathStandard"></div></div>
+<div class="pft-math-divider"></div>
+<div class="pft-math-section"><div class="pft-math-title">PlanForge Optimized</div><div class="pft-math-text" id="mathOptimized"></div></div>
+</div>
+
+</div>
+</div>
+
+<div class="pft-forfeiture" id="forfeitureCard">
+<div class="pft-forfeiture-title">Potential Employee Forfeitures</div>
+<div class="pft-forfeiture-sub">Based on a 3-year cliff vesting schedule and your selected turnover rate. Forfeited amounts flow back into the plan and can be reallocated to remaining participants or used to offset future employer contributions.</div>
+<div class="pft-forfeiture-grid" id="forfeitureGrid"></div>
+</div>
+
+<div class="pft-cta-section">
+<div class="pft-cta-line"></div>
+<div id="qualifyStep" class="pft-qualify">
+<div class="pft-qualify-text">Are the options you selected an accurate representation of your company?</div>
+<div class="pft-qualify-btns">
+<button class="pft-pill-btn pft-pill-yes" id="qualYes">Yes, this is my company</button>
+<button class="pft-pill-btn pft-pill-no" id="qualNo">No, I was just exploring</button>
+</div>
+</div>
+<div id="formStep" style="display:none">
+<div class="pft-form-wrap">
+<form id="ctaForm">
+<input type="text" name="name" placeholder="Full Name" required>
+<input type="email" name="email" placeholder="Email Address" required>
+<input type="tel" name="phone" placeholder="Phone (optional)">
+<input type="hidden" name="employees" id="hEmployees">
+<input type="hidden" name="ownerSalary" id="hOwnerSalary">
+<input type="hidden" name="avgSalary" id="hAvgSalary">
+<input type="hidden" name="ownerAge" id="hOwnerAge">
+<input type="hidden" name="crossTesting" id="hCrossTesting">
+<input type="hidden" name="employeesYounger" id="hYounger">
+<input type="hidden" name="turnover" id="hTurnover">
+<input type="hidden" name="netCostTypical" id="hNetTypical">
+<input type="hidden" name="netCostStandard" id="hNetStandard">
+<input type="hidden" name="netCostOptimized" id="hNetOptimized">
+<input type="hidden" name="tag" id="hTag">
+<input type="hidden" name="timestamp" id="hTimestamp">
+<button type="submit" class="pft-cta-btn">Get My Custom Illustration</button>
+</form>
+</div>
+</div>
+<div id="confirmStep" style="display:none">
+<div class="pft-confirm">
+<div class="pft-confirm-msg" id="confirmMsg"></div>
+<a href="https://calendly.com/planforge" class="pft-cta-btn pft-cta-secondary" target="_blank" rel="noopener">Want to skip the wait? Book a 15-minute call now.</a>
+</div>
+</div>
+</div>
+
+<div class="pft-footer">
+<div class="pft-motto">Pay Your Team, Not the IRS.</div>
+<div class="pft-info">PlanForge Consulting | Nick Moore, CFP&#174;</div>
+<div class="pft-info">nick@planforge401k.com | 214-908-2310</div>
+<div class="pft-info">planforge401k.com</div>
+</div>
+</div>
+
+<script>
+(function(){
+var G=function(id){return document.getElementById(id)};
+var QA=function(sel){return document.querySelectorAll('#pf-tax '+sel)};
+
+function fmt(n){
+var abs=Math.abs(n);
+var s=new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(abs);
+if(n<0)return'('+s+')';
+return s;
+}
+
+function fmtPlain(n){
+return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(n);
+}
+
+function fmtPct(n){return Math.round(n*10000)/100+'%'}
+
+function sBg(slider){
+var p=((slider.value-slider.min)/(slider.max-slider.min))*100;
+slider.style.background='linear-gradient(to right,#1B3A5C 0%,#1B3A5C '+p+'%,#E5E7EB '+p+'%,#E5E7EB 100%)';
+}
+
+var state={
+employees:25,
+ownerSalary:150000,
+avgSalary:75000,
+ownerAge:'46to55',
+employeesYounger:true,
+crossTesting:false,
+turnoverPct:0.20,
+activeTab:'annual',
+qualifyAnswer:null
+};
+
+/* --- Calculation Functions --- */
+
+function baseProfitSharePct(avgSalary){
+return 1000/avgSalary;
+}
+
+function ownerProfitSharePct(age,crossTesting,employeesYounger,basePct){
+if(!crossTesting)return basePct;
+if(!employeesYounger){
+return basePct*3;
+}
+if(age==='55plus')return 0.20;
+if(age==='46to55')return basePct*5;
+if(age==='36to45')return basePct*5;
+return basePct*3;
+}
+
+function calcAdminCredit(employees){
+if(employees<=10)return 3500;
+if(employees<=20)return Math.min(5500,3500+200*(employees-10));
+return 5500;
+}
+
+function calcContribCredit(employees){
+var creditPerEmp=1000*(1-0.02*Math.max(0,employees-50));
+creditPerEmp=Math.max(0,creditPerEmp);
+return creditPerEmp*employees;
+}
+
+function calcCreditPerEmp(employees){
+return 1000*(1-0.02*Math.max(0,employees-50));
+}
+
+function calcUncoveredCost(employees){
+var creditPerEmp=calcCreditPerEmp(employees);
+var uncoveredPerEmp=1000-creditPerEmp;
+if(uncoveredPerEmp<=0)return 0;
+return uncoveredPerEmp*employees;
+}
+
+function calcTotalCredits(employees,tabView){
+var annualContrib=calcContribCredit(employees);
+var annualAdmin=calcAdminCredit(employees);
+if(tabView==='annual'){
+return annualContrib;
+}else if(tabView==='3year'){
+return annualAdmin*3+annualContrib*3;
+}else{
+return annualAdmin*3+annualContrib*5;
+}
+}
+
+function calcColumn(colType,employees,ownerSalary,avgSalary,age,crossTesting,employeesYounger,tabView){
+var basePct=baseProfitSharePct(avgSalary);
+var ownerRate;
+if(colType==='typical'||colType==='standard'){
+ownerRate=basePct;
+}else{
+ownerRate=ownerProfitSharePct(age,crossTesting,employeesYounger,basePct);
+}
+var years=(tabView==='annual')?1:(tabView==='3year')?3:5;
+var annualEmpCost=employees*1000;
+var annualOwnerCost=ownerSalary*ownerRate;
+var annualExpense=annualEmpCost+annualOwnerCost;
+var totalExpense=annualExpense*years;
+var totalOwner=annualOwnerCost*years;
+var totalCredits=0;
+if(colType!=='typical'){
+totalCredits=calcTotalCredits(employees,tabView);
+}
+var annualUncovered=calcUncoveredCost(employees);
+var annualDeductible;
+if(colType==='typical'){
+annualDeductible=annualExpense;
+}else{
+annualDeductible=annualOwnerCost+annualUncovered;
+}
+var totalTaxSavings=annualDeductible*years*0.30;
+var netCost=totalExpense-totalOwner-totalCredits-totalTaxSavings;
+var totalTaxBenefit=totalCredits+totalTaxSavings;
+return{
+expense:totalExpense,
+ownerShare:totalOwner,
+credits:totalCredits,
+taxSavings:totalTaxSavings,
+netCost:netCost,
+taxBenefit:totalTaxBenefit,
+ownerRate:ownerRate,
+basePct:basePct,
+annualEmpCost:annualEmpCost,
+annualOwnerCost:annualOwnerCost,
+years:years
+};
+}
+
+function calcAll(){
+var e=state.employees,os=state.ownerSalary,as=state.avgSalary;
+var age=state.ownerAge,ey=state.employeesYounger,ct=state.crossTesting;
+var tab=state.activeTab;
+var typical=calcColumn('typical',e,os,as,age,ct,ey,tab);
+var standard=calcColumn('standard',e,os,as,age,ct,ey,tab);
+var optimized=calcColumn('optimized',e,os,as,age,ct,ey,tab);
+return{typical:typical,standard:standard,optimized:optimized};
+}
+
+function calcForfeitures(employees,turnoverPct){
+var y1=turnoverPct*employees*1000;
+var y2=turnoverPct*employees*1500;
+var y3=turnoverPct*employees*2000;
+return{y1:y1,y2:y2,y3:y3,total:y1+y2+y3};
+}
+
+/* --- Rendering --- */
+
+function render(){
+var r=calcAll();
+var t=r.typical,s=r.standard,o=r.optimized;
+
+G('typ_expense').textContent=fmtPlain(t.expense);
+G('typ_owner').textContent=fmt(-t.ownerShare);
+G('typ_credits').textContent='$0';
+G('typ_tax').textContent=fmt(-t.taxSavings);
+G('typ_net').textContent=fmt(t.netCost);
+
+G('std_expense').textContent=fmtPlain(s.expense);
+G('std_owner').textContent=fmt(-s.ownerShare);
+G('std_credits').textContent=fmt(-s.credits);
+G('std_tax').textContent=fmt(-s.taxSavings);
+G('std_net').textContent=fmt(s.netCost);
+
+G('opt_expense').textContent=fmtPlain(o.expense);
+G('opt_owner').textContent=fmt(-o.ownerShare);
+G('opt_credits').textContent=fmt(-o.credits);
+G('opt_tax').textContent=fmt(-o.taxSavings);
+G('opt_net').textContent=fmt(o.netCost);
+
+var netRows=['typ','std','opt'];
+var results=[t,s,o];
+for(var i=0;i<netRows.length;i++){
+var row=G(netRows[i]+'_net_row');
+if(results[i].netCost<0){
+row.className='pft-row pft-row-net pft-net-positive';
+}else{
+row.className='pft-row pft-row-net';
+}
+}
+
+var savStd=t.netCost-s.netCost;
+var savOpt=t.netCost-o.netCost;
+G('savingsStd').textContent='+'+fmtPlain(savStd);
+G('savingsOpt').textContent='+'+fmtPlain(savOpt);
+
+G('sum_typ_expense').textContent=fmtPlain(t.expense);
+G('sum_typ_net').textContent=fmt(t.netCost);
+G('sum_typ_benefit').textContent=fmtPlain(t.taxBenefit);
+
+G('sum_std_expense').textContent=fmtPlain(s.expense);
+G('sum_std_net').textContent=fmt(s.netCost);
+G('sum_std_savings').textContent='+'+fmtPlain(savStd);
+G('sum_std_benefit').textContent=fmtPlain(s.taxBenefit);
+
+G('sum_opt_expense').textContent=fmtPlain(o.expense);
+G('sum_opt_net').textContent=fmt(o.netCost);
+G('sum_opt_savings').textContent='+'+fmtPlain(savOpt);
+G('sum_opt_benefit').textContent=fmtPlain(o.taxBenefit);
+
+renderMath(r);
+renderForfeitures();
+}
+
+function renderMath(r){
+var t=r.typical,s=r.standard,o=r.optimized;
+var e=state.employees,os=state.ownerSalary,as=state.avgSalary;
+var basePct=baseProfitSharePct(as);
+var years=(state.activeTab==='annual')?1:(state.activeTab==='3year')?3:5;
+var yrLabel=(years===1)?'':'x '+years+' years = ';
+
+G('mathTypical').innerHTML=
+'<strong>Employee profit share:</strong> '+e+' employees x $1,000 = '+fmtPlain(e*1000)+'/yr<br>'+
+'<strong>Owner profit share:</strong> '+fmtPlain(os)+' x '+fmtPct(basePct)+' = '+fmtPlain(os*basePct)+'/yr<br>'+
+'<strong>Total expense:</strong> '+fmtPlain(t.expense)+(years>1?' ('+yrLabel+fmtPlain(t.expense)+')':'')+
+'<br><strong>Tax credits:</strong> $0 (no PlanForge plan)<br>'+
+'<strong>Tax savings:</strong> '+fmtPlain(t.expense)+' x 30% = '+fmtPlain(t.taxSavings)+' (full deduction, no credits)<br>'+
+'<strong>Net cost:</strong> '+fmtPlain(t.expense)+' - '+fmtPlain(t.ownerShare)+' - '+fmtPlain(t.taxSavings)+' = '+fmtPlain(t.netCost);
+
+var contribCredit=calcContribCredit(e);
+var adminCredit=calcAdminCredit(e);
+var creditDetail='';
+if(state.activeTab==='annual'){
+creditDetail='Contribution credit: '+e+' x '+fmtPlain(calcCreditPerEmp(e))+' = '+fmtPlain(contribCredit);
+}else{
+var adminYrs=Math.min(years,3);
+creditDetail='Contribution credit: '+fmtPlain(contribCredit)+'/yr x '+years+' = '+fmtPlain(contribCredit*years)+
+'<br>Admin + auto-enroll credit: '+fmtPlain(adminCredit)+'/yr x '+adminYrs+' = '+fmtPlain(adminCredit*adminYrs)+
+'<br>Total credits: '+fmtPlain(s.credits);
+}
+var uncovered=calcUncoveredCost(e);
+var deductDetail;
+if(uncovered>0){
+deductDetail='('+fmtPlain(os*basePct)+' owner + '+fmtPlain(uncovered)+' uncovered) x 30%'+(years>1?' x '+years:'');
+}else{
+deductDetail=fmtPlain(os*basePct)+' owner share x 30%'+(years>1?' x '+years:'');
+}
+
+G('mathStandard').innerHTML=
+'<strong>Employee profit share:</strong> '+e+' employees x $1,000 = '+fmtPlain(e*1000)+'/yr<br>'+
+'<strong>Owner profit share:</strong> '+fmtPlain(os)+' x '+fmtPct(basePct)+' = '+fmtPlain(os*basePct)+'/yr<br>'+
+'<strong>Total expense:</strong> '+fmtPlain(s.expense)+
+'<br><strong>Tax credits:</strong> '+creditDetail+'<br>'+
+'<strong>Tax savings:</strong> '+deductDetail+' = '+fmtPlain(s.taxSavings)+
+'<br><strong>Net cost:</strong> '+fmtPlain(s.netCost);
+
+var optRate=o.ownerRate;
+var optRateLabel;
+if(state.crossTesting&&state.employeesYounger&&state.ownerAge==='55plus'){
+optRateLabel='20% flat';
+}else{
+optRateLabel=fmtPct(optRate);
+}
+var deductDetailOpt;
+if(uncovered>0){
+deductDetailOpt='('+fmtPlain(os*optRate)+' owner + '+fmtPlain(uncovered)+' uncovered) x 30%'+(years>1?' x '+years:'');
+}else{
+deductDetailOpt=fmtPlain(os*optRate)+' owner share x 30%'+(years>1?' x '+years:'');
+}
+
+G('mathOptimized').innerHTML=
+'<strong>Employee profit share:</strong> '+e+' employees x $1,000 = '+fmtPlain(e*1000)+'/yr<br>'+
+'<strong>Owner profit share:</strong> '+fmtPlain(os)+' x '+optRateLabel+' = '+fmtPlain(os*optRate)+'/yr<br>'+
+'<strong>Total expense:</strong> '+fmtPlain(o.expense)+
+'<br><strong>Tax credits:</strong> '+creditDetail+'<br>'+
+'<strong>Tax savings:</strong> '+deductDetailOpt+' = '+fmtPlain(o.taxSavings)+
+'<br><strong>Net cost:</strong> '+fmtPlain(o.netCost);
+}
+
+function renderForfeitures(){
+var f=calcForfeitures(state.employees,state.turnoverPct);
+var grid=G('forfeitureGrid');
+var tab=state.activeTab;
+var html='';
+if(tab==='annual'){
+html='<div class="pft-forfeiture-item" style="grid-column:1/-1!important"><div class="pft-forfeiture-yr">Year 1 Estimate</div><div class="pft-forfeiture-amt">'+fmtPlain(f.y1)+'</div></div>';
+}else{
+html='<div class="pft-forfeiture-item"><div class="pft-forfeiture-yr">Year 1</div><div class="pft-forfeiture-amt">'+fmtPlain(f.y1)+'</div></div>'+
+'<div class="pft-forfeiture-item"><div class="pft-forfeiture-yr">Year 2</div><div class="pft-forfeiture-amt">'+fmtPlain(f.y2)+'</div></div>'+
+'<div class="pft-forfeiture-item"><div class="pft-forfeiture-yr">Year 3</div><div class="pft-forfeiture-amt">'+fmtPlain(f.y3)+'</div></div>'+
+'<div class="pft-forfeiture-item pft-forfeiture-total"><div class="pft-forfeiture-yr">3-Year Cumulative</div><div class="pft-forfeiture-amt">'+fmtPlain(f.total)+'</div></div>';
+}
+grid.innerHTML=html;
+}
+
+/* --- Event Bindings --- */
+
+var empSlider=G('empSlider');
+var ownerSlider=G('ownerSlider');
+var avgSlider=G('avgSlider');
+var turnSlider=G('turnSlider');
+
+function onEmpChange(){
+state.employees=parseInt(empSlider.value);
+G('empDisplay').textContent=empSlider.value;
+sBg(empSlider);
+render();
+}
+
+function onOwnerChange(){
+var v=parseInt(ownerSlider.value);
+state.ownerSalary=v;
+var display=fmtPlain(v);
+if(v>=350000)display=display+'+';
+G('ownerDisplay').textContent=display;
+sBg(ownerSlider);
+render();
+}
+
+function onAvgChange(){
+state.avgSalary=parseInt(avgSlider.value);
+G('avgDisplay').textContent=fmtPlain(state.avgSalary);
+sBg(avgSlider);
+render();
+}
+
+function onTurnChange(){
+state.turnoverPct=parseInt(turnSlider.value)/100;
+G('turnDisplay').textContent=turnSlider.value+'%';
+sBg(turnSlider);
+render();
+}
+
+empSlider.addEventListener('input',onEmpChange);
+empSlider.addEventListener('change',onEmpChange);
+ownerSlider.addEventListener('input',onOwnerChange);
+ownerSlider.addEventListener('change',onOwnerChange);
+avgSlider.addEventListener('input',onAvgChange);
+avgSlider.addEventListener('change',onAvgChange);
+turnSlider.addEventListener('input',onTurnChange);
+turnSlider.addEventListener('change',onTurnChange);
+
+var ageBtns=QA('.pft-age-btn');
+for(var i=0;i<ageBtns.length;i++){
+ageBtns[i].addEventListener('click',function(){
+for(var j=0;j<ageBtns.length;j++){ageBtns[j].classList.remove('active')}
+this.classList.add('active');
+state.ownerAge=this.getAttribute('data-age');
+render();
+});
+}
+
+function setupToggle(toggleId,stateKey,trueVal,falseVal){
+var toggle=G(toggleId);
+var opts=toggle.querySelectorAll('.pft-switch-opt');
+for(var i=0;i<opts.length;i++){
+opts[i].addEventListener('click',function(){
+for(var j=0;j<opts.length;j++){opts[j].classList.remove('active')}
+this.classList.add('active');
+state[stateKey]=(this.getAttribute('data-val')===trueVal);
+render();
+});
+}
+}
+
+setupToggle('youngerToggle','employeesYounger','yes','no');
+setupToggle('crossToggle','crossTesting','on','off');
+
+var tabBtns=QA('.pft-tab');
+for(var i=0;i<tabBtns.length;i++){
+tabBtns[i].addEventListener('click',function(){
+for(var j=0;j<tabBtns.length;j++){tabBtns[j].classList.remove('active')}
+this.classList.add('active');
+state.activeTab=this.getAttribute('data-view');
+render();
+});
+}
+
+G('mathToggleBtn').addEventListener('click',function(){
+var c=G('mathDetail'),a=G('mathArrow');
+if(c.classList.contains('open')){c.classList.remove('open');a.classList.remove('open')}
+else{c.classList.add('open');a.classList.add('open')}
+});
+
+/* --- CTA Flow --- */
+
+function showStep(stepId){
+var steps=['qualifyStep','formStep','confirmStep'];
+for(var i=0;i<steps.length;i++){
+G(steps[i]).style.display=(steps[i]===stepId)?'block':'none';
+}
+}
+
+G('qualYes').addEventListener('click',function(){
+state.qualifyAnswer='yes';
+G('hTag').value='Qualified, self-reported data';
+showStep('formStep');
+});
+
+G('qualNo').addEventListener('click',function(){
+state.qualifyAnswer='no';
+G('hTag').value='Warm, exploring';
+showStep('formStep');
+});
+
+G('ctaForm').addEventListener('submit',function(e){
+e.preventDefault();
+var r=calcAll();
+G('hEmployees').value=state.employees;
+G('hOwnerSalary').value=state.ownerSalary;
+G('hAvgSalary').value=state.avgSalary;
+G('hOwnerAge').value=state.ownerAge;
+G('hCrossTesting').value=state.crossTesting?'On':'Off';
+G('hYounger').value=state.employeesYounger?'Yes':'No';
+G('hTurnover').value=Math.round(state.turnoverPct*100)+'%';
+G('hNetTypical').value=r.typical.netCost;
+G('hNetStandard').value=r.standard.netCost;
+G('hNetOptimized').value=r.optimized.netCost;
+G('hTimestamp').value=new Date().toISOString();
+
+var formData=new FormData(this);
+var payload={fields:{}};
+formData.forEach(function(val,key){payload.fields[key]=val});
+
+fetch('AIRTABLE_WEBHOOK_URL_PLACEHOLDER',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify(payload)
+}).catch(function(){});
+
+showConfirmation(r);
+});
+
+function showConfirmation(r){
+if(state.qualifyAnswer==='yes'){
+G('confirmMsg').innerHTML="We'll be in touch within 24 hours with a custom illustration based on your numbers. Your PlanForge Optimized plan could save your business up to <strong>"+fmtPlain(Math.abs(r.typical.netCost-r.optimized.netCost))+"</strong> compared to a typical strategy.";
+}else{
+G('confirmMsg').innerHTML="Thanks for exploring! When you're ready, we'd love to build you a free custom illustration. We'll reach out soon with more details on how PlanForge can help.";
+}
+showStep('confirmStep');
+}
+
+/* --- Sanity Check (console only) --- */
+window._pftTest=function(){
+var saved=JSON.parse(JSON.stringify(state));
+state.employees=25;state.ownerSalary=300000;state.avgSalary=100000;
+state.ownerAge='55plus';state.employeesYounger=true;state.crossTesting=true;
+state.activeTab='annual';
+var r=calcAll();
+var pass=true;
+function check(label,actual,expected){
+if(Math.round(actual)!==expected){
+console.error('FAIL: '+label+' = '+actual+', expected '+expected);
+pass=false;
+}else{
+console.log('PASS: '+label+' = '+actual);
+}
+}
+check('Typical expense',r.typical.expense,28000);
+check('Typical owner',r.typical.ownerShare,3000);
+check('Typical credits',r.typical.credits,0);
+check('Typical tax',r.typical.taxSavings,8400);
+check('Typical net',r.typical.netCost,16600);
+check('Standard expense',r.standard.expense,28000);
+check('Standard owner',r.standard.ownerShare,3000);
+check('Standard credits',r.standard.credits,25000);
+check('Standard tax',r.standard.taxSavings,900);
+check('Standard net',r.standard.netCost,-900);
+check('Optimized expense',r.optimized.expense,85000);
+check('Optimized owner',r.optimized.ownerShare,60000);
+check('Optimized credits',r.optimized.credits,25000);
+check('Optimized tax',r.optimized.taxSavings,18000);
+check('Optimized net',r.optimized.netCost,-18000);
+check('PF Std vs Typical',r.typical.netCost-r.standard.netCost,17500);
+check('PF Opt vs Typical',r.typical.netCost-r.optimized.netCost,34600);
+check('Typical tax benefit',r.typical.taxBenefit,8400);
+check('Standard tax benefit',r.standard.taxBenefit,25900);
+check('Optimized tax benefit',r.optimized.taxBenefit,43000);
+
+state.turnoverPct=0.33;
+var f=calcForfeitures(state.employees,state.turnoverPct);
+check('Forfeiture Y1',f.y1,8250);
+check('Forfeiture Y2',f.y2,12375);
+check('Forfeiture Y3',f.y3,16500);
+check('Forfeiture total',f.total,37125);
+
+if(pass)console.log('ALL SANITY CHECKS PASSED!');
+else console.error('SOME CHECKS FAILED');
+
+Object.assign(state,saved);
+render();
+return pass;
+};
+
+/* --- Initialize --- */
+sBg(empSlider);sBg(ownerSlider);sBg(avgSlider);sBg(turnSlider);
+render();
+})();
+</script>
