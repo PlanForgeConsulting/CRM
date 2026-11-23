@@ -1,0 +1,11 @@
+{
+  "name": "planforge-crm-security-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:xss": "node tests/advisor-panel-xss.test.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.65.1"
+  }
+}
