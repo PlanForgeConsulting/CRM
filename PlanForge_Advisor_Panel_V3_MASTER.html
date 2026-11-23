@@ -283,11 +283,11 @@
       <div class="panel-body">
         <div class="form-group">
           <label>Business Name</label>
-          <input type="text" id="bizName" placeholder="AlphaGraphics" oninput="recalc()">
+          <input type="text" id="bizName" placeholder="e.g. Acme Printing" oninput="recalc()">
         </div>
         <div class="form-row">
-          <div class="form-group"><label>First Name</label><input type="text" id="firstName" placeholder="Sherry" oninput="recalc()"></div>
-          <div class="form-group"><label>Last Name</label><input type="text" id="lastName" placeholder="Perry" oninput="recalc()"></div>
+          <div class="form-group"><label>First Name</label><input type="text" id="firstName" placeholder="e.g. Jane" oninput="recalc()"></div>
+          <div class="form-group"><label>Last Name</label><input type="text" id="lastName" placeholder="e.g. Doe" oninput="recalc()"></div>
         </div>
         <div class="form-row-3">
           <div class="form-group">
@@ -300,7 +300,7 @@
               <option value="Sole Prop">Sole Prop</option>
             </select>
           </div>
-          <div class="form-group"><label>Owner Age</label><input type="number" id="ownerAge" value="68" min="21" max="85" oninput="recalc()"></div>
+          <div class="form-group"><label>Owner Age</label><input type="number" id="ownerAge" min="21" max="85" oninput="recalc()"></div>
           <div class="form-group">
             <label>Tax Year</label>
             <select id="taxYear" onchange="updateHcePayFloorNote();recalc()">
@@ -310,7 +310,7 @@
           </div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label>Owner W-2 Salary ($)</label><input type="number" id="ownerSalary" value="274345" step="1000" oninput="recalc()"></div>
+          <div class="form-group"><label>Owner W-2 Salary ($)</label><input type="number" id="ownerSalary" step="1000" oninput="recalc()"></div>
           <div class="form-group" id="k1Group"><label>Owner K-1 ($)</label><input type="number" id="ownerK1" value="0" step="1000" oninput="recalc()"></div>
         </div>
         <div class="form-group"><label>Tax Rate (%)</label><input type="number" id="taxRate" value="30" min="10" max="50" step="1" oninput="recalc()"></div>
@@ -1641,17 +1641,17 @@ function computeWhatIfScenarios(baseInput) {
 // ══════════════════════════════════════════════════════════════
 
 const TEST_SCENARIOS = [
-  { name: 'AlphaGraphics (Perry)', chip: 'AlphaGraphics', input: { bizName:'AlphaGraphics', firstName:'Sherry', lastName:'Perry', ownerAge:68, ownerSalary:274345, ownerK1:0, nhceCount:19, nhceAvgPay:62845, nhceAvgAge:32, nhcePayLow:28000, nhcePayHigh:85000, hceNonOwnerCount:1, hceAvgPay:25240, hceAvgAge:45, hceAllocRate:5, nhceOver100k:0, secureYear:2, forfeitures:14510, year:'2025', taxRate:0.30, entityType:'S-Corp', stdRate:3, deferralEligMonths:9, psEligMonths:3, excludableNhces:0, additionalOwners:[{name:'Spencer Perry',age:40,salary:142823,k1:0,receivesPS:false}] },
-    censusText: 'Darlene Scruggs\t09/01/1971\t83029.08\nCindy Aquila\t07/18/1968\t30950.41\nTammy Coil\t05/15/1965\t116636.23\nChristopher May\t04/16/1967\t108618.41\nJason Jones\t07/23/1978\t54053.42\nDerrick Rose\t07/26/1982\t11910.00\nMartha Rangel\t05/25/1999\t2252.25\nKevin Evans\t09/15/1986\t68581.80\nRoman De Leon\t10/02/1975\t73699.38\nEsteban Gomez\t04/30/1985\t96122.92\nElizabeth Castro\t08/16/1998\t53220.18\nScot Crispin\t07/17/1978\t58762.23\nKyle Foster\t01/13/1987\t53450.83\nTerri Ferguson\t04/02/1960\t15655.62\nRafael Garcia\t06/22/1970\t69210.35\nNicholas Crowder\t11/08/2000\t6601.01\nNancy Calderon Reyes\t09/27/1996\t55805.33\nTinisha Howard\t07/26/1980\t4268.00\nAnndrea Benavidez\t08/13/1993\t59099.03\nPete Mendoza\t03/19/1986\t67093.55\nKatrina Hilker\t08/27/1970\t61761.93',
-    departedIndices: [5,6,15,17], overrideForfeitures: 14510 },
+  { name: 'Sample Print Shop (21-EE census)', chip: 'Sample Census A', input: { bizName:'Sample Print Shop', firstName:'Test', lastName:'Owner', ownerAge:66, ownerSalary:270000, ownerK1:0, nhceCount:21, nhceAvgPay:60000, nhceAvgAge:40, nhcePayLow:3000, nhcePayHigh:110000, hceNonOwnerCount:1, hceAvgPay:25000, hceAvgAge:45, hceAllocRate:5, nhceOver100k:0, secureYear:2, forfeitures:14000, year:'2025', taxRate:0.30, entityType:'S-Corp', stdRate:3, deferralEligMonths:9, psEligMonths:3, excludableNhces:0, additionalOwners:[{name:'Test Partner',age:38,salary:140000,k1:0,receivesPS:false}] },
+    censusText: 'Sample Employee 01\t34\t85000\nSample Employee 02\t53\t110000\nSample Employee 03\t50\t107000\nSample Employee 04\t38\t63000\nSample Employee 05\t49\t105000\nSample Employee 06\t42\t5000\nSample Employee 07\t58\t42000\nSample Employee 08\t41\t80000\nSample Employee 09\t44\t81000\nSample Employee 10\t49\t69000\nSample Employee 11\t37\t39000\nSample Employee 12\t30\t26000\nSample Employee 13\t26\t59000\nSample Employee 14\t54\t16000\nSample Employee 15\t52\t47000\nSample Employee 16\t27\t36000\nSample Employee 17\t59\t35000\nSample Employee 18\t29\t58000\nSample Employee 19\t48\t57000\nSample Employee 20\t54\t100000\nSample Employee 21\t62\t67000',
+    departedIndices: [5,6,15,17], overrideForfeitures: 14000 },
   { name: 'Solo S-Corp', chip: 'Solo S-Corp', input: { bizName:'Smith Consulting', firstName:'John', lastName:'Smith', ownerAge:52, ownerSalary:200000, ownerK1:0, nhceCount:3, nhceAvgPay:40000, nhceAvgAge:28, nhcePayLow:32000, nhcePayHigh:48000, secureYear:1, forfeitures:0, year:'2026', taxRate:0.32, entityType:'S-Corp', stdRate:3, deferralEligMonths:12, psEligMonths:3, excludableNhces:0 }},
   { name: 'LLC + K-1 Cap', chip: 'LLC K-1', input: { bizName:'Main Street Dentistry LLC', firstName:'Sarah', lastName:'Chen', ownerAge:45, ownerSalary:250000, ownerK1:180000, nhceCount:8, nhceAvgPay:52000, nhceAvgAge:35, nhcePayLow:35000, nhcePayHigh:75000, secureYear:3, forfeitures:8500, year:'2026', taxRate:0.35, entityType:'LLC', stdRate:3, deferralEligMonths:12, psEligMonths:3, excludableNhces:2 }},
   { name: 'Young Owner (age test)', chip: 'Young Owner', input: { bizName:'Young Tech Inc', firstName:'Alex', lastName:'Young', ownerAge:35, ownerSalary:300000, ownerK1:0, nhceCount:15, nhceAvgPay:55000, nhceAvgAge:42, nhcePayLow:35000, nhcePayHigh:80000, secureYear:2, forfeitures:0, year:'2026', taxRate:0.32, entityType:'S-Corp', stdRate:3, deferralEligMonths:12, psEligMonths:3, excludableNhces:0 }},
   { name: 'Multi-Owner', chip: 'Multi-Owner', input: { bizName:'ABC Partners', firstName:'Alice', lastName:'Adams', ownerAge:50, ownerSalary:200000, ownerK1:0, nhceCount:12, nhceAvgPay:48000, nhceAvgAge:30, nhcePayLow:30000, nhcePayHigh:70000, hceNonOwnerCount:2, hceAvgPay:175000, hceAvgAge:45, nhceOver100k:1, secureYear:1, forfeitures:0, year:'2026', taxRate:0.30, entityType:'Partnership', stdRate:3, deferralEligMonths:12, psEligMonths:3, excludableNhces:0, additionalOwners:[{name:'Bob Baker',age:42,salary:180000,k1:0},{name:'Carol Cox',age:38,salary:150000,k1:0}] }},
   { name: 'Year 1 (Full Credit)', chip: 'Year 1', input: { bizName:'Fresh Start Inc', firstName:'David', lastName:'Lee', ownerAge:58, ownerSalary:175000, ownerK1:0, nhceCount:6, nhceAvgPay:55000, nhceAvgAge:30, nhcePayLow:35000, nhcePayHigh:72000, secureYear:1, forfeitures:0, year:'2026', taxRate:0.28, entityType:'S-Corp', stdRate:3, deferralEligMonths:12, psEligMonths:3, excludableNhces:0 }},
   { name: 'Year 5 (25% Credit)', chip: 'Year 5', input: { bizName:'Mature Plan Corp', firstName:'Emma', lastName:'Reeves', ownerAge:62, ownerSalary:280000, ownerK1:0, nhceCount:25, nhceAvgPay:50000, nhceAvgAge:34, nhcePayLow:28000, nhcePayHigh:78000, secureYear:5, forfeitures:22000, year:'2026', taxRate:0.30, entityType:'S-Corp', stdRate:3, deferralEligMonths:12, psEligMonths:6, excludableNhces:4 }},
-  { name: 'Team North Texas (Council)', chip: 'Team North Texas', input: { bizName:'Team North Texas', firstName:'Nathan', lastName:'Council', ownerAge:40, ownerSalary:54999.88, ownerK1:0, nhceCount:44, nhceAvgPay:32478, nhceAvgAge:38, nhcePayLow:15000, nhcePayHigh:56000, hceNonOwnerCount:0, hceAvgPay:0, nhceOver100k:0, secureYear:2, forfeitures:9000, year:'2025', taxRate:0.30, entityType:'S-Corp', stdRate:3, deferralEligMonths:9, psEligMonths:3, excludableNhces:0, turnoverPct:0, mode:'gateway', nhceFlatAmt:1000, additionalOwners:[{name:'Joseph Armstrong',age:39,salary:54999.88,k1:0}] },
-    censusText: 'Robert Armstrong\t10/21/1993\t120438.18\nJacob Armstrong\t04/05/1995\t87704.40\nCD Warren\t11/24/1986\t70944.69\nGerald Hearn\t01/26/1977\t67950.15\nJeb Armstrong\t07/02/1997\t60798.12\nErik Velazquez\t02/02/1996\t68803.76\nIsmael Hernandez\t09/14/1985\t92738.32\nEdwin Hernandez\t12/03/1987\t71305.75\nMichael Pelton\t07/20/1973\t15315.64\nJustin Coleman\t01/06/1982\t103084.94\nRichard Samples\t09/11/1979\t73495.28\nJustin Coleman\t01/01/2003\t21600.00\nRonald George\t07/31/1968\t65298.43\nKevin Welk\t10/23/1970\t49170.13\nJavier Dominguez\t11/30/1988\t28120.00\nCharles Taylor\t05/30/1979\t59798.77\nLuke Palmer\t08/03/1996\t38883.56\nJimmie Hass\t01/30/1966\t52580.00\nJonathan Lopez\t10/12/1992\t40147.75\nDylan Merriman\t09/09/2003\t36545.25\nJhony Mora Mora\t01/15/1993\t10269.24\nBrian Ashley\t05/20/1975\t68894.21\nBrandy Goddard\t02/14/1978\t14038.50\nDaniel Husted\t06/25/1990\t9318.75\nMakenzie Armstrong\t09/27/1992\t27624.64\nCody Gaines\t03/12/1995\t50273.11\nKevin Peterson\t10/20/1976\t57187.19\nMichael Morgan\t05/20/1971\t37743.75\nKirby Price\t03/20/1988\t63554.24\nMichael Arredondo\t11/01/1992\t20918.00\nRonnie George\t02/06/1948\t37378.75\nMary Rountree\t12/25/1964\t46849.85\nAngie Scott\t11/06/1981\t43168.87\nTrevor McLemore\t08/16/1990\t99890.00\nMichael Gutierrez\t07/10/1999\t28435.00\nMicah Anderson\t03/14/1983\t69180.11\nCaleb Dunson\t10/17/1997\t45072.84\nSamuel Selby\t09/26/2000\t43343.50\nMalik Simington\t05/24/2003\t33915.00\nFranklin Pierce\t11/09/1985\t30937.40\nGerald Dillon\t07/07/1959\t29883.63\nDarryl Updegraff\t10/28/1998\t10580.50\nCasey Moore\t01/07/1992\t9974.68\nRiley Pate\t07/18/1999\t7328.62',
+  { name: 'Sample Gateway Census (44-EE)', chip: 'Sample Census B', input: { bizName:'Sample Services Co', firstName:'Demo', lastName:'Owner', ownerAge:42, ownerSalary:55000, ownerK1:0, nhceCount:44, nhceAvgPay:40000, nhceAvgAge:38, nhcePayLow:8000, nhcePayHigh:110000, hceNonOwnerCount:0, hceAvgPay:0, nhceOver100k:0, secureYear:2, forfeitures:9000, year:'2025', taxRate:0.30, entityType:'S-Corp', stdRate:3, deferralEligMonths:9, psEligMonths:3, excludableNhces:0, turnoverPct:0, mode:'gateway', nhceFlatAmt:1000, additionalOwners:[{name:'Demo Partner',age:41,salary:55000,k1:0}] },
+    censusText: 'Sample Employee 01\t58\t105000\nSample Employee 02\t22\t22000\nSample Employee 03\t45\t98000\nSample Employee 04\t54\t93000\nSample Employee 05\t25\t19000\nSample Employee 06\t32\t85000\nSample Employee 07\t50\t108000\nSample Employee 08\t34\t58000\nSample Employee 09\t36\t64000\nSample Employee 10\t23\t83000\nSample Employee 11\t38\t34000\nSample Employee 12\t43\t18000\nSample Employee 13\t40\t59000\nSample Employee 14\t30\t68000\nSample Employee 15\t25\t43000\nSample Employee 16\t32\t62000\nSample Employee 17\t30\t33000\nSample Employee 18\t28\t106000\nSample Employee 19\t23\t32000\nSample Employee 20\t44\t68000\nSample Employee 21\t42\t15000\nSample Employee 22\t42\t103000\nSample Employee 23\t45\t40000\nSample Employee 24\t54\t11000\nSample Employee 25\t61\t76000\nSample Employee 26\t25\t26000\nSample Employee 27\t57\t18000\nSample Employee 28\t28\t28000\nSample Employee 29\t44\t17000\nSample Employee 30\t48\t97000\nSample Employee 31\t53\t71000\nSample Employee 32\t54\t10000\nSample Employee 33\t46\t26000\nSample Employee 34\t38\t100000\nSample Employee 35\t37\t93000\nSample Employee 36\t30\t49000\nSample Employee 37\t28\t53000\nSample Employee 38\t27\t71000\nSample Employee 39\t39\t58000\nSample Employee 40\t30\t105000\nSample Employee 41\t46\t59000\nSample Employee 42\t37\t97000\nSample Employee 43\t33\t88000\nSample Employee 44\t39\t60000',
     departedIndices: [20,22,23,25,29,34,36,37,38] },
 ];
 
@@ -1701,6 +1701,15 @@ function recalc() {
   const input = getInputFromForm();
   const c = independentCompute(input);
   currentComputed = c;
+
+  if (c.error) {
+    document.getElementById('stdResults').innerHTML = '';
+    document.getElementById('optResults').innerHTML = '';
+    document.getElementById('secureCreditAlert').style.display = 'none';
+    document.getElementById('netSavingsDisplay').textContent = '$0';
+    document.getElementById('savingsSubtext').textContent = c.error;
+    return;
+  }
 
   document.getElementById('stdRateDisplay').textContent = c.stdRate;
   document.getElementById('yearDisplay').textContent = c.year;
@@ -2117,7 +2126,7 @@ function loadScenario(idx) {
       });
     }
 
-    // Step 3: If scenario has an overrideForfeitures value (e.g. AG prior-year forfeitures),
+    // Step 3: If scenario has an overrideForfeitures value (e.g. prior-year forfeitures),
     // force that value instead of the checkbox-derived calculation.
     if (scenario.overrideForfeitures != null) {
       document.getElementById('realForfeituresValue').value = scenario.overrideForfeitures;
