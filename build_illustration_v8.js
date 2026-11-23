@@ -6,7 +6,7 @@
  * Preserves ALL V7 layout, typography, and visual design.
  *
  * Changes from V7:
- *  - Hardcoded AlphaGraphics/Sherry Perry data replaced with input parameter
+ *  - Hardcoded single-client data replaced with input parameter
  *  - Accepts pipeline JSON from advisor panel (toAdvisorPanelJSON output)
  *  - Computes all plan figures dynamically from input
  *  - Handles single-owner and multi-owner scenarios
