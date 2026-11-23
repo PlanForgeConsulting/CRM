@@ -1661,6 +1661,10 @@ const TEST_SCENARIOS = [
 // ══════════════════════════════════════════════════════════════
 
 function fmt(n) { return '$' + (n||0).toLocaleString(); }
+// Census, owner, and company strings come from pasted or imported files; encode them before any HTML string or attribute.
+function escHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"'`]/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;', '`':'&#96;' })[ch]);
+}
 function val(id) { const el = document.getElementById(id); return el ? el.value : ''; }
 function num(id) { return parseFloat(val(id)) || 0; }
 
@@ -1893,9 +1897,9 @@ function updateCrossTestingDetailUI(c) {
   for (const p of toShow) {
     const rowClass = p.isOwner ? 'owner-highlight' : (p.type === 'HCE' ? 'hce-highlight' : '');
     html += `<tr class="${rowClass}">
-      <td>${p.name || '—'}</td>
-      <td>${p.isOwner ? '👑 Owner' : p.type}</td>
-      <td>${p.age}</td>
+      <td>${escHtml(p.name || '—')}</td>
+      <td>${p.isOwner ? '👑 Owner' : escHtml(p.type)}</td>
+      <td>${escHtml(p.age)}</td>
       <td>${fmt(p.pay)}</td>
       <td>${p.allocRate.toFixed(2)}%</td>
       <td>${fmt(p.allocation)}</td>
@@ -1913,7 +1917,7 @@ function updateCrossTestingDetailUI(c) {
     const badge = rg.passes ? '<span class="xt-badge pass">PASS</span>' : '<span class="xt-badge fail">FAIL</span>';
     const testNote = rg.testUsed === 'ratio_pct' ? 'Ratio Pct' : rg.testUsed === 'avg_benefit' ? 'Avg Benefit' : 'Neither';
     html += `<div style="padding:6px 0;border-bottom:1px solid #f0f0f0;font-size:12px;">
-      ${badge} <strong>${rg.hce.name || 'HCE'}</strong> (EBAR: ${rg.hce.ebar.toFixed(2)}%) —
+      ${badge} <strong>${escHtml(rg.hce.name || 'HCE')}</strong> (EBAR: ${rg.hce.ebar.toFixed(2)}%) —
       Rate Group: ${rg.rateGroup.length} participants |
       Ratio: ${(rg.rpTest.ratio * 100).toFixed(1)}% (need ≥70%) |
       Test: ${testNote}
@@ -2026,10 +2030,10 @@ function renderOwners() {
   const showK1 = et === 'LLC' || et === 'Partnership' || et === 'Sole Prop';
   container.innerHTML = additionalOwnersList.map((ao, i) => `
     <div class="ao-row">
-      <input type="text" id="ao_name_${i}" value="${ao.name||''}" placeholder="Name" oninput="recalc()">
-      <input type="number" id="ao_age_${i}" value="${ao.age||40}" placeholder="Age" oninput="recalc()">
-      <input type="number" id="ao_salary_${i}" value="${ao.salary||0}" placeholder="W-2" oninput="recalc()">
-      <input type="number" id="ao_k1_${i}" value="${showK1?(ao.k1||0):0}" placeholder="K-1" ${!showK1?'disabled class="k1-disabled"':''} oninput="recalc()">
+      <input type="text" id="ao_name_${i}" value="${escHtml(ao.name||'')}" placeholder="Name" oninput="recalc()">
+      <input type="number" id="ao_age_${i}" value="${escHtml(ao.age||40)}" placeholder="Age" oninput="recalc()">
+      <input type="number" id="ao_salary_${i}" value="${escHtml(ao.salary||0)}" placeholder="W-2" oninput="recalc()">
+      <input type="number" id="ao_k1_${i}" value="${escHtml(showK1?(ao.k1||0):0)}" placeholder="K-1" ${!showK1?'disabled class="k1-disabled"':''} oninput="recalc()">
       <div style="text-align:center;padding-top:4px;"><input type="checkbox" id="ao_ps_${i}" ${ao.receivesPS !== false ? 'checked' : ''} onchange="recalc()" title="Include in profit sharing?"></div>
       <button class="ao-remove" onclick="removeOwner(${i})">×</button>
     </div>
@@ -2512,9 +2516,9 @@ function renderDepartureTable(computed) {
 
     html += `<tr class="${rowClass}">`;
     html += `<td><input type="checkbox" class="dep-check" data-emp-idx="${emp.index}" ${isDeparted ? 'checked' : ''} ${checkDisabled} title="${checkTitle}" onchange="toggleDeparture(${emp.index}, this.checked)"></td>`;
-    html += `<td>${emp.name}</td>`;
+    html += `<td>${escHtml(emp.name)}</td>`;
     html += `<td><span class="emp-type-badge ${typeBadge}">${typeLabel}</span></td>`;
-    html += `<td style="text-align:right;">${emp.age}</td>`;
+    html += `<td style="text-align:right;">${escHtml(emp.age)}</td>`;
     html += `<td style="text-align:right;">${fmt(emp.pay)}</td>`;
     html += `<td style="text-align:right;font-weight:600;">${emp.psAlloc > 0 ? fmt(emp.psAlloc) : '—'}</td>`;
     html += '</tr>';
@@ -2812,8 +2816,9 @@ function generateIllustrationPDF() {
   const curNhce = c.optNhceRate;
   const curIdx = whatIf.findIndex(s => Math.abs(s.nhceRate - curNhce) < 0.1);
 
-  const name = [c.firstName, c.lastName].filter(Boolean).join(' ') || 'Owner';
-  const first = c.firstName || 'Owner';
+  const name = escHtml([c.firstName, c.lastName].filter(Boolean).join(' ') || 'Owner');
+  const first = escHtml(c.firstName || 'Owner');
+  const bizName = escHtml(c.bizName || 'Client');
   const nonOwn = c.nhceCountEligible + (c.hceNonOwnerCount || 0);
   const elig = nonOwn + 1 + (c.additionalOwners || []).length;
   const tp = Math.round(c.taxRate * 100);
@@ -2881,7 +2886,7 @@ function generateIllustrationPDF() {
       <div style="color:#fff;font-size:24px;font-weight:700;margin-top:3px;font-family:Georgia,serif;">Retirement Plan Illustration</div>
     </div>
     <div style="text-align:right;color:#fff;">
-      <div style="font-size:19px;font-weight:700;font-family:Georgia,serif;">${c.bizName || 'Client'}</div>
+      <div style="font-size:19px;font-weight:700;font-family:Georgia,serif;">${bizName}</div>
       <div style="font-size:11px;opacity:0.8;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">${c.year} Plan Year</div>
     </div>
   </div>
@@ -3003,7 +3008,7 @@ function generateIllustrationPDF() {
   <div style="background:${NAVY};padding:12px 44px 9px;display:flex;justify-content:space-between;align-items:flex-end;">
     <div>
       <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:${GOLD};font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">PlanForge Consulting</div>
-      <div style="color:#fff;font-size:20px;font-weight:700;margin-top:2px;font-family:Georgia,serif;">${c.bizName || 'Client'} — Plan Details</div>
+      <div style="color:#fff;font-size:20px;font-weight:700;margin-top:2px;font-family:Georgia,serif;">${bizName} — Plan Details</div>
     </div>
     <div style="text-align:right;color:#fff;font-size:11px;opacity:0.8;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">${c.year} Plan Year</div>
   </div>
