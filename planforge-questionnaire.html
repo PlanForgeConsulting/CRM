@@ -967,6 +967,9 @@ const LABELS = {
 function friendlyVal(group, val) {
   return (LABELS[group] && LABELS[group][val]) || val || '—';
 }
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
 function buildReview() {
   const rc = document.getElementById('reviewContent');
   let html = '';
@@ -974,13 +977,13 @@ function buildReview() {
   html += `<div class="pf-summary">
     <div class="pf-summary-header">Plan Status & Ownership <span class="pf-summary-edit" onclick="goToStep(1)">Edit</span></div>
     <div class="pf-summary-body">
-      <div class="pf-summary-row"><span class="label">Current 401(k)?</span><span class="value">${friendlyVal('has401k', getRadioVal('has401k'))}</span></div>
-      ${getRadioVal('has401k') === 'yes' ? `<div class="pf-summary-row"><span class="label">Plan duration</span><span class="value">${friendlyVal('planAge', getRadioVal('planAge'))}</span></div>` : ''}
-      <div class="pf-summary-row"><span class="label">Controlled group?</span><span class="value">${friendlyVal('controlledGroup', getRadioVal('controlledGroup'))}</span></div>
-      <div class="pf-summary-row"><span class="label">Turnover estimate</span><span class="value">${friendlyVal('turnover', getVal('turnover'))}</span></div>
+      <div class="pf-summary-row"><span class="label">Current 401(k)?</span><span class="value">${escapeHtml(friendlyVal('has401k', getRadioVal('has401k')))}</span></div>
+      ${getRadioVal('has401k') === 'yes' ? `<div class="pf-summary-row"><span class="label">Plan duration</span><span class="value">${escapeHtml(friendlyVal('planAge', getRadioVal('planAge')))}</span></div>` : ''}
+      <div class="pf-summary-row"><span class="label">Controlled group?</span><span class="value">${escapeHtml(friendlyVal('controlledGroup', getRadioVal('controlledGroup')))}</span></div>
+      <div class="pf-summary-row"><span class="label">Turnover estimate</span><span class="value">${escapeHtml(friendlyVal('turnover', getVal('turnover')))}</span></div>
       ${getRadioVal('familyEmployees') ? `<div class="pf-summary-row"><span class="label">Family employees?</span><span class="value">${getRadioVal('familyEmployees') === 'yes' ? 'Yes' : 'No'}</span></div>` : ''}
-      <div class="pf-summary-row"><span class="label">Plan goals</span><span class="value">${getCheckedGoals()}</span></div>
-      ${getVal('currentProvider') ? `<div class="pf-summary-row"><span class="label">Current provider</span><span class="value">${getVal('currentProvider')}</span></div>` : ''}
+      <div class="pf-summary-row"><span class="label">Plan goals</span><span class="value">${escapeHtml(getCheckedGoals())}</span></div>
+      ${getVal('currentProvider') ? `<div class="pf-summary-row"><span class="label">Current provider</span><span class="value">${escapeHtml(getVal('currentProvider'))}</span></div>` : ''}
       ${getVal('currentFees') ? `<div class="pf-summary-row"><span class="label">Current annual fees</span><span class="value">$${parseInt(getVal('currentFees')).toLocaleString()}</span></div>` : ''}
     </div>
   </div>`;
@@ -988,11 +991,11 @@ function buildReview() {
   html += `<div class="pf-summary">
     <div class="pf-summary-header">Business Basics <span class="pf-summary-edit" onclick="goToStep(2)">Edit</span></div>
     <div class="pf-summary-body">
-      <div class="pf-summary-row"><span class="label">Structure</span><span class="value">${friendlyVal('bizStructure', getRadioVal('bizStructure'))}</span></div>
-      <div class="pf-summary-row"><span class="label">Active owners (5%+)</span><span class="value">${getVal('ownerCount') || '—'}</span></div>
-      <div class="pf-summary-row"><span class="label">HCEs (excl. owners)</span><span class="value">${getVal('hceCount') || '—'}</span></div>
-      <div class="pf-summary-row"><span class="label">NHCEs</span><span class="value">${getVal('nhceCount') || '—'}</span></div>
-      ${getVal('avgEmployeeAge') ? `<div class="pf-summary-row"><span class="label">Avg employee age</span><span class="value">${getVal('avgEmployeeAge')}</span></div>` : ''}
+      <div class="pf-summary-row"><span class="label">Structure</span><span class="value">${escapeHtml(friendlyVal('bizStructure', getRadioVal('bizStructure')))}</span></div>
+      <div class="pf-summary-row"><span class="label">Active owners (5%+)</span><span class="value">${escapeHtml(getVal('ownerCount') || '—')}</span></div>
+      <div class="pf-summary-row"><span class="label">HCEs (excl. owners)</span><span class="value">${escapeHtml(getVal('hceCount') || '—')}</span></div>
+      <div class="pf-summary-row"><span class="label">NHCEs</span><span class="value">${escapeHtml(getVal('nhceCount') || '—')}</span></div>
+      ${getVal('avgEmployeeAge') ? `<div class="pf-summary-row"><span class="label">Avg employee age</span><span class="value">${escapeHtml(getVal('avgEmployeeAge'))}</span></div>` : ''}
       ${getRadioVal('wantEmployeeDetail') === 'yes' ? `<div class="pf-summary-row"><span class="label">Employee detail</span><span class="value">${document.querySelectorAll('#employeeDetailRows .emp-age').length} employees entered</span></div>` : ''}
       ${uploadedFilesList.length ? `<div class="pf-summary-row"><span class="label">Uploaded files</span><span class="value">${uploadedFilesList.length} file${uploadedFilesList.length > 1 ? 's' : ''}</span></div>` : ''}
     </div>
@@ -1014,7 +1017,7 @@ function buildReview() {
   html += `<div class="pf-summary">
     <div class="pf-summary-header">Owner Compensation <span class="pf-summary-edit" onclick="goToStep(4)">Edit</span></div>
     <div class="pf-summary-body">
-      <div class="pf-summary-row"><span class="label">Owner 1 age</span><span class="value">${getVal('ownerAge') || '—'}</span></div>
+      <div class="pf-summary-row"><span class="label">Owner 1 age</span><span class="value">${escapeHtml(getVal('ownerAge') || '—')}</span></div>
       ${biz === 'llc'
         ? `<div class="pf-summary-row"><span class="label">K-1 per owner</span><span class="value">${fmtMoney(getVal('ownerK1'))}</span></div>`
         : `<div class="pf-summary-row"><span class="label">Owner 1 salary</span><span class="value">${fmtMoney(getVal('ownerSalary'))}</span></div>`}
@@ -1024,12 +1027,12 @@ function buildReview() {
   html += `<div class="pf-summary">
     <div class="pf-summary-header">Contact <span class="pf-summary-edit" onclick="goToStep(5)">Edit</span></div>
     <div class="pf-summary-body">
-      <div class="pf-summary-row"><span class="label">Business</span><span class="value">${getVal('bizName') || '—'}</span></div>
-      <div class="pf-summary-row"><span class="label">Target start</span><span class="value">${friendlyVal('targetStart', getVal('targetStart'))}</span></div>
-      <div class="pf-summary-row"><span class="label">Name</span><span class="value">${getVal('firstName')} ${getVal('lastName')}</span></div>
-      <div class="pf-summary-row"><span class="label">Email</span><span class="value">${getVal('email') || '—'}</span></div>
-      <div class="pf-summary-row"><span class="label">Phone</span><span class="value">${getVal('phone') || '—'}</span></div>
-      ${getVal('notes') ? `<div class="pf-summary-row"><span class="label">Notes</span><span class="value" style="max-width:280px;white-space:normal;text-align:right">${getVal('notes')}</span></div>` : ''}
+      <div class="pf-summary-row"><span class="label">Business</span><span class="value">${escapeHtml(getVal('bizName') || '—')}</span></div>
+      <div class="pf-summary-row"><span class="label">Target start</span><span class="value">${escapeHtml(friendlyVal('targetStart', getVal('targetStart')))}</span></div>
+      <div class="pf-summary-row"><span class="label">Name</span><span class="value">${escapeHtml(getVal('firstName'))} ${escapeHtml(getVal('lastName'))}</span></div>
+      <div class="pf-summary-row"><span class="label">Email</span><span class="value">${escapeHtml(getVal('email') || '—')}</span></div>
+      <div class="pf-summary-row"><span class="label">Phone</span><span class="value">${escapeHtml(getVal('phone') || '—')}</span></div>
+      ${getVal('notes') ? `<div class="pf-summary-row"><span class="label">Notes</span><span class="value" style="max-width:280px;white-space:normal;text-align:right">${escapeHtml(getVal('notes'))}</span></div>` : ''}
     </div>
   </div>`;
   rc.innerHTML = html;
@@ -1130,10 +1133,18 @@ function handleFileSelect(files) {
 }
 function renderUploadedFiles() {
   const container = document.getElementById('uploadedFiles');
-  if (!uploadedFilesList.length) { container.innerHTML = ''; return; }
-  container.innerHTML = uploadedFilesList.map((f, i) =>
-    `<div><span>📎 ${f.name} (${(f.size / 1024).toFixed(1)} KB)</span><span class="remove-file" onclick="removeUploadedFile(${i})">×</span></div>`
-  ).join('');
+  container.replaceChildren();
+  uploadedFilesList.forEach((f, i) => {
+    const row = document.createElement('div');
+    const label = document.createElement('span');
+    label.textContent = `📎 ${f.name} (${(f.size / 1024).toFixed(1)} KB)`;
+    const remove = document.createElement('span');
+    remove.className = 'remove-file';
+    remove.textContent = '×';
+    remove.addEventListener('click', () => removeUploadedFile(i));
+    row.append(label, remove);
+    container.appendChild(row);
+  });
 }
 function removeUploadedFile(index) {
   uploadedFilesList.splice(index, 1);
