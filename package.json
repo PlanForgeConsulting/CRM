@@ -1,0 +1,11 @@
+{
+  "name": "planforge-crm-security-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/questionnaire-upload-filename-xss.test.mjs"
+  },
+  "devDependencies": {
+    "playwright-core": "1.65.1"
+  }
+}
